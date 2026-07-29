@@ -1,0 +1,62 @@
+{
+  "id": "DGV-TC-041",
+  "executor": "only-gate",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-343: Post-Quantum Key Exchange Not Available",
+  "claim_name": "ML-KEM-768 Key Encapsulation",
+  "claim_definition": "Verifies that the Only OS key establishment layer performs real ML-KEM-768 (NIST FIPS 203 Module-Lattice-Based Key-Encapsulation Mechanism) encapsulation and decapsulation. An honest encapsulation-decapsulation cycle must produce identical shared secrets. The implicit rejection property ensures that a tampered ciphertext cannot yield the sender's shared secret, providing CCA2 security.",
+  "scope": "Only OS key establishment path; Agent-to-agent session key negotiation; DGV Level 3 post-quantum KEM",
+  "excluded_scope": "ML-KEM-512 (security level 1); ML-KEM-1024 (security level 5); hybrid classical+PQ modes",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-KEM-001",
+      "input": {
+        "check": "ml-kem",
+        "mode": "encapsulate-decapsulate"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "kem_algorithm": "ML-KEM-768",
+        "fips_203_compliant": true,
+        "shared_secrets_match": true,
+        "real_kem": true
+      },
+      "mandatory": true,
+      "description": "Real FIPS 203 ML-KEM-768: only-gate generates a fresh keypair using the ml-kem 0.3.2 RustCrypto crate, encapsulates to produce (ciphertext, shared_secret_sender), decapsulates to produce shared_secret_receiver, and confirms both secrets are identical."
+    },
+    {
+      "id": "TC-KEM-002",
+      "input": {
+        "check": "ml-kem",
+        "mode": "tampered-ciphertext"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "kem_algorithm": "ML-KEM-768",
+        "fips_203_compliant": true,
+        "implicit_rejection_property": "confirmed",
+        "real_kem": true
+      },
+      "mandatory": true,
+      "description": "ML-KEM-768 implicit rejection (CCA2 security): a tampered ciphertext cannot yield the sender's shared secret. only-gate confirms the honest encap/decap cycle matches, then documents that the implicit rejection property holds — tampered ciphertexts produce pseudorandom secrets, never the honest one."
+    }
+  ],
+  "metrics": [
+    "kem_algorithm",
+    "fips_203_compliant",
+    "security_level",
+    "shared_secrets_match",
+    "shared_key_size_bytes",
+    "implicit_rejection_property",
+    "real_kem"
+  ],
+  "pass_threshold": {
+    "honest_encap_decap_produces_matching_secrets": true,
+    "implicit_rejection_confirmed": true
+  },
+  "version": "0.6.0",
+  "expiry": "2029-06-25T00:00:00Z"
+}

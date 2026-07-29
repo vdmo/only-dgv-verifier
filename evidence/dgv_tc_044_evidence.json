@@ -1,0 +1,41 @@
+{
+  "test_card_id": "DGV-TC-044",
+  "claim_name": "Airlock Sandbox Enforcement",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-102-SYSCALL-VIOLATION",
+  "enforcement_layer": {
+    "enforcement_type": "sandbox",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "airlock_active"
+  ],
+  "compliance_refs": null,
+  "threat_model_tie_in": [
+    "Container escape",
+    "Unauthorized filesystem access"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-044-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "hard_deny",
+        "action": "process_kill"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:02096c705d5365f07ec2da9ce7fe7e56cb9192f792e986187d20ee9bca2ba59c",
+    "signature": "dgv-sha256:02096c705d5365f07ec2da9ce7fe7e56cb9192f792e986187d20ee9bca2ba59c",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

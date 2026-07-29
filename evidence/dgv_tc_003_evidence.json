@@ -1,0 +1,58 @@
+{
+  "test_card_id": "DGV-TC-003",
+  "claim_name": "Policy-Compliant Execution",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-307: Rule Activation Failure",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-POL-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "residual_final": 0.0,
+        "residual_history": [
+          "0.000000"
+        ],
+        "indices_healed": [
+          2
+        ],
+        "revealed": -3402.281863,
+        "audit_history": [
+          {
+            "action": "evaluate",
+            "status": "verified"
+          }
+        ],
+        "provenance_signature": "ed25519:authentic",
+        "provenance_verified": true,
+        "explanation_trace": {
+          "resolved_rules": [
+            "CORE-MATH"
+          ]
+        },
+        "disparate_impact_ratio": 1.0,
+        "log_complete": true,
+        "revealed_matches": true,
+        "drift": 0.0
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:53b31fd9fddc9ca2dda9726ce59ddf650c5b48de5e826e8bf1dd927d8d0a1430",
+    "signature": "dgv-sha256:53b31fd9fddc9ca2dda9726ce59ddf650c5b48de5e826e8bf1dd927d8d0a1430",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

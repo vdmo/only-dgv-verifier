@@ -1,0 +1,82 @@
+{
+  "id": "DGV-TC-034",
+  "executor": "only-gate",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-341: Cryptographic Algorithm Not Quantum-Resistant",
+  "claim_name": "Post-Quantum Key Acceptance",
+  "claim_definition": "Verifies that the Only OS authority plane performs real ML-DSA-65 (NIST FIPS 204 Module-Lattice-Based Digital Signature) signing and verification, and that Ed25519 continues to work alongside it. Signature verification is performed by the ml-dsa 0.1.1 crate (RustCrypto, pure Rust FIPS 204 implementation). Tampered signatures are rejected with cryptographic certainty.",
+  "scope": "Only OS signing verification path; Agent Manifest signature verification; DGV Level 3 assurance",
+  "excluded_scope": "ML-KEM-768 key encapsulation (TC-041); SHAKE-256 hash substitution (TC-042); full FIPS 204 KAT suite",
+  "test_type": "rubric-based",
+  "test_cases": [
+    {
+      "id": "TC-PQC-001",
+      "input": {
+        "check": "signature",
+        "algorithm": "ML-DSA-65",
+        "message": "dgv-compliance-manifest-v0.6.0",
+        "tampered": "false"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "signature_algorithm": "ML-DSA-65",
+        "fips_204_compliant": true,
+        "real_verification": true
+      },
+      "mandatory": true,
+      "description": "Real FIPS 204 ML-DSA-65: only-gate generates a fresh keypair, signs the manifest message with the lattice-based algorithm, then verifies the signature. The ml-dsa 0.1.1 RustCrypto crate performs actual CRYSTALS-Dilithium lattice arithmetic."
+    },
+    {
+      "id": "TC-PQC-002",
+      "input": {
+        "check": "signature",
+        "algorithm": "Ed25519",
+        "message": "dgv-compliance-manifest-v0.6.0",
+        "tampered": "false"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "signature_algorithm": "Ed25519",
+        "real_verification": true
+      },
+      "mandatory": true,
+      "description": "Real Ed25519 backward compatibility: only-gate generates a fresh Ed25519 keypair (ed25519-dalek 2.x), signs the manifest, and verifies. Confirms migration readiness — Ed25519 must continue to work alongside ML-DSA-65."
+    },
+    {
+      "id": "TC-PQC-003",
+      "input": {
+        "check": "signature",
+        "algorithm": "ML-DSA-65",
+        "message": "dgv-compliance-manifest-v0.6.0",
+        "tampered": "true"
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "ml_dsa_signature_verification_failed",
+        "tamper_detected": true,
+        "real_verification": true
+      },
+      "mandatory": true,
+      "description": "Tampered signature rejection: the valid ML-DSA-65 signature is verified against a different (corrupted) message. The lattice-based verification must fail, confirming cryptographic tamper-evidence."
+    }
+  ],
+  "metrics": [
+    "signature_algorithm",
+    "fips_204_compliant",
+    "fips_204_level",
+    "lattice_based",
+    "real_verification",
+    "tamper_detected",
+    "gate_status"
+  ],
+  "pass_threshold": {
+    "ml_dsa_accepted": true,
+    "ed25519_still_accepted": true,
+    "tampered_ml_dsa_rejected": true
+  },
+  "version": "0.6.0",
+  "expiry": "2029-06-25T00:00:00Z"
+}

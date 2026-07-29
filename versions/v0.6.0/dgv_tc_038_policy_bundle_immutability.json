@@ -1,0 +1,58 @@
+{
+  "id": "DGV-TC-038",
+  "executor": "only-gate",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-415: Policy Bundle Tampered Undetected",
+  "claim_name": "Policy Bundle Immutability Under TEE",
+  "claim_definition": "Verifies that the SHA-256 hash of a Cedar policy bundle, measured at load time and sealed by the TEE, correctly detects any post-deployment modification. A policy bundle whose computed hash does not match the TEE-sealed expected hash is rejected before any evaluation begins, preventing a silent policy swap attack.",
+  "scope": "Cedar policy bundle integrity; TEE-sealed hash measurement; cMCP policy enforcement path",
+  "excluded_scope": "Runtime Cedar evaluation logic; policy bundle version migration procedures",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-POL-001",
+      "input": {
+        "check": "policy-integrity",
+        "policy": "allow action when (resource.type == \"compute\") && (principal.clearance >= \"L1\"); deny action when resource.sensitivity == \"CLASSIFIED\" && !principal.has_cleared_approval;",
+        "expected_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "policy_bundle_hash_mismatch",
+        "tamper_detected": true
+      },
+      "mandatory": true,
+      "description": "The expected hash is all-zeros (simulating a tampered or missing TEE seal). The computed hash of the valid policy content does not match, triggering tamper detection."
+    },
+    {
+      "id": "TC-POL-002",
+      "input": {
+        "check": "policy-integrity",
+        "policy": "allow action when (resource.type == \"compute\") && (principal.clearance >= \"L1\"); deny action when resource.sensitivity == \"CLASSIFIED\" && !principal.has_cleared_approval;",
+        "expected_hash": "sha256:e5b250f0c31e6fcae21f15313b11fb07c4c5872f1452c156a8c4fa3effd7e5cc"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "policy_integrity_verified": true,
+        "tamper_detected": false
+      },
+      "mandatory": true,
+      "description": "The expected hash matches the actual SHA-256 of the policy content. The TEE-sealed measurement confirms the bundle is unchanged since deployment."
+    }
+  ],
+  "metrics": [
+    "policy_integrity_verified",
+    "tamper_detected",
+    "computed_hash",
+    "expected_hash",
+    "gate_status"
+  ],
+  "pass_threshold": {
+    "tamper_detected_on_mismatch": true,
+    "integrity_confirmed_on_match": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-25T00:00:00Z"
+}

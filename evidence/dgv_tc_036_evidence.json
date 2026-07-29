@@ -1,0 +1,125 @@
+{
+  "test_card_id": "DGV-TC-036",
+  "claim_name": "CBOM Crypto Algorithm Inventory Conformance",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-342: Missing Cryptographic Algorithm Inventory",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-CBO-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "cbom_generated": true,
+        "algorithm_count": 5,
+        "quantum_safe_count": 2,
+        "quantum_vulnerable_count": 3,
+        "quantum_readiness_assessed": true,
+        "quantum_ready": false,
+        "cbom_format": "CycloneDX-1.7",
+        "algorithms": [
+          {
+            "crate": "sha2",
+            "algorithm": "SHA-256/SHA-512 (NIST FIPS 180-4)",
+            "quantum_vulnerable": false
+          },
+          {
+            "crate": "ed25519-dalek",
+            "algorithm": "Ed25519 (RFC 8032) \u2014 quantum-vulnerable",
+            "quantum_vulnerable": true
+          },
+          {
+            "crate": "ed25519",
+            "algorithm": "Ed25519 (RFC 8032) \u2014 quantum-vulnerable",
+            "quantum_vulnerable": true
+          },
+          {
+            "crate": "ring",
+            "algorithm": "ring (RSA/ECDSA/AES/ECDH) \u2014 partially quantum-vulnerable",
+            "quantum_vulnerable": true
+          },
+          {
+            "crate": "rand",
+            "algorithm": "CSPRNG (OS entropy source)",
+            "quantum_vulnerable": false
+          }
+        ],
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-CBO-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "cbom_generated": true,
+        "algorithm_count": 7,
+        "quantum_safe_count": 7,
+        "quantum_vulnerable_count": 0,
+        "quantum_readiness_assessed": true,
+        "quantum_ready": true,
+        "cbom_format": "CycloneDX-1.7",
+        "algorithms": [
+          {
+            "crate": "sha2",
+            "algorithm": "SHA-256/SHA-512 (NIST FIPS 180-4)",
+            "quantum_vulnerable": false
+          },
+          {
+            "crate": "sha3",
+            "algorithm": "SHA-3/SHAKE-256/SHAKE-128 (NIST FIPS 202)",
+            "quantum_vulnerable": false
+          },
+          {
+            "crate": "aes",
+            "algorithm": "AES-128/256 (NIST FIPS 197)",
+            "quantum_vulnerable": false
+          },
+          {
+            "crate": "aes-gcm",
+            "algorithm": "AES-GCM (NIST SP 800-38D)",
+            "quantum_vulnerable": false
+          },
+          {
+            "crate": "chacha20",
+            "algorithm": "ChaCha20 (RFC 8439)",
+            "quantum_vulnerable": false
+          },
+          {
+            "crate": "chacha20poly1305",
+            "algorithm": "ChaCha20-Poly1305 (RFC 8439)",
+            "quantum_vulnerable": false
+          },
+          {
+            "crate": "rand",
+            "algorithm": "CSPRNG (OS entropy source)",
+            "quantum_vulnerable": false
+          }
+        ],
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:9ac2abf5fff02370f70045732e4b8c69d37e77a167153d718dbc6419a7579105",
+    "signature": "dgv-sha256:9ac2abf5fff02370f70045732e4b8c69d37e77a167153d718dbc6419a7579105",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

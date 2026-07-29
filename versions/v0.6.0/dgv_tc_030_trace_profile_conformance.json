@@ -1,0 +1,100 @@
+{
+  "id": "DGV-TC-030",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-339: Distributed Verification Gap",
+  "claim_name": "TRACE Profile Conformance",
+  "claim_definition": "Verifies that the Only OS gateway session produces a signed GatewayClaim JWT carrying EAT profile tag `tag:agentrust.io,2026:trace-v0.1` that passes all four mandatory TRACE Level 1 test modules (TR-ENV, TR-SIG, TR-RTE, TR-POL) when executed against the agentrust-io/trace-tests conformance suite. The claim binds five attestation anchors: `eat_profile` (EAT profile URI), `trace.runtime.platform` (TEE or software-mode platform identity), `trace.policy.bundle_hash` (SHA-256 of the enforced policy bundle), `trace.cnf.jwk` (confirmation key bound to the session), and `gateway.audit_chain` (root-to-tip hash chain covering the session audit log). A session whose GatewayClaim JWT fails any mandatory module is treated as an unverifiable evidence unit and triggers GER-339.",
+  "scope": "Only OS gateway session TRACE claim output; trace-tests conformance suite Level 1",
+  "excluded_scope": "TR-TXN (Phase 2 tool-call transcript binding), TR-ANC (SCITT transparency anchoring), TR-SCA (SLSA provenance) — scheduled for DGV v0.6.0",
+  "test_type": "rubric-based",
+  "test_cases": [
+    {
+      "id": "TC-TRC-001",
+      "input": {
+        "gateway_claim_jwt": "artifacts/gateway_claim.jwt",
+        "trace_module": "TR-ENV",
+        "cli_args": ["--trace-module=TR-ENV"]
+      },
+      "expected": {
+        "module": "TR-ENV",
+        "passed": true,
+        "fields_present": [
+          "eat_profile",
+          "iat",
+          "trace.runtime",
+          "trace.policy",
+          "trace.cnf",
+          "gateway.audit_chain"
+        ]
+      },
+      "mandatory": true,
+      "description": "Validates the EAT envelope structure of the GatewayClaim JWT. The runner asserts that all six required top-level claims are present, that `eat_profile` equals `tag:agentrust.io,2026:trace-v0.1`, and that `iat` is a valid NumericDate no more than 300 seconds in the past at verification time."
+    },
+    {
+      "id": "TC-TRC-002",
+      "input": {
+        "gateway_claim_jwt": "artifacts/gateway_claim.jwt",
+        "trace_module": "TR-SIG",
+        "cli_args": ["--trace-module=TR-SIG"]
+      },
+      "expected": {
+        "module": "TR-SIG",
+        "passed": true,
+        "algorithm": "EdDSA",
+        "key_bound": true
+      },
+      "mandatory": true,
+      "description": "Validates the Ed25519 (EdDSA) signature over the GatewayClaim JWT and confirms key binding. The runner verifies the JWS compact serialization using the public key embedded in `trace.cnf.jwk`, asserts the `alg` header is `EdDSA`, and checks that the confirmation key thumbprint matches the session identity. ES256 and ES384 are accepted as alternative algorithms if `alg` is declared accordingly, but EdDSA is the Only OS default."
+    },
+    {
+      "id": "TC-TRC-003",
+      "input": {
+        "gateway_claim_jwt": "artifacts/gateway_claim.jwt",
+        "trace_module": "TR-RTE",
+        "cli_args": ["--trace-module=TR-RTE"]
+      },
+      "expected": {
+        "module": "TR-RTE",
+        "passed": true,
+        "platform_present": true,
+        "measurement_format": "hex64"
+      },
+      "mandatory": true,
+      "description": "Validates the TEE platform field and measurement format inside `trace.runtime`. The runner asserts that `trace.runtime.platform` is a non-empty string and that `trace.runtime.measurement` is a 64-character lowercase hex string (SHA-256). In hardware TEE mode the measurement reflects the enclave MRENCLAVE or equivalent. In software-only mode (`CMCP_DEV_MODE=1`) the platform value is the literal string `\"software\"` and the measurement is a deterministic SHA-256 of the gateway startup configuration (sorted JSON canonical form), satisfying the `hex64` format requirement without requiring a hardware RIM URI."
+    },
+    {
+      "id": "TC-TRC-004",
+      "input": {
+        "gateway_claim_jwt": "artifacts/gateway_claim.jwt",
+        "trace_module": "TR-POL",
+        "cli_args": ["--trace-module=TR-POL"]
+      },
+      "expected": {
+        "module": "TR-POL",
+        "passed": true,
+        "bundle_hash_present": true,
+        "enforcement_mode": "enforcing"
+      },
+      "mandatory": true,
+      "description": "Validates the policy bundle hash binding and enforcement mode declared in `trace.policy`. The runner asserts that `trace.policy.bundle_hash` is present and matches the pattern `sha256:[0-9a-f]{64}`, and that `trace.policy.enforcement_mode` is the string `\"enforcing\"`. A value of `\"permissive\"` or `\"audit\"` causes this module to fail, signalling that the gateway is not operating under binding policy controls."
+    }
+  ],
+  "metrics": [
+    "eat_profile_valid",
+    "signature_algorithm",
+    "key_bound_to_tee",
+    "platform_measurement_present",
+    "policy_bundle_hash_present",
+    "audit_chain_integrity",
+    "trace_level_1_pass_rate"
+  ],
+  "pass_threshold": {
+    "mandatory_modules_passed": 4,
+    "total_mandatory": 4,
+    "trace_level": 1,
+    "minimum_pass_rate": 1.0
+  },
+  "evidence": "evidence/dgv_tc_030_evidence.json",
+  "version": "0.5.0",
+  "expiry": "2028-06-24T00:00:00Z"
+}

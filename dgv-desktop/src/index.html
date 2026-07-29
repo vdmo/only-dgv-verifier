@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DGV Control Center - Deterministic AI Governance Standards</title>
+  <link rel="stylesheet" href="styles.css" />
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Three.js + OrbitControls for 3D Visuals -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- JS Module Entrypoint -->
+  <script type="module" src="/main.js" defer></script>
+</head>
+<body>
+  
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand-container">
+      <div class="brand-title">ONLY.INSTITUTE</div>
+      <div class="brand-divider"></div>
+      <div class="brand-subtitle">DGV Desktop Control Center</div>
+    </div>
+
+    <!-- Registry Sync Notification Center -->
+    <div class="sync-banner" id="sync-banner">
+      <span class="sync-status-dot green"></span>
+      <span class="sync-text" id="sync-text">Registry Sync status: Connected (v0.5.0)</span>
+      <button class="sync-btn" id="sync-btn">Check Update</button>
+    </div>
+
+    <!-- Settlement layer configuration selection -->
+    <div class="settings-container">
+      <label class="dropdown-label" for="settlement-select">Settlement Layer:</label>
+      <select class="settings-dropdown" id="settlement-select">
+        <option value="sui">Sui Blockchain (Testnet)</option>
+        <option value="helixdb">HelixDB (Local Block Ledger)</option>
+        <option value="onlydb">OnlyDB (Local Partition Cache)</option>
+        <option value="pbft">PBFT WebSocket Swarm</option>
+        <option value="gitops">GitOps Cryptographic Registry</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- 3-Column Grid Layout Container -->
+  <div class="layout-container">
+    
+    <!-- Left Column: Search & Test Card List -->
+    <div class="sidebar">
+      <div class="search-box-container">
+        <input type="text" class="search-input" id="search-input" placeholder="Search test cards..." />
+      </div>
+      
+      <div class="run-all-container">
+        <button class="action-btn run-all" id="run-all-btn">▶ Run All Cards</button>
+      </div>
+
+      <div class="cards-list" id="cards-list">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+
+    <!-- Center Column: Card Specs Inspector & Code Viewers -->
+    <div class="center-panel">
+      <div class="inspector-header">
+        <div class="inspector-meta">
+          <span class="layer-badge" id="insp-layer-badge">--</span>
+          <span class="ger-pill" id="insp-ger-mapping">--</span>
+          <span class="layer-badge ver" id="insp-version">Version: --</span>
+        </div>
+        <div class="inspector-title-row">
+          <h1 class="inspector-title" id="insp-title">Select a Test Card</h1>
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <span class="card-id" id="insp-card-id" style="display: none;">--</span>
+            <button class="action-btn run-card" id="run-card-btn" style="width: auto; padding: 6px 14px; font-size: 11.5px; margin: 0;">⚡ Run Selected Card</button>
+          </div>
+        </div>
+        <p class="inspector-desc" id="insp-desc">Click on a test card in the sidebar to review detailed specifications, Only-Lang script definitions, and SDK integration code.</p>
+      </div>
+
+      <div class="tabs-nav">
+        <button class="tab-link active" data-tab="overview">Overview</button>
+        <button class="tab-link" data-tab="json">JSON Spec</button>
+        <button class="tab-link" data-tab="dsl">Only-Lang DSL</button>
+        <button class="tab-link" data-tab="rust">Rust Code</button>
+        <button class="tab-link" data-tab="python">Python Code</button>
+        <button class="tab-link" data-tab="receipt">Auditor Receipt</button>
+      </div>
+
+      <div class="viewer-panel">
+        <div class="viewer-header">
+          <span class="viewer-title" id="viewer-title">Overview</span>
+          <button class="copy-btn" id="copy-btn">
+            <span class="copy-icon">📋</span> <span class="copy-text">Copy</span>
+          </button>
+        </div>
+        
+        <!-- Combined Overview, 3D Gating Visuals and Trace Panel -->
+        <div id="overview-container" class="explanation-content" style="padding: 0; position: relative; flex: 1; display: flex; flex-direction: column;">
+          <div class="webgl-container" id="webgl-container" style="flex: 1; position: relative;">
+            <!-- Canvas will be injected here -->
+            
+            <!-- Left Overlay: Live Decision Path Trace -->
+            <div id="live-trace-overlay" class="overlay-panel left-overlay">
+              <div class="trace-container" id="trace-content">
+                <div class="empty-trace">No test run active. Select a card and click "Run Selected Card" to execute check.</div>
+              </div>
+            </div>
+
+            <!-- Right Overlay: Card Overview & Risk Implications -->
+            <div id="overview-info-overlay" class="overlay-panel right-overlay">
+              <!-- Filled dynamically by JS -->
+            </div>
+
+            <!-- Telemetry Overlay (Centered near the top) -->
+            <div class="visualizer-telemetry" style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10; pointer-events: none;">
+              <div style="background: rgba(11, 19, 43, 0.85); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; align-items: center;">
+                <span style="font-size: 9px; text-transform: uppercase; color: var(--muted); font-weight: 700;">Gate Status</span>
+                <span id="gate-pill" class="status-pill idle" style="font-size: 11px; font-weight: 800; color: var(--muted);">IDLE</span>
+              </div>
+              <div style="background: rgba(11, 19, 43, 0.85); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; align-items: center;">
+                <span style="font-size: 9px; text-transform: uppercase; color: var(--muted); font-weight: 700;">Latency</span>
+                <span id="gate-latency" style="font-size: 11px; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: #fff;">-- ms</span>
+              </div>
+            </div>
+
+            <!-- Play Controls -->
+            <div class="visualizer-overlay-controls">
+              <button class="btn success-play" id="vis-play-success">Play Success</button>
+              <button class="btn fail-play" id="vis-play-fail">Play Failure</button>
+            </div>
+
+            <!-- HITL manual action overlay -->
+            <div id="hitl-overlay" style="position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); backdrop-filter: blur(16px); background: rgba(15, 23, 48, 0.9); border: 2px solid var(--warn); border-radius: 12px; padding: 18px; width: 280px; text-align: center; box-shadow: 0 10px 30px rgba(245, 158, 11, 0.25); z-index: 20; display: none; flex-direction: column; gap: 8px;">
+              <div class="hitl-title" style="font-size: 13px; font-weight: 700; color: var(--warn);">⚠️ Manual Authorization</div>
+              <div class="hitl-desc" style="font-size: 11px; color: var(--muted); line-height: 1.4;">OnlyOS Gate has escalated a transaction proposal. Resolve this human review constraint.</div>
+              <div class="hitl-actions" style="display: flex; gap: 8px; justify-content: center; margin-top: 8px;">
+                <button class="btn success-play" id="hitl-approve" style="padding: 4px 10px; font-size: 11px; cursor: pointer; color: var(--ok); border: 1px solid var(--ok); background: rgba(16,185,129,0.15);">Approve</button>
+                <button class="btn fail-play" id="hitl-deny" style="padding: 4px 10px; font-size: 11px; cursor: pointer; color: var(--danger); border: 1px solid var(--danger); background: rgba(239,68,68,0.15);">Deny</button>
+              </div>
+            </div>
+          </div>
+          <div class="visualizer-legend" style="background: rgba(8, 12, 28, 0.85); padding: 12px 20px; display: flex; justify-content: space-around; font-size: 11.5px; font-weight: 600; color: var(--muted); border-top: 1px solid var(--border);">
+            <div class="legend-item"><span class="color-dot client"></span>Client Node</div>
+            <div class="legend-item"><span class="color-dot gate"></span>Gating Plane</div>
+            <div class="legend-item"><span class="color-dot hitl"></span>Human in the Loop</div>
+            <div class="legend-item"><span class="color-dot db"></span>Settlement Ledger</div>
+          </div>
+        </div>
+
+        <pre class="code-block" id="code-container" style="display: none;"><code id="code-content"></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Champions Registry Modal Overlay -->
+  <div class="modal-overlay" id="champions-modal">
+    <div class="modal-box">
+      <div class="modal-title">🏆 100% Conformance Achieved!</div>
+      <div class="modal-desc">
+        Your system has successfully passed all 29 deterministic governance verification tests under the OnlyOS TEE Gating standards.
+      </div>
+      <div class="modal-form">
+        <div class="form-group">
+          <label for="champ-name">Developer / Audit Handle</label>
+          <input type="text" class="form-input" id="champ-name" placeholder="e.g. Vladislava" required />
+        </div>
+        <div class="form-group">
+          <label for="champ-org">Organization / System Name</label>
+          <input type="text" class="form-input" id="champ-org" placeholder="e.g. OnlyEngine Executor v1" required />
+        </div>
+        <div class="form-group">
+          <label for="champ-email">Contact Email (Optional)</label>
+          <input type="email" class="form-input" id="champ-email" placeholder="e.g. admin@only.institute" />
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" id="champ-skip-btn">Keep Private</button>
+        <button class="modal-btn primary" id="champ-submit-btn">Broadcast as Champion</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

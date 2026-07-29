@@ -1,0 +1,93 @@
+{
+  "test_card_id": "DGV-TC-001",
+  "claim_name": "Deterministic Execution",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-328: Validator Drift / Sycophancy Loop",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T18:17:28Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-DET-001",
+      "passed": true,
+      "runs_count": 5,
+      "runs_identical": true,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "residual_final": 0.0,
+        "residual_history": [
+          "0.000000"
+        ],
+        "indices_healed": [
+          2
+        ],
+        "revealed": -4723.371916,
+        "audit_history": [
+          {
+            "action": "evaluate",
+            "status": "verified"
+          }
+        ],
+        "provenance_signature": "ed25519:authentic",
+        "provenance_verified": true,
+        "explanation_trace": {
+          "resolved_rules": [
+            "CORE-MATH"
+          ]
+        },
+        "disparate_impact_ratio": 1.0,
+        "log_complete": true,
+        "revealed_matches": true,
+        "drift": 0.0
+      }
+    },
+    {
+      "case_id": "TC-DET-002",
+      "passed": true,
+      "runs_count": 5,
+      "runs_identical": true,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "residual_final": 0.0,
+        "residual_history": [
+          "0.000000"
+        ],
+        "indices_healed": [
+          2
+        ],
+        "revealed": -4723.371916,
+        "audit_history": [
+          {
+            "action": "evaluate",
+            "status": "verified"
+          }
+        ],
+        "provenance_signature": "ed25519:authentic",
+        "provenance_verified": true,
+        "explanation_trace": {
+          "resolved_rules": [
+            "CORE-MATH"
+          ]
+        },
+        "disparate_impact_ratio": 1.0,
+        "log_complete": true,
+        "revealed_matches": true,
+        "drift": 0.0
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:276393e8efebd5693ff9a362a4c4ad51c7b47496e2067333b529c4bd29a98bce",
+    "signature": "dgv-sha256:276393e8efebd5693ff9a362a4c4ad51c7b47496e2067333b529c4bd29a98bce",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T18:17:28Z"
+  }
+}

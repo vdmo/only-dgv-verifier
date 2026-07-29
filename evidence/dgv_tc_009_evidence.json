@@ -1,0 +1,37 @@
+{
+  "test_card_id": "DGV-TC-009",
+  "claim_name": "Token Replay Resistance",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-426: Agentic Authority Overreach",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-REP-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "token_replay_attack_detected",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:b629d5ea1287a93d8ceb4aae778fd5466e4251dbc8cb7ac475883c78c7e67903",
+    "signature": "dgv-sha256:b629d5ea1287a93d8ceb4aae778fd5466e4251dbc8cb7ac475883c78c7e67903",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

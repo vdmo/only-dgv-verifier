@@ -1,0 +1,47 @@
+{
+  "id": "DGV-TC-050",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-701-GOVERNANCE-BYPASS",
+  "replay_protection_required": false,
+  "latency_threshold_ms": 25,
+  "claim_name": "Active Governance Verdict",
+  "claim_definition": "Combine JIS identity, provenance, and snapshot age into a single active allow/deny decision gating application logic.",
+  "scope": "Governance gating, JIS identity.",
+  "excluded_scope": "Offline auditing.",
+  "test_type": "rubric-based",
+  "enforcement_layer": {
+    "enforcement_type": "sandbox",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "jis_identity_resolved",
+    "provenance_chain_valid"
+  ],
+  "threat_model_tie_in": [
+    "Unauthorized deployment",
+    "Stale snapshot usage"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-050-01",
+      "input": {
+        "jis_status": "approved",
+        "snapshot_age_ms": 5000
+      },
+      "expected": {
+        "verdict": "allow"
+      },
+      "mandatory": true,
+      "description": "Active governance gate passes with fresh state and approved JIS."
+    }
+  ],
+  "metrics": [
+    "governance_verdict_latency"
+  ],
+  "pass_threshold": {
+    "governance_verdict_latency": "< 25ms"
+  },
+  "evidence": "evidence/dgv_tc_050_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

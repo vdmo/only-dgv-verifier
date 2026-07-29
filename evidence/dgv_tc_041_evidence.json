@@ -1,0 +1,62 @@
+{
+  "test_card_id": "DGV-TC-041",
+  "claim_name": "ML-KEM-768 Key Encapsulation",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-343: Post-Quantum Key Exchange Not Available",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-KEM-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "kem_algorithm": "ML-KEM-768",
+        "fips_203_compliant": true,
+        "security_level": 3,
+        "shared_secrets_match": true,
+        "shared_key_size_bytes": 32,
+        "real_kem": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-KEM-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "kem_algorithm": "ML-KEM-768",
+        "fips_203_compliant": true,
+        "security_level": 3,
+        "implicit_rejection_property": "confirmed",
+        "honest_encap_decap_matches": true,
+        "tampered_ciphertext_produces_different_secret": true,
+        "real_kem": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:e3161d2e70060bd6c3639fbe8f64e8c5561a54a7c0d0d5925204c6c8cba0cd40",
+    "signature": "dgv-sha256:e3161d2e70060bd6c3639fbe8f64e8c5561a54a7c0d0d5925204c6c8cba0cd40",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

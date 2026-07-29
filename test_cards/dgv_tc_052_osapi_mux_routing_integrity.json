@@ -1,0 +1,47 @@
+{
+  "id": "DGV-TC-052",
+  "svrnos_layer": "L3: Routing & Boundary",
+  "ger_mapping": "GER-302-ROUTING-TAMPER",
+  "replay_protection_required": true,
+  "latency_threshold_ms": 15,
+  "claim_name": "OSAPI Mux Routing Integrity",
+  "claim_definition": "Test semantic surface manifest routing without decrypting the payload early.",
+  "scope": "Routing, payload encapsulation.",
+  "excluded_scope": "Deep packet inspection.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "mux_manifest_parsed"
+  ],
+  "threat_model_tie_in": [
+    "Payload tampering before decryption",
+    "Routing manipulation"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-052-01",
+      "input": {
+        "manifest_signature": "valid",
+        "payload_decrypted": false
+      },
+      "expected": {
+        "verdict": "allow",
+        "route_status": "forwarded"
+      },
+      "mandatory": true,
+      "description": "Payload routed correctly without early decryption."
+    }
+  ],
+  "metrics": [
+    "routing_latency"
+  ],
+  "pass_threshold": {
+    "routing_latency": "< 15ms"
+  },
+  "evidence": "evidence/dgv_tc_052_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

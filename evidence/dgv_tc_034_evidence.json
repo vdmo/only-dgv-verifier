@@ -1,0 +1,78 @@
+{
+  "test_card_id": "DGV-TC-034",
+  "claim_name": "Post-Quantum Key Acceptance",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-341: Cryptographic Algorithm Not Quantum-Resistant",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-PQC-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "signature_algorithm": "ML-DSA-65",
+        "fips_204_compliant": true,
+        "fips_204_level": 3,
+        "lattice_based": true,
+        "real_verification": true,
+        "manifest_verified": true,
+        "backward_compatibility_preserved": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-PQC-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "signature_algorithm": "Ed25519",
+        "fips_204_compliant": null,
+        "backward_compatibility_preserved": true,
+        "real_verification": true,
+        "manifest_verified": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-PQC-003",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "ml_dsa_signature_verification_failed",
+        "signature_algorithm": "ML-DSA-65",
+        "tamper_detected": true,
+        "real_verification": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:1d5a04a915549e5cce587a7dbfc6597ceb0cdf7851c0a0d6ef7dbd11f0b2e9ab",
+    "signature": "dgv-sha256:1d5a04a915549e5cce587a7dbfc6597ceb0cdf7851c0a0d6ef7dbd11f0b2e9ab",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

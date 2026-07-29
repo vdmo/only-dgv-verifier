@@ -1,0 +1,70 @@
+{
+  "id": "DGV-TC-043",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-501-STATE-MUTATION-WITHOUT-PRECONDITION",
+  "replay_protection_required": true,
+  "latency_threshold_ms": 50,
+  "claim_name": "Snapshot Precondition Gate Enforcement",
+  "claim_definition": "Verify that destructive or high-risk operations are blocked unconditionally unless accompanied by a cryptographically-signed snapshot token representing the valid pre-state.",
+  "scope": "State mutation gates, pre-transaction snapshot validation.",
+  "excluded_scope": "Read-only operations.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "hardware",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "fresh_snapshot_token"
+  ],
+  "performance": {
+    "expected_latency_p99_ms": 15
+  },
+  "compliance_refs": [
+    {
+      "standard": "ISO 42001",
+      "article": "A.5.4 Risk Treatment"
+    }
+  ],
+  "threat_model_tie_in": [
+    "State-desync attacks",
+    "Race conditions mutating stale state"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-043-01",
+      "input": {
+        "operation": "mutate_weights",
+        "snapshot_token": "valid_signed_snapshot_hex"
+      },
+      "expected": {
+        "verdict": "allow"
+      },
+      "mandatory": true,
+      "description": "Operation allowed with valid snapshot."
+    },
+    {
+      "id": "tc-043-02",
+      "input": {
+        "operation": "mutate_weights",
+        "snapshot_token": "expired_or_invalid_snapshot_hex"
+      },
+      "expected": {
+        "verdict": "hard_deny",
+        "error_code": "PRECONDITION_FAILED"
+      },
+      "mandatory": true,
+      "description": "Operation blocked with invalid snapshot."
+    }
+  ],
+  "metrics": [
+    "gate_enforcement_accuracy",
+    "snapshot_validation_latency"
+  ],
+  "pass_threshold": {
+    "gate_enforcement_accuracy": 1.0,
+    "snapshot_validation_latency": "< 50ms"
+  },
+  "evidence": "evidence/dgv_tc_043_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

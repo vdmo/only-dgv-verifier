@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DGVTestCard",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the test card, e.g. DGV-TC-001"
+    },
+    "svrnos_layer": {
+      "type": "string",
+      "enum": [
+        "L1: Compute Substrate",
+        "L2: Component & Provenance",
+        "L3: Routing & Boundary",
+        "L4: Evidence Transport",
+        "L5: Session & State",
+        "L6: Risk Interpretation",
+        "L7: Application Enforcement"
+      ],
+      "description": "The target SVRNOS governance layer this test card evaluates"
+    },
+    "ger_mapping": {
+      "type": "string",
+      "description": "The canonical SVRNOS Governance Error Register (GER) code mapped to this claim's failure condition"
+    },
+    "replay_protection_required": {
+      "type": "boolean",
+      "description": "If true, the system must demonstrate token replay resistance"
+    },
+    "latency_threshold_ms": {
+      "type": "number",
+      "description": "Maximum allowed verification execution latency in milliseconds"
+    },
+    "claim_name": {
+      "type": "string",
+      "description": "Descriptive name of the claim class being verified"
+    },
+    "claim_definition": {
+      "type": "string",
+      "description": "Exact definition of what is being tested and certified"
+    },
+    "scope": {
+      "type": "string",
+      "description": "Operational scope covered by this test card"
+    },
+    "excluded_scope": {
+      "type": "string",
+      "description": "Scenarios explicitly excluded from the certification"
+    },
+    "test_type": {
+      "type": "string",
+      "enum": ["exact-match", "statistical", "metamorphic", "rubric-based"],
+      "description": "The methodology used to evaluate outcomes"
+    },
+    "test_cases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "input": {
+            "type": "object",
+            "description": "Input payload or script arguments"
+          },
+          "expected": {
+            "type": "object",
+            "description": "Expected outputs, metrics, or validation thresholds"
+          },
+          "mandatory": {
+            "type": "boolean",
+            "description": "If true, this case must pass to certify the claim"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "input", "expected", "mandatory"]
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of metrics evaluated by this test card"
+    },
+    "pass_threshold": {
+      "type": "object",
+      "description": "Acceptable criteria/rules for metrics to declare a pass status"
+    },
+    "evidence": {
+      "type": "string",
+      "description": "Evidence output path where run details will be written"
+    },
+    "enforcement_layer": {
+      "type": "object",
+      "properties": {
+        "enforcement_type": {
+          "type": "string",
+          "enum": ["simulation", "sandbox", "hardware", "distributed"]
+        },
+        "expected_verdict": {
+          "type": "string",
+          "enum": ["allow", "hard_deny"]
+        }
+      },
+      "required": ["enforcement_type", "expected_verdict"],
+      "description": "Specifies how the governance rule is actively enforced"
+    },
+    "required_preconditions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "State prerequisites required before test execution (e.g. fresh_snapshot)"
+    },
+    "performance": {
+      "type": "object",
+      "description": "Baseline throughput/latency expectations"
+    },
+    "compliance_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "standard": { "type": "string" },
+          "article": { "type": "string" }
+        }
+      },
+      "description": "Links to regulatory standards"
+    },
+    "threat_model_tie_in": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Specific attack scenarios this card defends against"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the test card"
+    },
+    "expiry": {
+      "type": "string",
+      "description": "Timestamp or version constraint for validity"
+    }
+  },
+  "required": [
+    "id",
+    "svrnos_layer",
+    "ger_mapping",
+    "claim_name",
+    "claim_definition",
+    "scope",
+    "test_type",
+    "test_cases",
+    "metrics",
+    "pass_threshold",
+    "version",
+    "expiry"
+  ]
+}

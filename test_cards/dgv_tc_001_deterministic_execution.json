@@ -1,0 +1,46 @@
+{
+  "id": "DGV-TC-001",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-328: Validator Drift / Sycophancy Loop",
+  "claim_name": "Deterministic Execution",
+  "claim_definition": "Given the exact same script commands and baseline values, the Only-Lang solver evaluates and heals state variables to the exact same values and zero-residual alignment.",
+  "scope": "only-lang dgv-verifier CLI execution",
+  "test_type": "metamorphic",
+  "test_cases": [
+    {
+      "id": "TC-DET-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "residual_final": 0.0,
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "Verifies that solving a baseline balanced budget returns a 0.0 residual exactly every time."
+    },
+    {
+      "id": "TC-DET-002",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "corrupt_index": 0
+      },
+      "expected": {
+        "pass": true,
+        "runs_identical": true,
+        "max_residual": 1e-12
+      },
+      "mandatory": true,
+      "description": "Metamorphic: introduces a sector-0 corruption then verifies the solver still heals to zero residual identically across 5 runs, confirming corruption recovery is also deterministic."
+    }
+  ],
+  "metrics": ["output_identity", "residual_zero_tolerance"],
+  "pass_threshold": {
+    "allowed_variance": 0.0,
+    "max_residual": 1e-12
+  },
+  "version": "0.5.0",
+  "expiry": "2027-06-24T00:00:00Z"
+}

@@ -1,0 +1,47 @@
+{
+  "id": "DGV-TC-053",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-702-COMPROMISE-RECOVERY-FAIL",
+  "replay_protection_required": true,
+  "latency_threshold_ms": 500,
+  "claim_name": "Post-Compromise Recovery Window",
+  "claim_definition": "Test how quickly trust can be re-established across the distributed network after a detected anomaly or node compromise.",
+  "scope": "Incident response, automated recovery.",
+  "excluded_scope": "Physical hardware replacement.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "anomaly_detected"
+  ],
+  "threat_model_tie_in": [
+    "Prolonged compromise exposure",
+    "Stale keys post-incident"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-053-01",
+      "input": {
+        "action": "trigger_recovery",
+        "compromised_node": "node-4"
+      },
+      "expected": {
+        "verdict": "allow",
+        "recovery_status": "keys_rotated_and_healed"
+      },
+      "mandatory": true,
+      "description": "Network automatically isolates node and rotates keys within SLA."
+    }
+  ],
+  "metrics": [
+    "recovery_time_ms"
+  ],
+  "pass_threshold": {
+    "recovery_time_ms": "< 500ms"
+  },
+  "evidence": "evidence/dgv_tc_053_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

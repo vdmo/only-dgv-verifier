@@ -1,0 +1,389 @@
+{
+  "certified_systems": [
+    {
+      "system_name": "Only OS / only-engine",
+      "system_version": "v1.5.0"
+      "certifications": [
+        {
+          "claim_id": "DGV-CL-001",
+          "claim_name": "Deterministic Execution",
+          "test_card_id": "DGV-TC-001",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-13T14:00:00Z",
+          "expiry": "2027-06-13T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_001_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-002",
+          "claim_name": "Boundary Enforcement",
+          "test_card_id": "DGV-TC-002",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-13T14:00:00Z",
+          "expiry": "2027-06-13T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_002_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-003",
+          "claim_name": "Policy-Compliant Execution",
+          "test_card_id": "DGV-TC-003",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-13T14:00:00Z",
+          "expiry": "2027-06-13T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_003_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-004",
+          "claim_name": "Instruction Hierarchy Obedience",
+          "test_card_id": "DGV-TC-004",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-13T14:00:00Z",
+          "expiry": "2027-06-13T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_004_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-005",
+          "claim_name": "Refusal Correctness",
+          "test_card_id": "DGV-TC-005",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-13T14:00:00Z",
+          "expiry": "2027-06-13T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_005_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-006",
+          "claim_name": "Audit Log Completeness",
+          "test_card_id": "DGV-TC-006",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-13T14:00:00Z",
+          "expiry": "2027-06-13T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_006_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-007",
+          "claim_name": "Provenance Traceability",
+          "test_card_id": "DGV-TC-007",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-13T14:00:00Z",
+          "expiry": "2027-06-13T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_007_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-008",
+          "claim_name": "Stability Under Repeated Runs",
+          "test_card_id": "DGV-TC-008",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-13T14:00:00Z",
+          "expiry": "2027-06-13T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_008_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-009",
+          "claim_name": "Token Replay Resistance",
+          "test_card_id": "DGV-TC-009",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-16T14:00:00Z",
+          "expiry": "2027-06-16T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_009_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-010",
+          "claim_name": "Fail-Closed Latency",
+          "test_card_id": "DGV-TC-010",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-16T14:00:00Z",
+          "expiry": "2027-06-16T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_010_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-011",
+          "claim_name": "Explanation & Decision Traceability",
+          "test_card_id": "DGV-TC-011",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-17T14:00:00Z",
+          "expiry": "2027-06-17T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_011_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-012",
+          "claim_name": "Adversarial Prompt Resistance",
+          "test_card_id": "DGV-TC-012",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-17T14:00:00Z",
+          "expiry": "2027-06-17T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_012_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-013",
+          "claim_name": "Statistical Fairness & Bias Mitigation",
+          "test_card_id": "DGV-TC-013",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-17T14:00:00Z",
+          "expiry": "2027-06-17T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_013_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-014",
+          "claim_name": "Cryptographic Provenance Watermarking",
+          "test_card_id": "DGV-TC-014",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-17T14:00:00Z",
+          "expiry": "2027-06-17T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_014_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-015",
+          "claim_name": "Continuous Governance Heartbeat",
+          "test_card_id": "DGV-TC-015",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-17T14:00:00Z",
+          "expiry": "2027-06-17T14:00:00Z",
+          "evidence_package": "evidence/dgv_tc_015_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-016",
+          "claim_name": "Codon Delegation Lineage",
+          "test_card_id": "DGV-TC-016",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-19T00:00:00Z",
+          "expiry": "2027-06-19T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_016_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-017",
+          "claim_name": "RLWE Enclave Binding",
+          "test_card_id": "DGV-TC-017",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-19T00:00:00Z",
+          "expiry": "2027-06-19T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_017_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-018",
+          "claim_name": "Spectral Drift Containment",
+          "test_card_id": "DGV-TC-018",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-19T00:00:00Z",
+          "expiry": "2027-06-19T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_018_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-019",
+          "claim_name": "Non-Expansive Repair",
+          "test_card_id": "DGV-TC-019",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-19T00:00:00Z",
+          "expiry": "2027-06-19T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_019_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-020",
+          "claim_name": "Transitive Trust Revocation",
+          "test_card_id": "DGV-TC-020",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-19T00:00:00Z",
+          "expiry": "2027-06-19T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_020_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-021",
+          "claim_name": "Multi-Sig Consensus Escape",
+          "test_card_id": "DGV-TC-021",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-19T00:00:00Z",
+          "expiry": "2027-06-19T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_021_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-022",
+          "claim_name": "Double-Spend Prevention",
+          "test_card_id": "DGV-TC-022",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-19T00:00:00Z",
+          "expiry": "2027-06-19T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_022_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-023",
+          "claim_name": "Coherence Auto-Escalation",
+          "test_card_id": "DGV-TC-023",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-19T00:00:00Z",
+          "expiry": "2027-06-19T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_023_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-024",
+          "claim_name": "UIAG Legal Hold Disposition Interlock",
+          "test_card_id": "DGV-TC-024",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-22T00:00:00Z",
+          "expiry": "2027-06-22T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_024_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-025",
+          "claim_name": "UIAG High-Risk DPIA Linkage",
+          "test_card_id": "DGV-TC-025",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-22T00:00:00Z",
+          "expiry": "2027-06-22T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_025_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-026",
+          "claim_name": "UIAG Classification Security Enforcement",
+          "test_card_id": "DGV-TC-026",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-22T00:00:00Z",
+          "expiry": "2027-06-22T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_026_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-027",
+          "claim_name": "Model Weight Integrity Verification",
+          "test_card_id": "DGV-TC-027",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-22T00:00:00Z",
+          "expiry": "2027-06-22T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_027_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-028",
+          "claim_name": "AI-ID Registry Lookup Validation",
+          "test_card_id": "DGV-TC-028",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-22T00:00:00Z",
+          "expiry": "2027-06-22T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_028_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-029",
+          "claim_name": "Model Structural Drift Threshold Enforcement",
+          "test_card_id": "DGV-TC-029",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-22T00:00:00Z",
+          "expiry": "2027-06-22T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_029_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-030",
+          "claim_name": "TRACE Profile Conformance",
+          "test_card_id": "DGV-TC-030",
+          "badge_status": "gold",
+          "verification_timestamp": "2026-06-24T00:00:00Z",
+          "expiry": "2028-06-24T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_030_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-031",
+          "claim_name": "RAG Corpus Digest Verification",
+          "test_card_id": "DGV-TC-031",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-24T00:00:00Z",
+          "expiry": "2028-06-24T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_031_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-032",
+          "claim_name": "HITL Bypass Prevention",
+          "test_card_id": "DGV-TC-032",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-24T00:00:00Z",
+          "expiry": "2028-06-24T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_032_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-033",
+          "claim_name": "Cross-Agent PHI Boundary Enforcement",
+          "test_card_id": "DGV-TC-033",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-24T00:00:00Z",
+          "expiry": "2028-06-24T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_033_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-034",
+          "claim_name": "Post-Quantum Key Acceptance",
+          "test_card_id": "DGV-TC-034",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-24T00:00:00Z",
+          "expiry": "2028-06-24T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_034_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-035",
+          "claim_name": "Zero-Knowledge Audit Export Integrity",
+          "test_card_id": "DGV-TC-035",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-24T00:00:00Z",
+          "expiry": "2028-06-24T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_035_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-036",
+          "claim_name": "CBOM Crypto Algorithm Inventory Conformance",
+          "test_card_id": "DGV-TC-036",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-25T00:00:00Z",
+          "expiry": "2028-06-25T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_036_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-037",
+          "claim_name": "Temporal Trust Score Decay",
+          "test_card_id": "DGV-TC-037",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-25T00:00:00Z",
+          "expiry": "2028-06-25T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_037_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-038",
+          "claim_name": "Policy Bundle Immutability Under TEE",
+          "test_card_id": "DGV-TC-038",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-25T00:00:00Z",
+          "expiry": "2028-06-25T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_038_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-039",
+          "claim_name": "Transparency Log Anchor Integrity",
+          "test_card_id": "DGV-TC-039",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-25T00:00:00Z",
+          "expiry": "2028-06-25T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_039_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-040",
+          "claim_name": "GPU Confidential Compute Attestation",
+          "test_card_id": "DGV-TC-040",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-25T00:00:00Z",
+          "expiry": "2028-06-25T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_040_evidence.json"
+        }
+        ,
+        {
+          "claim_id": "DGV-CL-041",
+          "claim_name": "ML-KEM-768 Key Encapsulation",
+          "test_card_id": "DGV-TC-041",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-25T00:00:00Z",
+          "expiry": "2029-06-25T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_041_evidence.json"
+        },
+        {
+          "claim_id": "DGV-CL-042",
+          "claim_name": "SHAKE-256 Hash Conformance",
+          "test_card_id": "DGV-TC-042",
+          "badge_status": "verified",
+          "verification_timestamp": "2026-06-25T00:00:00Z",
+          "expiry": "2029-06-25T00:00:00Z",
+          "evidence_package": "evidence/dgv_tc_042_evidence.json"
+        }
+      ]
+    }
+  ]
+}

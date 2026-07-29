@@ -1,0 +1,62 @@
+{
+  "test_card_id": "DGV-TC-037",
+  "claim_name": "Temporal Trust Score Decay",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-512: Trust Score Staleness Undetected",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-TRS-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "trust_score_below_threshold",
+        "initial_score": 0.95,
+        "final_score": 0.295912,
+        "threshold": 0.5,
+        "elapsed_secs": 7776000,
+        "decay_rate": 1.5e-07,
+        "re_attestation_required": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-TRS-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "initial_score": 0.95,
+        "final_score": 0.86761,
+        "threshold": 0.5,
+        "elapsed_secs": 604800,
+        "decay_rate": 1.5e-07,
+        "re_attestation_required": false,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:3c88577e07e2e28a38c473db34cb826913880abec980583dc5c91d03b7165458",
+    "signature": "dgv-sha256:3c88577e07e2e28a38c473db34cb826913880abec980583dc5c91d03b7165458",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

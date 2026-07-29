@@ -1,0 +1,59 @@
+{
+  "test_card_id": "DGV-TC-039",
+  "claim_name": "Transparency Log Anchor Integrity",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-340: Evidence Anchor Not Verifiable",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-MKL-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "anchor_verified": true,
+        "inclusion_proof_valid": true,
+        "merkle_root": "sha256:ba9ce7478dcb18bc28805cec64d89b0679f71009e0227eac829b0beaae34d1f4",
+        "entry_index": 1,
+        "inclusion_depth": 2,
+        "log_size": 4,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-MKL-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "merkle_inclusion_proof_invalid",
+        "anchor_verified": false,
+        "inclusion_proof_valid": false,
+        "merkle_root": "sha256:ba9ce7478dcb18bc28805cec64d89b0679f71009e0227eac829b0beaae34d1f4",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:57e4e29c9bb9951f35ceeffacf9d50feec575559aab45a8cba33a86e91b25e97",
+    "signature": "dgv-sha256:57e4e29c9bb9951f35ceeffacf9d50feec575559aab45a8cba33a86e91b25e97",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

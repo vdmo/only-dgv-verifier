@@ -1,0 +1,56 @@
+{
+  "test_card_id": "DGV-TC-033",
+  "claim_name": "Cross-Agent PHI Boundary Enforcement",
+  "svrnos_layer": "L3: Routing & Boundary",
+  "ger_mapping": "GER-313: Sensitive Data Leaked Across Agent Boundary",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-PHI-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "phi_boundary_violation_detected",
+        "label": "PHI_RESTRICTED",
+        "downstream_output_clean": false,
+        "phi_label_detected": true,
+        "phi_token_count": 1,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-PHI-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "downstream_output_clean": true,
+        "phi_label_detected": false,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:6f2c3f609206ea2a50b2061924d83ac37ad4e25ea95bc33ff5180e917fde4f88",
+    "signature": "dgv-sha256:6f2c3f609206ea2a50b2061924d83ac37ad4e25ea95bc33ff5180e917fde4f88",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

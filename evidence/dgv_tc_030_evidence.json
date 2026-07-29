@@ -1,0 +1,391 @@
+{
+  "test_card_id": "DGV-TC-030",
+  "claim_name": "TRACE Profile Conformance",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-339: Distributed Verification Gap",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-TRC-001",
+      "passed": true,
+      "trace_level": 1,
+      "eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+      "tee_provider": "software",
+      "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+      "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+      "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+      "audit_chain_length": 7,
+      "module_results": [
+        {
+          "module_id": "TR-ENV",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-SIG",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-RTE",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-POL",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        }
+      ],
+      "overall_pass_rate": 1.0,
+      "conformance_tool_version": "0.2.0",
+      "output": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "trace_level": 1,
+        "eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+        "tee_provider": "software",
+        "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+        "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+        "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+        "audit_chain_length": 7,
+        "signature_algorithm": "Ed25519",
+        "key_origin": "software_sealed",
+        "module_results": [
+          {
+            "module_id": "TR-ENV",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-SIG",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-RTE",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-POL",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          }
+        ],
+        "overall_pass_rate": 1.0,
+        "conformance_tool_version": "0.2.0",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-TRC-002",
+      "passed": true,
+      "trace_level": 1,
+      "eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+      "tee_provider": "software",
+      "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+      "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+      "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+      "audit_chain_length": 7,
+      "module_results": [
+        {
+          "module_id": "TR-ENV",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-SIG",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-RTE",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-POL",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        }
+      ],
+      "overall_pass_rate": 1.0,
+      "conformance_tool_version": "0.2.0",
+      "output": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "trace_level": 1,
+        "eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+        "tee_provider": "software",
+        "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+        "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+        "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+        "audit_chain_length": 7,
+        "signature_algorithm": "Ed25519",
+        "key_origin": "software_sealed",
+        "module_results": [
+          {
+            "module_id": "TR-ENV",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-SIG",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-RTE",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-POL",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          }
+        ],
+        "overall_pass_rate": 1.0,
+        "conformance_tool_version": "0.2.0",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-TRC-003",
+      "passed": true,
+      "trace_level": 1,
+      "eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+      "tee_provider": "software",
+      "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+      "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+      "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+      "audit_chain_length": 7,
+      "module_results": [
+        {
+          "module_id": "TR-ENV",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-SIG",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-RTE",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-POL",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        }
+      ],
+      "overall_pass_rate": 1.0,
+      "conformance_tool_version": "0.2.0",
+      "output": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "trace_level": 1,
+        "eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+        "tee_provider": "software",
+        "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+        "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+        "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+        "audit_chain_length": 7,
+        "signature_algorithm": "Ed25519",
+        "key_origin": "software_sealed",
+        "module_results": [
+          {
+            "module_id": "TR-ENV",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-SIG",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-RTE",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-POL",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          }
+        ],
+        "overall_pass_rate": 1.0,
+        "conformance_tool_version": "0.2.0",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-TRC-004",
+      "passed": true,
+      "trace_level": 1,
+      "eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+      "tee_provider": "software",
+      "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+      "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+      "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+      "audit_chain_length": 7,
+      "module_results": [
+        {
+          "module_id": "TR-ENV",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-SIG",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-RTE",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        },
+        {
+          "module_id": "TR-POL",
+          "passed": true,
+          "mandatory": true,
+          "error_code": null
+        }
+      ],
+      "overall_pass_rate": 1.0,
+      "conformance_tool_version": "0.2.0",
+      "output": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "trace_level": 1,
+        "eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+        "tee_provider": "software",
+        "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+        "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+        "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+        "audit_chain_length": 7,
+        "signature_algorithm": "Ed25519",
+        "key_origin": "software_sealed",
+        "module_results": [
+          {
+            "module_id": "TR-ENV",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-SIG",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-RTE",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          },
+          {
+            "module_id": "TR-POL",
+            "passed": true,
+            "mandatory": true,
+            "error_code": null
+          }
+        ],
+        "overall_pass_rate": 1.0,
+        "conformance_tool_version": "0.2.0",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "trace_level": 1,
+  "gateway_claim_eat_profile": "tag:agentrust.io,2026:trace-v0.1",
+  "tee_provider": "software",
+  "policy_bundle_hash": "sha256:4a8f9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b",
+  "audit_chain_root": "deadbeef01020304050607080910111213141516171819202122232425262728",
+  "audit_chain_tip": "cafef00d01020304050607080910111213141516171819202122232425262728",
+  "audit_chain_length": 7,
+  "module_results": [
+    {
+      "module_id": "TR-ENV",
+      "passed": true,
+      "mandatory": true,
+      "error_code": null
+    },
+    {
+      "module_id": "TR-SIG",
+      "passed": true,
+      "mandatory": true,
+      "error_code": null
+    },
+    {
+      "module_id": "TR-RTE",
+      "passed": true,
+      "mandatory": true,
+      "error_code": null
+    },
+    {
+      "module_id": "TR-POL",
+      "passed": true,
+      "mandatory": true,
+      "error_code": null
+    }
+  ],
+  "overall_pass_rate": 1.0,
+  "conformance_tool_version": "0.2.0",
+  "gateway_claim_path": "evidence/gateway_claim_tc030.jwt",
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:a93b537b4379eeb7d0ffdecb1c17584578be147f19956266a41b2c0885cae910",
+    "signature": "dgv-sha256:a93b537b4379eeb7d0ffdecb1c17584578be147f19956266a41b2c0885cae910",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

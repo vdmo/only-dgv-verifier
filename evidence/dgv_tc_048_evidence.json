@@ -1,0 +1,41 @@
+{
+  "test_card_id": "DGV-TC-048",
+  "claim_name": "RAM RAID-0 Consistency",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-104-MEMORY-NODE-LOSS",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "cluster_quorum"
+  ],
+  "compliance_refs": null,
+  "threat_model_tie_in": [
+    "Node crash data loss",
+    "Network partition"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-048-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "allow",
+        "reconstruction": "successful"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:34a4fd9b1de10dd3b96ea3fb2858da5162932944840a19d2fbd8534a45cb78ca",
+    "signature": "dgv-sha256:34a4fd9b1de10dd3b96ea3fb2858da5162932944840a19d2fbd8534a45cb78ca",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

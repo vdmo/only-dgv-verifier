@@ -1,0 +1,57 @@
+{
+  "id": "DGV-TC-051",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-601-COMPLIANCE-MAPPING-FAILURE",
+  "replay_protection_required": false,
+  "latency_threshold_ms": 100,
+  "claim_name": "Regulatory Claim Binding",
+  "claim_definition": "Map a DGV claim directly to specific EU AI Act / ISO 42001 articles and output a machine-readable compliance artifact.",
+  "scope": "Compliance mapping, report generation.",
+  "excluded_scope": "Runtime execution limits.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "simulation",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "compliance_database_loaded"
+  ],
+  "compliance_refs": [
+    {
+      "standard": "EU AI Act",
+      "article": "Art. 15 (Accuracy, robustness, cybersecurity)"
+    },
+    {
+      "standard": "ISO 42001",
+      "article": "A.5.4 Risk Treatment"
+    }
+  ],
+  "threat_model_tie_in": [
+    "Regulatory non-compliance",
+    "Audit failure"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-051-01",
+      "input": {
+        "dgv_claim_id": "DGV-TC-044",
+        "target_framework": "EU_AI_ACT"
+      },
+      "expected": {
+        "verdict": "allow",
+        "mapped_articles": ["Art. 15"]
+      },
+      "mandatory": true,
+      "description": "Correctly maps DGV sandbox claim to EU AI Act Article 15."
+    }
+  ],
+  "metrics": [
+    "mapping_accuracy"
+  ],
+  "pass_threshold": {
+    "mapping_accuracy": 1.0
+  },
+  "evidence": "evidence/dgv_tc_051_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

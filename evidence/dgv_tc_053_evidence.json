@@ -1,0 +1,41 @@
+{
+  "test_card_id": "DGV-TC-053",
+  "claim_name": "Post-Compromise Recovery Window",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-702-COMPROMISE-RECOVERY-FAIL",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "anomaly_detected"
+  ],
+  "compliance_refs": null,
+  "threat_model_tie_in": [
+    "Prolonged compromise exposure",
+    "Stale keys post-incident"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-053-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "allow",
+        "recovery_status": "keys_rotated_and_healed"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:be5c5c4b06760b9d95beacc1f8bccb7382c817d9b3edfb5009bd46f150244738",
+    "signature": "dgv-sha256:be5c5c4b06760b9d95beacc1f8bccb7382c817d9b3edfb5009bd46f150244738",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

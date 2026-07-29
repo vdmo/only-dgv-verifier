@@ -1,0 +1,34 @@
+{
+  "id": "DGV-TC-013",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-334: Demographic Skew Detected",
+  "claim_name": "Statistical Fairness & Bias Mitigation",
+  "claim_definition": "Verifies that the system gate decisions preserve fairness limits and stay within the disparate impact ratio boundaries (0.80 to 1.25).",
+  "scope": "runtime CLI execution",
+  "test_type": "statistical",
+  "test_cases": [
+    {
+      "id": "TC-FAI-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "gate_status": "OPEN",
+        "min_disparate_impact_ratio": 0.8,
+        "max_disparate_impact_ratio": 1.25
+      },
+      "mandatory": true,
+      "description": "Verifies that continuous evaluations satisfy statistical equity ratios."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "disparate_impact_ratio"
+  ],
+  "pass_threshold": {
+    "fairness_check_passed": true
+  },
+  "version": "0.4.0",
+  "expiry": "2027-06-17T00:00:00Z"
+}

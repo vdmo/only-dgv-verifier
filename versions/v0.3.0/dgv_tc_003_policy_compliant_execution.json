@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-003",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-307: Rule Activation Failure",
+  "claim_name": "Policy-Compliant Execution",
+  "claim_definition": "System execution remains strictly within policy constraints (e.g. payloads must be positive, residuals must remain within harmony bounds).",
+  "scope": "only-lang dgv-verifier CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-POL-001",
+      "input": {
+        "script": "harmony(1e-6)\nevolve(2)\ndata(500)\nresidual()",
+        "payload": 500
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "Verifies that executing a valid configuration value of 500 operates within safety policy limits, keeping the gate open."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "residual_limit"
+  ],
+  "pass_threshold": {
+    "max_residual": 1e-06
+  },
+  "version": "0.3.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}

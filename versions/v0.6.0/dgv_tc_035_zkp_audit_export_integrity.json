@@ -1,0 +1,65 @@
+{
+  "id": "DGV-TC-035",
+  "executor": "only-gate",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-339: Distributed Verification Gap",
+  "claim_name": "Zero-Knowledge Audit Export Integrity",
+  "claim_definition": "Verifies that Only OS produces a real Groth16 BN254 zkSNARK proof over the ComplianceSquare circuit: the prover demonstrates knowledge of a compliance score s such that s² equals a public commitment, without revealing s. The arkworks ark-groth16 0.6 crate performs real trusted setup, proving, and pairing-based verification. A tampered public input (wrong commitment) is rejected by the verifier.",
+  "scope": "Only OS ZKP compliance export path; Groth16 BN254 proof system; privacy-preserving audit for regulated industries",
+  "excluded_scope": "Full on-chain SNARK anchoring; ZKP latency certification; recursive proofs",
+  "test_type": "rubric-based",
+  "test_cases": [
+    {
+      "id": "TC-ZKP-001",
+      "input": {
+        "check": "zkp",
+        "compliance_score": "42",
+        "tampered": "false"
+      },
+      "expected": {
+        "pass": true,
+        "zkp_valid": true,
+        "verifier_accepted": true,
+        "input_data_hidden": true,
+        "proof_system": "Groth16-BN254",
+        "real_snark": true
+      },
+      "mandatory": true,
+      "description": "Real Groth16 BN254 zkSNARK: only-gate runs trusted setup for the ComplianceSquare circuit (score²=commitment), generates a real proof that score=42 satisfies 42²=1764, and verifies with the honest public commitment. The verifier never learns score=42."
+    },
+    {
+      "id": "TC-ZKP-002",
+      "input": {
+        "check": "zkp",
+        "compliance_score": "42",
+        "tampered": "true"
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "zkp_verification_failed",
+        "zkp_valid": false,
+        "proof_system": "Groth16-BN254",
+        "real_snark": true
+      },
+      "mandatory": true,
+      "description": "Tampered public input: the valid proof is verified against commitment+1 (wrong value). The BN254 pairing check fails, proving tamper-evidence. No proof generated for a different witness can satisfy the wrong commitment."
+    }
+  ],
+  "metrics": [
+    "zkp_valid",
+    "verifier_accepted",
+    "input_data_hidden",
+    "tamper_detected",
+    "proof_system",
+    "circuit",
+    "real_snark"
+  ],
+  "pass_threshold": {
+    "valid_proof_accepted": true,
+    "tampered_proof_rejected": true,
+    "real_snark": true
+  },
+  "version": "0.6.0",
+  "expiry": "2029-06-25T00:00:00Z"
+}

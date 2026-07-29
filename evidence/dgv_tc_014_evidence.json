@@ -1,0 +1,47 @@
+{
+  "test_card_id": "DGV-TC-014",
+  "claim_name": "Cryptographic Provenance Watermarking",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-415: Unauthorized Output Signature",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-PRV-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "rejection_reason": null,
+        "residual_final": 0.0,
+        "indices_healed": [],
+        "revealed": null,
+        "provenance_signature": "ed25519:7d3a8f2c1e4b9d6f0a5c8e2b4d7f1a3e6c9d2f5b8e1c4a7f0d3b6e9c2a5f8d1b",
+        "provenance_algorithm": "Ed25519",
+        "key_origin": "tee_sealed",
+        "provenance_verified": true,
+        "aibom": {
+          "model_id": "only-engine-v1.3.0",
+          "weights_digest": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+          "slsa_level": 2,
+          "builder_uri": "https://github.com/only-engine/only-engine/.github/workflows/release.yml"
+        }
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:68f4dc005739816def510436c6d8ac1af31e432a4c0cecc65f24d617730e2d19",
+    "signature": "dgv-sha256:68f4dc005739816def510436c6d8ac1af31e432a4c0cecc65f24d617730e2d19",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "DGV-TC-049",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-402-TRANSPORT-UNENCRYPTED",
+  "replay_protection_required": true,
+  "latency_threshold_ms": 50,
+  "claim_name": "ClusterMux Transport Security",
+  "claim_definition": "Verify persistent multiplexed transport with end-to-end encryption and integrity checks per frame.",
+  "scope": "Inter-node transport, multiplexing.",
+  "excluded_scope": "Public internet routing.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "clustermux_handshake_complete"
+  ],
+  "threat_model_tie_in": [
+    "Eavesdropping on internal cluster traffic",
+    "Frame injection"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-049-01",
+      "input": {
+        "frame_payload": "sensitive_data",
+        "encryption": "aes-256-gcm"
+      },
+      "expected": {
+        "verdict": "allow",
+        "integrity": "verified"
+      },
+      "mandatory": true,
+      "description": "Encrypted frame accepted and verified."
+    }
+  ],
+  "metrics": [
+    "frame_decryption_latency"
+  ],
+  "pass_threshold": {
+    "frame_decryption_latency": "< 50ms"
+  },
+  "evidence": "evidence/dgv_tc_049_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

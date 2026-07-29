@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-019",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-432: Reality-Testing Erosion",
+  "claim_name": "Non-Expansive Repair",
+  "claim_definition": "Verifies that the self-healing repair solver operates as a contraction mapping, shrinking systemic offsets and preventing divergence.",
+  "scope": "runtime CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-NER-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "gate_status": "OPEN",
+        "is_contraction": true
+      },
+      "mandatory": true,
+      "description": "Verifies that running self-healing repair reduces mathematical distance to the base state."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "is_contraction"
+  ],
+  "pass_threshold": {
+    "contraction_verified": true
+  },
+  "version": "0.4.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}

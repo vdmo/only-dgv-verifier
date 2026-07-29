@@ -1,0 +1,58 @@
+{
+  "id": "DGV-TC-039",
+  "executor": "only-gate",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-340: Evidence Anchor Not Verifiable",
+  "claim_name": "Transparency Log Anchor Integrity",
+  "claim_definition": "Verifies that the append-only SHA-256 Merkle transparency log correctly issues and validates inclusion proofs for anchored evidence entries. Any third party holding the log root and an inclusion proof can independently verify that a specific evidence record was committed to the log, without trusting the operator. A forged or non-existent entry cannot produce a valid inclusion proof.",
+  "scope": "SCITT-compatible append-only Merkle log; evidence anchor; TRACE registry integration",
+  "excluded_scope": "Log compaction and archival; signed tree head (STH) timestamp verification; cross-log consistency proofs",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-MKL-001",
+      "input": {
+        "check": "merkle",
+        "entries": "entry-A:dgv-tc001-pass-2026-06-25|entry-B:dgv-tc006-pass-2026-06-25|entry-C:dgv-tc030-pass-2026-06-25|entry-D:dgv-tc035-pass-2026-06-25",
+        "verify_entry": "entry-B:dgv-tc006-pass-2026-06-25"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "anchor_verified": true,
+        "inclusion_proof_valid": true
+      },
+      "mandatory": true,
+      "description": "Verifies that entry-B (a real committed evidence anchor) produces a valid Merkle inclusion proof against the 4-entry log root. Any party can recompute this proof independently."
+    },
+    {
+      "id": "TC-MKL-002",
+      "input": {
+        "check": "merkle",
+        "entries": "entry-A:dgv-tc001-pass-2026-06-25|entry-B:dgv-tc006-pass-2026-06-25|entry-C:dgv-tc030-pass-2026-06-25|entry-D:dgv-tc035-pass-2026-06-25",
+        "verify_entry": "entry-X:forged-evidence-2026-06-25"
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "merkle_inclusion_proof_invalid",
+        "anchor_verified": false
+      },
+      "mandatory": true,
+      "description": "A forged entry not present in the log cannot produce a valid inclusion proof. The verifier rejects it, confirming the log's tamper-evidence property."
+    }
+  ],
+  "metrics": [
+    "anchor_verified",
+    "inclusion_proof_valid",
+    "merkle_root",
+    "entry_index",
+    "inclusion_depth"
+  ],
+  "pass_threshold": {
+    "valid_entry_provable": true,
+    "forged_entry_unprovable": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-25T00:00:00Z"
+}

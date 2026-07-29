@@ -1,0 +1,60 @@
+{
+  "test_card_id": "DGV-TC-035",
+  "claim_name": "Zero-Knowledge Audit Export Integrity",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-339: Distributed Verification Gap",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-ZKP-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "zkp_valid": true,
+        "verifier_accepted": true,
+        "input_data_hidden": true,
+        "proof_system": "Groth16-BN254",
+        "circuit": "ComplianceSquare-Fr",
+        "real_snark": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-ZKP-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "zkp_verification_failed",
+        "zkp_valid": false,
+        "verifier_accepted": false,
+        "tamper_detected": true,
+        "proof_system": "Groth16-BN254",
+        "real_snark": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:e6a3fc57553f79849170f286c4435ae37b9ed8610df2eb39e0403d3e6a250897",
+    "signature": "dgv-sha256:e6a3fc57553f79849170f286c4435ae37b9ed8610df2eb39e0403d3e6a250897",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

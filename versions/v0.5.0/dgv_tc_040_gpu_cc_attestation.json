@@ -1,0 +1,63 @@
+{
+  "id": "DGV-TC-040",
+  "executor": "only-gate",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-312: GPU Compute Not Attested",
+  "claim_name": "GPU Confidential Compute Attestation",
+  "claim_definition": "Verifies that a GPU Confidential Compute attestation report (NVIDIA H100/H200/Blackwell CC mode) has the correct structure: report_type GPU_CC, a known GPU model identifier, a valid SHA-256 runtime measurement, and PCR values present. This establishes the conformance baseline for hardware-rooted GPU inference attestation, the compute substrate root-of-trust for DGV Level 1 and above.",
+  "scope": "NVIDIA GPU CC attestation report structure; DGV Level 1 compute substrate; hardware root-of-trust for AI inference",
+  "excluded_scope": "Full NVIDIA RATS attestation chain verification; GPU CC mode enablement procedures; GH200 Grace-Hopper NVLink topology attestation",
+  "test_type": "rubric-based",
+  "test_cases": [
+    {
+      "id": "TC-GPU-001",
+      "input": {
+        "check": "gpu-cc",
+        "report_type": "GPU_CC",
+        "gpu_model": "H100",
+        "measurement": "sha256:958a6e07f2ed93a44c1a9bf11e2ca943c727ff1514037fa46e94db0e706ae3aa",
+        "has_pcr_values": "true"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "gpu_cc_attested": true,
+        "measurement_verified": true,
+        "pcr_values_present": true
+      },
+      "mandatory": true,
+      "description": "A well-formed GPU_CC attestation report for an H100 with a valid SHA-256 measurement and PCR values present is accepted, confirming hardware-rooted compute substrate attestation."
+    },
+    {
+      "id": "TC-GPU-002",
+      "input": {
+        "check": "gpu-cc",
+        "report_type": "GPU_CC",
+        "gpu_model": "H100",
+        "measurement": "NOT_A_VALID_MEASUREMENT",
+        "has_pcr_values": "false"
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "gpu_attestation_report_invalid"
+      },
+      "mandatory": true,
+      "description": "A report with a malformed measurement field and missing PCR values is rejected. The missing_fields list identifies both deficiencies for remediation."
+    }
+  ],
+  "metrics": [
+    "gpu_cc_attested",
+    "gpu_model",
+    "report_type",
+    "measurement_verified",
+    "pcr_values_present",
+    "missing_fields"
+  ],
+  "pass_threshold": {
+    "valid_report_accepted": true,
+    "invalid_report_rejected": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-25T00:00:00Z"
+}

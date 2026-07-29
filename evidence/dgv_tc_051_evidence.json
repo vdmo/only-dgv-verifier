@@ -1,0 +1,52 @@
+{
+  "test_card_id": "DGV-TC-051",
+  "claim_name": "Regulatory Claim Binding",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-601-COMPLIANCE-MAPPING-FAILURE",
+  "enforcement_layer": {
+    "enforcement_type": "simulation",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "compliance_database_loaded"
+  ],
+  "compliance_refs": [
+    {
+      "standard": "EU AI Act",
+      "article": "Art. 15 (Accuracy, robustness, cybersecurity)"
+    },
+    {
+      "standard": "ISO 42001",
+      "article": "A.5.4 Risk Treatment"
+    }
+  ],
+  "threat_model_tie_in": [
+    "Regulatory non-compliance",
+    "Audit failure"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-051-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "allow",
+        "mapped_articles": [
+          "Art. 15"
+        ]
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:86fec1d2849976119dc82f9a725c7c1c586b6c17df1668e184748a41e265a6ca",
+    "signature": "dgv-sha256:86fec1d2849976119dc82f9a725c7c1c586b6c17df1668e184748a41e265a6ca",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

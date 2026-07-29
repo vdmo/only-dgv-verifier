@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-007",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-426: Agentic Authority Overreach",
+  "claim_name": "Provenance Traceability",
+  "claim_definition": "System traces every action back to its source authorization, validating and revealing original baseline configurations from the cryptographic ghost memory.",
+  "scope": "only-lang dgv-verifier CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-PRO-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "revealed_matches": true
+      },
+      "mandatory": true,
+      "description": "Verifies that the revealed payload is successfully traced and decoded back to the original budget value of 1000."
+    }
+  ],
+  "metrics": [
+    "provenance_identity",
+    "revealed_value"
+  ],
+  "pass_threshold": {
+    "trace_successful": true
+  },
+  "version": "0.2.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}

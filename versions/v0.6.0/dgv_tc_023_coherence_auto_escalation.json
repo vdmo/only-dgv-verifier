@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-023",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-328: Validator Drift / Sycophancy Loop",
+  "claim_name": "Coherence Auto-Escalation",
+  "claim_definition": "Verifies that if computed state transitions are within boundaries but are borderline high-risk or show minor mathematical drift, WEDGE escalates the proposal for Human-in-the-Loop review.",
+  "scope": "runtime CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-CAE-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "gate_status": "ESCALATE",
+        "next_step": "HumanApprovalRequired"
+      },
+      "mandatory": true,
+      "description": "Verifies that borderline drift or risk levels trigger an ESCALATE status rather than immediate ALLOW or DENY."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "next_step"
+  ],
+  "pass_threshold": {
+    "escalation_triggered": true
+  },
+  "version": "0.4.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}

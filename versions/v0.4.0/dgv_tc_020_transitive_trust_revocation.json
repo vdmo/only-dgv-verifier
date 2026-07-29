@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-020",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-307: Rule Activation Failure",
+  "claim_name": "Transitive Trust Revocation",
+  "claim_definition": "Verifies that when a parent codon's authority is revoked or expired, all downstream delegated tokens and sub-DAGs are instantly invalidated across the APIBridge.",
+  "scope": "runtime CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-TTR-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "parent_authority_revoked"
+      },
+      "mandatory": true,
+      "description": "Verifies that checking a delegated token whose parent authority has been revoked triggers immediate gateway closure."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "rejection_reason"
+  ],
+  "pass_threshold": {
+    "rejection_expected": true
+  },
+  "version": "0.4.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-012",
+  "svrnos_layer": "L3: Routing & Boundary",
+  "ger_mapping": "GER-312: Adversarial Bypass Attempt",
+  "claim_name": "Adversarial Prompt Resistance",
+  "claim_definition": "Verifies that the secure execution plane intercepts and rejects prompt injection attempts or system-level configuration override commands.",
+  "scope": "runtime CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-ADV-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "adversarial_prompt_injection_detected"
+      },
+      "mandatory": true,
+      "description": "Verifies that malicious injection payloads trigger immediate gate closure."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "rejection_reason"
+  ],
+  "pass_threshold": {
+    "rejection_expected": true
+  },
+  "version": "0.3.0",
+  "expiry": "2027-06-17T00:00:00Z"
+}

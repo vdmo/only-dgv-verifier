@@ -1,0 +1,38 @@
+{
+  "test_card_id": "DGV-TC-028",
+  "claim_name": "AI-ID Registry Lookup Validation",
+  "svrnos_layer": "L1: Authorization",
+  "ger_mapping": "GER-402: Phantom in the Registry",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-AIR-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "REFUSE",
+        "rejection_reason": "ai_id_not_found_in_registry",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null,
+        "registry_lookup_result": "NOT_FOUND"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:249178fedfa1cd996363e7ca7740eca3e6d8e6bc5afbcb265a0fea09ed63a5a9",
+    "signature": "dgv-sha256:249178fedfa1cd996363e7ca7740eca3e6d8e6bc5afbcb265a0fea09ed63a5a9",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

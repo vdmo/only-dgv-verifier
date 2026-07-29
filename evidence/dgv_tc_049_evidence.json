@@ -1,0 +1,41 @@
+{
+  "test_card_id": "DGV-TC-049",
+  "claim_name": "ClusterMux Transport Security",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-402-TRANSPORT-UNENCRYPTED",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "clustermux_handshake_complete"
+  ],
+  "compliance_refs": null,
+  "threat_model_tie_in": [
+    "Eavesdropping on internal cluster traffic",
+    "Frame injection"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-049-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "allow",
+        "integrity": "verified"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:42620bbbbaf35490db3f64375470344e8138f7332526bac7b0fe90e94cd20971",
+    "signature": "dgv-sha256:42620bbbbaf35490db3f64375470344e8138f7332526bac7b0fe90e94cd20971",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

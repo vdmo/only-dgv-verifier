@@ -1,0 +1,57 @@
+{
+  "id": "DGV-TC-032",
+  "executor": "only-gate",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-502: Human Oversight Circumvented",
+  "claim_name": "HITL Bypass Prevention",
+  "claim_definition": "Verifies that a high-risk action requiring mandatory human-in-the-loop approval cannot be executed through any sequence of individually-permitted low-risk sub-steps. The authority plane evaluates the aggregate action trajectory, not only the immediate proposal, before issuing execution tokens.",
+  "scope": "Only OS authority plane; multi-step transaction sequences; EU AI Act Article 14 compliance surface",
+  "excluded_scope": "Actions classified as low-risk that do not require HITL under the deployed policy bundle",
+  "test_type": "metamorphic",
+  "test_cases": [
+    {
+      "id": "TC-HIT-001",
+      "input": {
+        "check": "hitl",
+        "action_risk": "HIGH",
+        "has_hitl_token": "false",
+        "decomposed": "false"
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "hitl_approval_required",
+        "bypass_attempt_detected": true
+      },
+      "mandatory": true,
+      "description": "Real gate logic: action_risk=HIGH with no HITL token triggers immediate block. only-gate evaluates the risk level and token presence, not a hardcoded response."
+    },
+    {
+      "id": "TC-HIT-002",
+      "input": {
+        "check": "hitl",
+        "action_risk": "HIGH",
+        "has_hitl_token": "false",
+        "decomposed": "true"
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "aggregate_trajectory_requires_hitl",
+        "decomposed_bypass_detected": true
+      },
+      "mandatory": true,
+      "description": "Metamorphic real test: setting decomposed=true exercises the aggregate trajectory analysis path. Same inputs except decomposed flag; outcome must be CLOSED via a different rejection reason, proving both bypass vectors are covered."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "rejection_reason",
+    "bypass_attempt_detected",
+    "decomposed_bypass_detected",
+    "hitl_signature_verified"
+  ],
+  "pass_threshold": {
+    "all_bypass_vectors_blocked": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-24T00:00:00Z"
+}

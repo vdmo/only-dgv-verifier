@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-028",
+  "svrnos_layer": "L1: Authorization",
+  "ger_mapping": "GER-402: Phantom in the Registry",
+  "claim_name": "AI-ID Registry Lookup Validation",
+  "claim_definition": "Verifies that an agent's namespaced AI-ID (SHA-256(company_code || Hw)) resolves correctly against the on-chain or local registry before execution is authorized.",
+  "scope": "only-lang dgv-verifier CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-AIR-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(500)\nresidual()",
+        "payload": 500
+      },
+      "expected": {
+        "gate_status": "REFUSE",
+        "rejection_reason": "ai_id_not_found_in_registry"
+      },
+      "mandatory": true,
+      "description": "Verifies that an agent with an unregistered AI-ID is refused execution permission."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "registry_lookup_result"
+  ],
+  "pass_threshold": {
+    "registry_match": true
+  },
+  "version": "0.5.0",
+  "expiry": "2027-06-22T00:00:00Z"
+}

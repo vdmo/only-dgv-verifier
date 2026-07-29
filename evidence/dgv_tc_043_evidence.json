@@ -1,0 +1,55 @@
+{
+  "test_card_id": "DGV-TC-043",
+  "claim_name": "Snapshot Precondition Gate Enforcement",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-501-STATE-MUTATION-WITHOUT-PRECONDITION",
+  "enforcement_layer": {
+    "enforcement_type": "hardware",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "fresh_snapshot_token"
+  ],
+  "compliance_refs": [
+    {
+      "standard": "ISO 42001",
+      "article": "A.5.4 Risk Treatment"
+    }
+  ],
+  "threat_model_tie_in": [
+    "State-desync attacks",
+    "Race conditions mutating stale state"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-043-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "allow"
+      }
+    },
+    {
+      "case_id": "tc-043-02",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "hard_deny",
+        "error_code": "PRECONDITION_FAILED"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:12e4699f5f8a163311fbe23e7e4be4682590e044171a78d8bdab3f34c70c8348",
+    "signature": "dgv-sha256:12e4699f5f8a163311fbe23e7e4be4682590e044171a78d8bdab3f34c70c8348",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

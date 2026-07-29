@@ -1,0 +1,59 @@
+{
+  "id": "DGV-TC-035",
+  "executor": "only-gate",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-339: Distributed Verification Gap",
+  "claim_name": "Zero-Knowledge Audit Export Integrity",
+  "claim_definition": "Verifies that the Zero-Knowledge Proof (ZKP) audit export produced by the Only OS compliance exporter is mathematically valid: a third-party verifier can confirm the execution outcome and policy compliance without accessing the raw input data or internal state, and a tampered or fabricated ZKP is rejected by the verifier.",
+  "scope": "Only OS ZKP compliance export path; Verifiable compliance pack generation; privacy-preserving audit for regulated industries",
+  "excluded_scope": "Full SNARK circuit verification on-chain; ZKP proof generation latency certification — tracked for DGV v0.6.0",
+  "test_type": "rubric-based",
+  "test_cases": [
+    {
+      "id": "TC-ZKP-001",
+      "input": {
+        "check": "zkp",
+        "witness": "only-engine:pass=true:residual=0.0:policy=compliant",
+        "nonce": "b5f9a4d2",
+        "commitment": "sha256:13da1b3dae442c8263904d9df472f22399332089f5571552ae7ce5ca669188f5"
+      },
+      "expected": {
+        "pass": true,
+        "zkp_valid": true,
+        "verifier_accepted": true,
+        "input_data_hidden": true
+      },
+      "mandatory": true,
+      "description": "Real commitment check: only-gate computes sha256(witness||nonce) and verifies it equals the provided commitment. The pre-computed commitment was derived from the same witness+nonce, so the proof verifies correctly."
+    },
+    {
+      "id": "TC-ZKP-002",
+      "input": {
+        "check": "zkp",
+        "witness": "only-engine:pass=true:residual=0.0:policy=compliant",
+        "nonce": "b5f9a4d2",
+        "commitment": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "zkp_verification_failed",
+        "zkp_valid": false
+      },
+      "mandatory": true,
+      "description": "Tampered commitment: the all-zeros commitment cannot equal sha256(witness||nonce). only-gate computes the mismatch and rejects the proof, confirming tamper-evidence."
+    }
+  ],
+  "metrics": [
+    "zkp_valid",
+    "verifier_accepted",
+    "input_data_hidden",
+    "rejection_reason"
+  ],
+  "pass_threshold": {
+    "valid_proof_accepted": true,
+    "tampered_proof_rejected": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-24T00:00:00Z"
+}

@@ -1,0 +1,57 @@
+{
+  "id": "DGV-TC-031",
+  "executor": "only-gate",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-427: Corpus Poisoning Undetected",
+  "claim_name": "RAG Corpus Digest Verification",
+  "claim_definition": "Verifies that the RAG corpus loaded at query time matches the SHA-256 digest registered in the Agent Manifest at deployment. A corpus that has been modified, poisoned, or swapped since signing causes immediate gate closure before any retrieval-augmented generation is permitted.",
+  "scope": "Agent Manifest corpus binding; only-engine gateway RAG query path",
+  "excluded_scope": "Streaming corpus updates; real-time knowledge bases that are designed to change after deployment",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-RAG-001",
+      "input": {
+        "check": "corpus-digest",
+        "corpus": "DGV only-engine governance corpus v0.5.0: defines policy constraints for DGV compliance framework verification across L1-compute L2-provenance L3-routing L4-evidence L5-session L6-risk L7-application.",
+        "registered_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "gate_status": "CLOSE",
+        "rejection_reason": "rag_corpus_digest_mismatch",
+        "registered_digest_present": true,
+        "observed_digest_present": true
+      },
+      "mandatory": true,
+      "description": "Real SHA-256 of the corpus is computed by only-gate and compared to the deliberately wrong registered digest. Gate closes on mismatch."
+    },
+    {
+      "id": "TC-RAG-002",
+      "input": {
+        "check": "corpus-digest",
+        "corpus": "DGV only-engine governance corpus v0.5.0: defines policy constraints for DGV compliance framework verification across L1-compute L2-provenance L3-routing L4-evidence L5-session L6-risk L7-application.",
+        "registered_digest": "sha256:958a6e07f2ed93a44c1a9bf11e2ca943c727ff1514037fa46e94db0e706ae3aa"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "corpus_digest_verified": true
+      },
+      "mandatory": true,
+      "description": "Positive control: only-gate computes SHA-256 of the corpus and it matches the pre-registered digest, confirming corpus integrity."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "rejection_reason",
+    "registered_digest_present",
+    "observed_digest_present",
+    "corpus_digest_verified"
+  ],
+  "pass_threshold": {
+    "rejection_expected_on_mismatch": true,
+    "pass_expected_on_match": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-24T00:00:00Z"
+}

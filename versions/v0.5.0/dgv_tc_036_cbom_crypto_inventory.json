@@ -1,0 +1,56 @@
+{
+  "id": "DGV-TC-036",
+  "executor": "only-gate",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-342: Missing Cryptographic Algorithm Inventory",
+  "claim_name": "CBOM Crypto Algorithm Inventory Conformance",
+  "claim_definition": "Verifies that the only-gate engine can scan a dependency lockfile and produce a Cryptographic Bill of Materials (CBOM) in CycloneDX 1.7 format, correctly classifying each algorithm as quantum-safe or quantum-vulnerable. This is the quantum-readiness audit baseline required before DGV Level 3 upgrade.",
+  "scope": "Dependency lockfile scanning; CycloneDX CBOM generation; quantum readiness classification",
+  "excluded_scope": "Runtime binary scanning; transitive dependency graph expansion beyond direct lockfile entries",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-CBO-001",
+      "input": {
+        "check": "cbom",
+        "lockfile_content": "[[package]]\nname = \"sha2\"\nversion = \"0.10.8\"\n\n[[package]]\nname = \"ed25519-dalek\"\nversion = \"2.1.0\"\n\n[[package]]\nname = \"ring\"\nversion = \"0.17.5\"\n\n[[package]]\nname = \"rand\"\nversion = \"0.8.5\""
+      },
+      "expected": {
+        "pass": true,
+        "cbom_generated": true,
+        "quantum_readiness_assessed": true
+      },
+      "mandatory": true,
+      "description": "Verifies that a mixed dependency set (quantum-safe sha2/rand + quantum-vulnerable ed25519-dalek/ring) produces a valid CBOM with assessment completed."
+    },
+    {
+      "id": "TC-CBO-002",
+      "input": {
+        "check": "cbom",
+        "lockfile_content": "[[package]]\nname = \"sha2\"\nversion = \"0.10.8\"\n\n[[package]]\nname = \"sha3\"\nversion = \"0.10.8\"\n\n[[package]]\nname = \"aes-gcm\"\nversion = \"0.10.3\"\n\n[[package]]\nname = \"chacha20poly1305\"\nversion = \"0.10.1\"\n\n[[package]]\nname = \"rand\"\nversion = \"0.8.5\""
+      },
+      "expected": {
+        "pass": true,
+        "cbom_generated": true,
+        "quantum_ready": true,
+        "quantum_vulnerable_count": 0
+      },
+      "mandatory": true,
+      "description": "Positive quantum-ready baseline: a stack using only post-quantum-safe symmetric and hash primitives produces a CBOM where quantum_ready is true and quantum_vulnerable_count is zero."
+    }
+  ],
+  "metrics": [
+    "cbom_generated",
+    "algorithm_count",
+    "quantum_safe_count",
+    "quantum_vulnerable_count",
+    "quantum_readiness_assessed",
+    "quantum_ready"
+  ],
+  "pass_threshold": {
+    "cbom_generated": true,
+    "quantum_readiness_assessed": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-25T00:00:00Z"
+}

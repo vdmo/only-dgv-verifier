@@ -1,0 +1,41 @@
+{
+  "test_card_id": "DGV-TC-050",
+  "claim_name": "Active Governance Verdict",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-701-GOVERNANCE-BYPASS",
+  "enforcement_layer": {
+    "enforcement_type": "sandbox",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "jis_identity_resolved",
+    "provenance_chain_valid"
+  ],
+  "compliance_refs": null,
+  "threat_model_tie_in": [
+    "Unauthorized deployment",
+    "Stale snapshot usage"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-050-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "allow"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:0a0575632a17ee9c9885df4702b11549a427ceeff39b49066cc0efcc5159f016",
+    "signature": "dgv-sha256:0a0575632a17ee9c9885df4702b11549a427ceeff39b49066cc0efcc5159f016",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

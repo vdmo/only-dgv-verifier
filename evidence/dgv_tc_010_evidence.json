@@ -1,0 +1,37 @@
+{
+  "test_card_id": "DGV-TC-010",
+  "claim_name": "Fail-Closed Latency",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-501: Escalation Not Implemented",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-LAT-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "fail_closed_latency_timeout_exceeded",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:5a701fac5ec53691dfa370e62dc541523c7aa160eea41f45de8544702f00ece4",
+    "signature": "dgv-sha256:5a701fac5ec53691dfa370e62dc541523c7aa160eea41f45de8544702f00ece4",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

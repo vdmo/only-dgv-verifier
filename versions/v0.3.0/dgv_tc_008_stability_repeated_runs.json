@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-008",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-432: Reality-Testing Erosion",
+  "claim_name": "Stability Under Repeated Runs",
+  "claim_definition": "System exhibits zero state drift or variance over recurrent evaluations, verifying long-term numeric stability.",
+  "scope": "only-lang dgv-verifier CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-STB-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "drift": 0.0
+      },
+      "mandatory": true,
+      "description": "Verifies that repeatedly executing the recovery loop yields identical state values with zero drift."
+    }
+  ],
+  "metrics": [
+    "state_drift",
+    "repeated_runs_identical"
+  ],
+  "pass_threshold": {
+    "allowed_drift": 0.0
+  },
+  "version": "0.3.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}

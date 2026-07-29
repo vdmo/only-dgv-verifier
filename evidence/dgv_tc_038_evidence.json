@@ -1,0 +1,57 @@
+{
+  "test_card_id": "DGV-TC-038",
+  "claim_name": "Policy Bundle Immutability Under TEE",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-415: Policy Bundle Tampered Undetected",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-POL-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "policy_bundle_hash_mismatch",
+        "tamper_detected": true,
+        "computed_hash": "sha256:e5b250f0c31e6fcae21f15313b11fb07c4c5872f1452c156a8c4fa3effd7e5cc",
+        "expected_hash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-POL-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "policy_integrity_verified": true,
+        "computed_hash": "sha256:e5b250f0c31e6fcae21f15313b11fb07c4c5872f1452c156a8c4fa3effd7e5cc",
+        "expected_hash": "sha256:e5b250f0c31e6fcae21f15313b11fb07c4c5872f1452c156a8c4fa3effd7e5cc",
+        "tamper_detected": false,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:f417028c1b2df73b66c1907e53b91761fc90cf091be3b735b0d486b9a7eeb283",
+    "signature": "dgv-sha256:f417028c1b2df73b66c1907e53b91761fc90cf091be3b735b0d486b9a7eeb283",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "id": "DGV-TC-044",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-102-SYSCALL-VIOLATION",
+  "replay_protection_required": false,
+  "latency_threshold_ms": 10,
+  "claim_name": "Airlock Sandbox Enforcement",
+  "claim_definition": "Test syscall-level monitoring (SNAFT-style) and hard kill on violation inside the execution airlock.",
+  "scope": "Syscall boundaries, process isolation.",
+  "excluded_scope": "Network topology.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "sandbox",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "airlock_active"
+  ],
+  "threat_model_tie_in": [
+    "Container escape",
+    "Unauthorized filesystem access"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-044-01",
+      "input": {
+        "syscall": "openat",
+        "path": "/etc/passwd"
+      },
+      "expected": {
+        "verdict": "hard_deny",
+        "action": "process_kill"
+      },
+      "mandatory": true,
+      "description": "Process killed on unauthorized syscall."
+    }
+  ],
+  "metrics": [
+    "sandbox_kill_latency"
+  ],
+  "pass_threshold": {
+    "sandbox_kill_latency": "< 10ms"
+  },
+  "evidence": "evidence/dgv_tc_044_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

@@ -1,0 +1,47 @@
+{
+  "id": "DGV-TC-047",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-103-MEMORY-PAGE-TAMPER",
+  "replay_protection_required": false,
+  "latency_threshold_ms": 150,
+  "claim_name": "DIME-Style Virtual Memory Mapping",
+  "claim_definition": "Verify on-demand materialization of remote blocks with page-fault integrity, preventing malicious injection during fault resolution.",
+  "scope": "Virtual memory, distributed execution.",
+  "excluded_scope": "Disk I/O latency.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "cluster_node_active"
+  ],
+  "threat_model_tie_in": [
+    "Malicious page replacement",
+    "Memory injection"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-047-01",
+      "input": {
+        "page_fault": "0xDEADBEEF",
+        "remote_hash": "invalid_hash"
+      },
+      "expected": {
+        "verdict": "hard_deny",
+        "action": "page_fault_panic"
+      },
+      "mandatory": true,
+      "description": "Panic on invalid remote page hash."
+    }
+  ],
+  "metrics": [
+    "page_fault_validation_time"
+  ],
+  "pass_threshold": {
+    "page_fault_validation_time": "< 150ms"
+  },
+  "evidence": "evidence/dgv_tc_047_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

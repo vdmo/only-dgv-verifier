@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DGV-TC-030 TRACE Profile Conformance Evidence Package",
+  "description": "Validates the structure and required fields of a dgv_tc_030_evidence.json file produced by a DGV runner after executing the TRACE Level 1 conformance suite against an Only OS gateway session GatewayClaim JWT.",
+  "type": "object",
+  "required": [
+    "test_card_id",
+    "claim_name",
+    "svrnos_layer",
+    "ger_mapping",
+    "verified_timestamp",
+    "benchmark_version",
+    "status",
+    "trace_level",
+    "gateway_claim_path",
+    "gateway_claim_eat_profile",
+    "tee_provider",
+    "policy_bundle_hash",
+    "audit_chain_root",
+    "audit_chain_tip",
+    "audit_chain_length",
+    "module_results",
+    "overall_pass_rate",
+    "conformance_tool_version",
+    "settlement_receipt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "test_card_id": {
+      "type": "string",
+      "const": "DGV-TC-030",
+      "description": "The DGV test card identifier this evidence package was produced against."
+    },
+    "claim_name": {
+      "type": "string",
+      "description": "Human-readable name of the claim class under test, copied from the test card."
+    },
+    "svrnos_layer": {
+      "type": "string",
+      "description": "The SVRNOS governance layer targeted by this test card."
+    },
+    "ger_mapping": {
+      "type": "string",
+      "description": "The GER failure code this evidence attests against."
+    },
+    "verified_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp (UTC) at which the conformance run completed and this evidence package was sealed."
+    },
+    "benchmark_version": {
+      "type": "string",
+      "description": "The DGV specification version under which this evidence was produced (e.g. \"0.5.0\")."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["passed", "failed"],
+      "description": "Overall certification outcome: \"passed\" only when all mandatory TRACE modules pass."
+    },
+    "trace_level": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The TRACE conformance level that was evaluated (1 for Level 1, which requires TR-ENV, TR-SIG, TR-RTE, and TR-POL)."
+    },
+    "gateway_claim_path": {
+      "type": "string",
+      "description": "File-system path or artifact URI of the GatewayClaim JWT that was submitted to the conformance suite."
+    },
+    "gateway_claim_eat_profile": {
+      "type": "string",
+      "const": "tag:agentrust.io,2026:trace-v0.1",
+      "description": "The EAT profile URI extracted from the GatewayClaim JWT; must equal the canonical TRACE v0.1 profile tag."
+    },
+    "tee_provider": {
+      "type": "string",
+      "enum": ["software", "tpm", "sev-snp", "tdx", "opaque"],
+      "description": "The TEE or execution environment that produced the runtime measurement in `trace.runtime.platform`. Use \"software\" when running with CMCP_DEV_MODE=1."
+    },
+    "policy_bundle_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "The policy bundle hash extracted from `trace.policy.bundle_hash` in the verified JWT, in the form `sha256:<64 hex chars>`."
+    },
+    "audit_chain_root": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "The genesis block hash (root) of the gateway session audit chain, as 64 lowercase hex characters."
+    },
+    "audit_chain_tip": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "The most recent block hash (tip) of the gateway session audit chain at verification time, as 64 lowercase hex characters."
+    },
+    "audit_chain_length": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of entries in the audit chain from root to tip (inclusive)."
+    },
+    "module_results": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Per-module results from the trace-tests runner, one object per executed TRACE module.",
+      "items": {
+        "type": "object",
+        "required": [
+          "module_id",
+          "passed",
+          "mandatory",
+          "error_code",
+          "details"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "module_id": {
+            "type": "string",
+            "enum": [
+              "TR-ENV",
+              "TR-SIG",
+              "TR-RTE",
+              "TR-POL",
+              "TR-TXN",
+              "TR-ANC",
+              "TR-SCA"
+            ],
+            "description": "The TRACE module identifier as defined in the agentrust-io/trace-tests specification."
+          },
+          "passed": {
+            "type": "boolean",
+            "description": "True if this module's assertions all passed; false if any assertion failed."
+          },
+          "mandatory": {
+            "type": "boolean",
+            "description": "True for Level 1 mandatory modules (TR-ENV, TR-SIG, TR-RTE, TR-POL); false for Phase 2 optional modules."
+          },
+          "error_code": {
+            "type": ["string", "null"],
+            "description": "Machine-readable error code if the module failed (e.g. \"TRACE-SIG-001\"), or null when passed."
+          },
+          "details": {
+            "type": "object",
+            "description": "Module-specific assertion details as returned by the trace-tests runner; structure varies per module.",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "overall_pass_rate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Fraction of mandatory modules that passed (e.g. 1.0 when all four Level 1 modules pass, 0.75 when three of four pass). Must be 1.0 for status to be \"passed\"."
+    },
+    "conformance_tool_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+",
+      "description": "Semantic version of the agentrust-io/trace-tests package used to run the conformance suite (e.g. \"0.1.4\")."
+    },
+    "results": {
+      "type": "array",
+      "description": "Per-case raw evidence entries as written by the DGV runner, one object per test_case in the test card.",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "settlement_receipt": {
+      "type": "object",
+      "description": "Content-addressed anchor proving this evidence file has not been tampered with. See RECEIPT_VERIFICATION.md for the independent verification procedure.",
+      "required": [
+        "layer",
+        "anchor_method",
+        "transaction_id",
+        "signature",
+        "verification_procedure",
+        "timestamp"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "layer": {
+          "type": "string",
+          "const": "GitOps Cryptographic Registry",
+          "description": "The anchoring layer. \"GitOps Cryptographic Registry\" means the anchor is the SHA-256 of the evidence file content committed to a public git repository."
+        },
+        "anchor_method": {
+          "type": "string",
+          "const": "sha256-content-hash",
+          "description": "The hashing method used. sha256-content-hash means SHA-256 over the canonical JSON serialization (sorted keys, 2-space indent, UTF-8)."
+        },
+        "transaction_id": {
+          "type": "string",
+          "pattern": "^dgv-sha256:[0-9a-f]{64}$",
+          "description": "The content hash in the form dgv-sha256:<64 hex chars>. Recompute with: sha256sum of the evidence JSON (sort_keys=True, indent=2)."
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^dgv-sha256:[0-9a-f]{64}$",
+          "description": "Identical to transaction_id for the sha256-content-hash method. Present for schema compatibility with other anchor methods."
+        },
+        "verification_procedure": {
+          "type": "string",
+          "description": "URI of the published verification procedure document."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 UTC timestamp at which the receipt was computed."
+        }
+      }
+    }
+  }
+}

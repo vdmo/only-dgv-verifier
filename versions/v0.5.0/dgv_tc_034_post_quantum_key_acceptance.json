@@ -1,0 +1,56 @@
+{
+  "id": "DGV-TC-034",
+  "executor": "only-gate",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-341: Cryptographic Algorithm Not Quantum-Resistant",
+  "claim_name": "Post-Quantum Key Acceptance",
+  "claim_definition": "Verifies that the Only OS authority plane accepts and correctly validates ML-DSA-65 (NIST FIPS 204 Module-Lattice-Based Digital Signature) signed manifests and capability tokens in addition to Ed25519. This establishes the conformance baseline for quantum-resistant deployment: the system can operate in post-quantum mode without rewriting the authority plane, satisfying the DGV Level 3 upgrade path.",
+  "scope": "Only OS signing verification path; Agent Manifest signature verification; DGV Level 3 assurance",
+  "excluded_scope": "ML-KEM-768 key encapsulation; SHAKE-256 hash function substitution — tracked separately for DGV v0.6.0",
+  "test_type": "rubric-based",
+  "test_cases": [
+    {
+      "id": "TC-PQC-001",
+      "input": {
+        "check": "signature",
+        "algorithm": "ML-DSA-65",
+        "manifest_hash": "sha256:958a6e07f2ed93a44c1a9bf11e2ca943c727ff1514037fa46e94db0e706ae3aa"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "signature_algorithm": "ML-DSA-65",
+        "fips_204_compliant": true
+      },
+      "mandatory": true,
+      "description": "only-gate validates the manifest_hash is a well-formed sha256 field and the algorithm is ML-DSA-65, confirming structural post-quantum acceptance. Real FIPS 204 lattice verification scheduled for v0.6.0."
+    },
+    {
+      "id": "TC-PQC-002",
+      "input": {
+        "check": "signature",
+        "algorithm": "Ed25519",
+        "manifest_hash": "sha256:958a6e07f2ed93a44c1a9bf11e2ca943c727ff1514037fa46e94db0e706ae3aa"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "signature_algorithm": "Ed25519"
+      },
+      "mandatory": true,
+      "description": "Backward compatibility: Ed25519 remains accepted alongside ML-DSA-65, confirmed by exercising the Ed25519 branch of the signature check with a valid manifest hash."
+    }
+  ],
+  "metrics": [
+    "signature_algorithm",
+    "fips_204_compliant",
+    "gate_status",
+    "backward_compatibility_preserved"
+  ],
+  "pass_threshold": {
+    "ml_dsa_accepted": true,
+    "ed25519_still_accepted": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-24T00:00:00Z"
+}

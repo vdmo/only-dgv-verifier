@@ -1,0 +1,60 @@
+{
+  "test_card_id": "DGV-TC-042",
+  "claim_name": "SHAKE-256 Hash Conformance",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-344: Hash Function Not Post-Quantum Safe",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-SHA-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "hash_function": "SHAKE-256",
+        "fips_202_compliant": true,
+        "shake256_deterministic": true,
+        "all_digests_identical": true,
+        "digest": "8c11a40d9aa8667167b0c35ba374916b33bc874f613f642eb1926f6966ff57d3",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-SHA-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "hash_function": "SHAKE-256",
+        "fips_202_compliant": true,
+        "shake256_non_collision_confirmed": true,
+        "digests_differ": true,
+        "digest_1": "8c11a40d9aa8667167b0c35ba374916b33bc874f613f642eb1926f6966ff57d3",
+        "digest_2": "3a92d566324a9a32139fc47ff8bb0cf89639915fcde27f5d3286db722dddb47e",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:a57cf807ad98e73fd9a92d23f7b705604daa15185d31938e5518e1dcce7ba1c5",
+    "signature": "dgv-sha256:a57cf807ad98e73fd9a92d23f7b705604daa15185d31938e5518e1dcce7ba1c5",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

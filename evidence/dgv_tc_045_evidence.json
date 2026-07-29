@@ -1,0 +1,41 @@
+{
+  "test_card_id": "DGV-TC-045",
+  "claim_name": "Fork Token Session Continuity",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-505-SESSION-HIJACKING",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "active_session_token"
+  ],
+  "compliance_refs": null,
+  "threat_model_tie_in": [
+    "Session hijacking",
+    "Replay attacks across nodes"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-045-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "allow",
+        "session_state": "resumed"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:d7c971d6b67eebf14195b529aa5efcd47382fdce269fff055746e799e5f38ae0",
+    "signature": "dgv-sha256:d7c971d6b67eebf14195b529aa5efcd47382fdce269fff055746e799e5f38ae0",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

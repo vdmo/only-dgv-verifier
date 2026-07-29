@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-026",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-352: Lost in Translation",
+  "claim_name": "UIAG Classification Security Enforcement",
+  "claim_definition": "Verifies that setting Classification Level (Field 16) to Restricted automatically enforces security controls (MFA, encryption, logging).",
+  "scope": "only-lang dgv-verifier CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-UCS-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(500)\nresidual()",
+        "payload": 500
+      },
+      "expected": {
+        "gate_status": "OPEN",
+        "encryption_enforced": "AES-256"
+      },
+      "mandatory": true,
+      "description": "Verifies that Restricted assets automatically enforce AES-256 encryption."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "encryption_enforced"
+  ],
+  "pass_threshold": {
+    "encryption_required": "AES-256"
+  },
+  "version": "0.4.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}

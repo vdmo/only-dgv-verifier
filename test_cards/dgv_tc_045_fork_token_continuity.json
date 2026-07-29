@@ -1,0 +1,46 @@
+{
+  "id": "DGV-TC-045",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-505-SESSION-HIJACKING",
+  "replay_protection_required": true,
+  "latency_threshold_ms": 20,
+  "claim_name": "Fork Token Session Continuity",
+  "claim_definition": "Verify secure cross-device/session handoff using cryptographically bound fork tokens.",
+  "scope": "Session handoff, token continuity.",
+  "excluded_scope": "Initial authentication.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "active_session_token"
+  ],
+  "threat_model_tie_in": [
+    "Session hijacking",
+    "Replay attacks across nodes"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-045-01",
+      "input": {
+        "handoff_token": "valid_fork_token"
+      },
+      "expected": {
+        "verdict": "allow",
+        "session_state": "resumed"
+      },
+      "mandatory": true,
+      "description": "Session resumed with valid fork token."
+    }
+  ],
+  "metrics": [
+    "token_validation_accuracy"
+  ],
+  "pass_threshold": {
+    "token_validation_accuracy": 1.0
+  },
+  "evidence": "evidence/dgv_tc_045_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

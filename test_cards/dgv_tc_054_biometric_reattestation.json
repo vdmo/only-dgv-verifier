@@ -1,0 +1,47 @@
+{
+  "id": "DGV-TC-054",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-506-RE-ATTESTATION-FAIL",
+  "replay_protection_required": true,
+  "latency_threshold_ms": 100,
+  "claim_name": "Multi-Factor Re-attestation",
+  "claim_definition": "Enforce re-attestation (e.g., biometric TAT consumer) on high-risk dynamic operations, invalidating stale state.",
+  "scope": "Continuous authentication, session step-up.",
+  "excluded_scope": "Initial login.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "simulation",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "high_risk_operation_flagged"
+  ],
+  "threat_model_tie_in": [
+    "Session hijacking post-login",
+    "Insider threat execution"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-054-01",
+      "input": {
+        "operation": "deploy_model",
+        "reattestation_token": "missing"
+      },
+      "expected": {
+        "verdict": "hard_deny",
+        "error": "RE_ATTESTATION_REQUIRED"
+      },
+      "mandatory": true,
+      "description": "Blocks high-risk operation without re-attestation."
+    }
+  ],
+  "metrics": [
+    "enforcement_latency"
+  ],
+  "pass_threshold": {
+    "enforcement_latency": "< 100ms"
+  },
+  "evidence": "evidence/dgv_tc_054_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

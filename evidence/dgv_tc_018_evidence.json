@@ -1,0 +1,37 @@
+{
+  "test_card_id": "DGV-TC-018",
+  "claim_name": "Spectral Drift Containment",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-321: Reasoning Step Skipped / Authority Hierarchy Misapplied",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-SDC-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "phi_lattice_drift_limit_exceeded",
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:08f701b62c2e4cece67afcc58a15d35ed4517cd8ce09bcf107701b152a26b383",
+    "signature": "dgv-sha256:08f701b62c2e4cece67afcc58a15d35ed4517cd8ce09bcf107701b152a26b383",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

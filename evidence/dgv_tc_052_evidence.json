@@ -1,0 +1,41 @@
+{
+  "test_card_id": "DGV-TC-052",
+  "claim_name": "OSAPI Mux Routing Integrity",
+  "svrnos_layer": "L3: Routing & Boundary",
+  "ger_mapping": "GER-302-ROUTING-TAMPER",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "mux_manifest_parsed"
+  ],
+  "compliance_refs": null,
+  "threat_model_tie_in": [
+    "Payload tampering before decryption",
+    "Routing manipulation"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-052-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "allow",
+        "route_status": "forwarded"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:27a729eac3cf56d2cfb0175e88d58f10a746f8af23d03e504364fd965a3c31e5",
+    "signature": "dgv-sha256:27a729eac3cf56d2cfb0175e88d58f10a746f8af23d03e504364fd965a3c31e5",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

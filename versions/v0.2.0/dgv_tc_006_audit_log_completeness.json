@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-006",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-339: Distributed Verification Gap",
+  "claim_name": "Audit Log Completeness",
+  "claim_definition": "System records every transaction proposal, step resolution, healed variable index, and final verification outcome.",
+  "scope": "only-lang dgv-verifier CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-AUD-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "log_complete": true
+      },
+      "mandatory": true,
+      "description": "Verifies that healing events and solver steps record indices healed and history traces in execution logs."
+    }
+  ],
+  "metrics": [
+    "history_tracing",
+    "indices_healed_logged"
+  ],
+  "pass_threshold": {
+    "history_logged": true
+  },
+  "version": "0.2.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}

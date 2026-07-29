@@ -1,0 +1,67 @@
+{
+  "id": "DGV-TC-042",
+  "executor": "only-gate",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-344: Hash Function Not Post-Quantum Safe",
+  "claim_name": "SHAKE-256 Hash Conformance",
+  "claim_definition": "Verifies that the Only OS hashing subsystem provides SHAKE-256 (SHA-3 Extendable-Output Function, NIST FIPS 202) as a quantum-resistant alternative to SHA-2. SHAKE-256 is required for DGV Level 3 post-quantum readiness and is used for commitment schemes in ML-DSA and ML-KEM. Two properties are tested: (1) determinism — the same input always produces the same digest, and (2) non-collision resistance — distinct inputs produce distinct digests.",
+  "scope": "Only OS hash computation path; FIPS 202 SHAKE-256 XOF; post-quantum hash primitive baseline",
+  "excluded_scope": "SHAKE-128; full NIST FIPS 202 Known Answer Test suite; streaming XOF usage",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-SHA-001",
+      "input": {
+        "check": "shake256",
+        "mode": "determinism",
+        "input": "dgv-compliance-proof-v0.6.0"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "hash_function": "SHAKE-256",
+        "fips_202_compliant": true,
+        "shake256_deterministic": true,
+        "all_digests_identical": true
+      },
+      "mandatory": true,
+      "description": "Determinism: only-gate computes SHAKE-256 of the same input three times using the sha3 0.10 RustCrypto crate and verifies all outputs are identical. A non-deterministic hash function would fail this test."
+    },
+    {
+      "id": "TC-SHA-002",
+      "input": {
+        "check": "shake256",
+        "mode": "non-collision",
+        "input": "dgv-compliance-proof-v0.6.0",
+        "input2": "dgv-compliance-proof-v0.5.0"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "hash_function": "SHAKE-256",
+        "fips_202_compliant": true,
+        "shake256_non_collision_confirmed": true,
+        "digests_differ": true
+      },
+      "mandatory": true,
+      "description": "Non-collision: two distinct inputs (v0.6.0 vs v0.5.0) must produce different SHAKE-256 digests. This is a basic first-preimage resistance sanity check using the sha3 RustCrypto crate."
+    }
+  ],
+  "metrics": [
+    "hash_function",
+    "fips_202_compliant",
+    "shake256_deterministic",
+    "shake256_non_collision_confirmed",
+    "all_digests_identical",
+    "digests_differ",
+    "digest",
+    "digest_1",
+    "digest_2"
+  ],
+  "pass_threshold": {
+    "determinism_confirmed": true,
+    "non_collision_confirmed": true
+  },
+  "version": "0.6.0",
+  "expiry": "2029-06-25T00:00:00Z"
+}

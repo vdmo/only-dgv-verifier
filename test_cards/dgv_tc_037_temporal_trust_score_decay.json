@@ -1,0 +1,62 @@
+{
+  "id": "DGV-TC-037",
+  "executor": "only-gate",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-512: Trust Score Staleness Undetected",
+  "claim_name": "Temporal Trust Score Decay",
+  "claim_definition": "Verifies that an agent's deployment trust score decays exponentially over time according to the AGT governance model and that a score which falls below the re-attestation threshold triggers a mandatory re-attestation gate. A trust score that was valid at deployment provides no assurance after sufficient time has elapsed without re-attestation.",
+  "scope": "AGT trust score decay engine; deployment trust lifecycle; mandatory re-attestation gate",
+  "excluded_scope": "Manual trust score overrides; hardware-reset events that reinitialise the score counter",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-TRS-001",
+      "input": {
+        "check": "trust-decay",
+        "initial_score": "0.95",
+        "decay_rate": "1.5e-7",
+        "elapsed_secs": "7776000",
+        "threshold": "0.50"
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "trust_score_below_threshold",
+        "re_attestation_required": true
+      },
+      "mandatory": true,
+      "description": "After 90 days (7,776,000 seconds) with decay_rate=1.5e-7, an initial score of 0.95 decays to ~0.296, below the 0.50 threshold — mandatory re-attestation gate triggers."
+    },
+    {
+      "id": "TC-TRS-002",
+      "input": {
+        "check": "trust-decay",
+        "initial_score": "0.95",
+        "decay_rate": "1.5e-7",
+        "elapsed_secs": "604800",
+        "threshold": "0.50"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "re_attestation_required": false
+      },
+      "mandatory": true,
+      "description": "After 7 days (604,800 seconds) with the same parameters, score decays to ~0.868 — still above threshold. Gate remains open, no re-attestation required."
+    }
+  ],
+  "metrics": [
+    "initial_score",
+    "final_score",
+    "threshold",
+    "elapsed_secs",
+    "re_attestation_required",
+    "gate_status"
+  ],
+  "pass_threshold": {
+    "decay_enforced": true,
+    "threshold_gate_triggers": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-25T00:00:00Z"
+}

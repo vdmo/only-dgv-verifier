@@ -1,0 +1,47 @@
+{
+  "id": "DGV-TC-048",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-104-MEMORY-NODE-LOSS",
+  "replay_protection_required": false,
+  "latency_threshold_ms": 200,
+  "claim_name": "RAM RAID-0 Consistency",
+  "claim_definition": "Test striped data across nodes with reconstruction after partial failure.",
+  "scope": "Distributed memory, high availability.",
+  "excluded_scope": "Byzantine fault tolerance.",
+  "test_type": "exact-match",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "allow"
+  },
+  "required_preconditions": [
+    "cluster_quorum"
+  ],
+  "threat_model_tie_in": [
+    "Node crash data loss",
+    "Network partition"
+  ],
+  "test_cases": [
+    {
+      "id": "tc-048-01",
+      "input": {
+        "action": "drop_node",
+        "node_id": "worker-2"
+      },
+      "expected": {
+        "verdict": "allow",
+        "reconstruction": "successful"
+      },
+      "mandatory": true,
+      "description": "Stripe reconstruction successful after node drop."
+    }
+  ],
+  "metrics": [
+    "reconstruction_latency"
+  ],
+  "pass_threshold": {
+    "reconstruction_latency": "< 200ms"
+  },
+  "evidence": "evidence/dgv_tc_048_receipt.json",
+  "version": "0.7.0",
+  "expiry": "2027-01-01T00:00:00Z"
+}

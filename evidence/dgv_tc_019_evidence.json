@@ -1,0 +1,38 @@
+{
+  "test_card_id": "DGV-TC-019",
+  "claim_name": "Non-Expansive Repair",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-432: Reality-Testing Erosion",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-NER-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "rejection_reason": null,
+        "residual_final": 0.0,
+        "indices_healed": [],
+        "revealed": null,
+        "is_contraction": true
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:c8f9586d7323e7e2cc59dc80fbebca23a6f08f6be396e6a51e2d1768681a4530",
+    "signature": "dgv-sha256:c8f9586d7323e7e2cc59dc80fbebca23a6f08f6be396e6a51e2d1768681a4530",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:03Z"
+  }
+}

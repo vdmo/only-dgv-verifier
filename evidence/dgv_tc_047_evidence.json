@@ -1,0 +1,41 @@
+{
+  "test_card_id": "DGV-TC-047",
+  "claim_name": "DIME-Style Virtual Memory Mapping",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-103-MEMORY-PAGE-TAMPER",
+  "enforcement_layer": {
+    "enforcement_type": "distributed",
+    "expected_verdict": "hard_deny"
+  },
+  "required_preconditions": [
+    "cluster_node_active"
+  ],
+  "compliance_refs": null,
+  "threat_model_tie_in": [
+    "Malicious page replacement",
+    "Memory injection"
+  ],
+  "benchmark_version": "0.7.0",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "tc-047-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "verdict": "hard_deny",
+        "action": "page_fault_panic"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:b071fbbb801cf2be8711b03739823b0a468260e42b3992dc8a9f7b6fb0a8fbbe",
+    "signature": "dgv-sha256:b071fbbb801cf2be8711b03739823b0a468260e42b3992dc8a9f7b6fb0a8fbbe",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

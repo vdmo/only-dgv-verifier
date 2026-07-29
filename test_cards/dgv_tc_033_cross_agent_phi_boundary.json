@@ -1,0 +1,56 @@
+{
+  "id": "DGV-TC-033",
+  "executor": "only-gate",
+  "svrnos_layer": "L3: Routing & Boundary",
+  "ger_mapping": "GER-313: Sensitive Data Leaked Across Agent Boundary",
+  "claim_name": "Cross-Agent PHI Boundary Enforcement",
+  "claim_definition": "Verifies that protected health information (PHI) or other data labelled with a restricted classification in one agent's output context cannot appear in a downstream agent's visible output. The routing plane inspects the data-flow boundary between agents and blocks any output that contains tokens matching the registered restricted-label pattern.",
+  "scope": "Multi-agent pipeline routing plane; HIPAA minimum necessary standard; EU MDR data boundary requirements",
+  "excluded_scope": "Single-agent pipelines; data that has been explicitly de-identified or pseudonymised before crossing the boundary",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-PHI-001",
+      "input": {
+        "check": "phi",
+        "output_text": "Patient John Doe SSN: 123-45-6789 DOB: 1975-04-12 MRN: 00438291 treatment: beta-blocker",
+        "restricted_labels": "PHI_RESTRICTED"
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "phi_boundary_violation_detected",
+        "label": "PHI_RESTRICTED",
+        "downstream_output_clean": false
+      },
+      "mandatory": true,
+      "description": "Real PHI detection: only-gate applies SSN (\\d{3}-\\d{2}-\\d{4}), DOB, and MRN regex patterns to the actual output text and detects PII tokens before boundary crossing."
+    },
+    {
+      "id": "TC-PHI-002",
+      "input": {
+        "check": "phi",
+        "output_text": "The treatment protocol shows a 12% improvement in aggregate outcomes across the cohort.",
+        "restricted_labels": "PHI_RESTRICTED"
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "downstream_output_clean": true
+      },
+      "mandatory": true,
+      "description": "Positive control: the output text contains no SSN, DOB, or MRN patterns. All regex scans return no match; boundary passes cleanly."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "rejection_reason",
+    "phi_label_detected",
+    "downstream_output_clean"
+  ],
+  "pass_threshold": {
+    "phi_leakage_blocked": true,
+    "clean_boundary_passes": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-24T00:00:00Z"
+}

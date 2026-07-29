@@ -1,0 +1,62 @@
+{
+  "test_card_id": "DGV-TC-040",
+  "claim_name": "GPU Confidential Compute Attestation",
+  "svrnos_layer": "L1: Compute Substrate",
+  "ger_mapping": "GER-312: GPU Compute Not Attested",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "0.7.0",
+  "executor": "only-gate",
+  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-GPU-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "gpu_cc_attested": true,
+        "gpu_model": "H100",
+        "report_type": "GPU_CC",
+        "measurement_verified": true,
+        "pcr_values_present": true,
+        "driver_version_valid": true,
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    },
+    {
+      "case_id": "TC-GPU-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "gpu_attestation_report_invalid",
+        "gpu_model": "H100",
+        "report_type": "GPU_CC",
+        "missing_fields": [
+          "valid_measurement",
+          "pcr_values"
+        ],
+        "residual_final": null,
+        "indices_healed": [],
+        "revealed": null
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:1e51e260fc59b4e65873d842ebe8d6745cb5add6817eb2d431fa9cab0dc9c100",
+    "signature": "dgv-sha256:1e51e260fc59b4e65873d842ebe8d6745cb5add6817eb2d431fa9cab0dc9c100",
+    "timestamp": "2026-07-28T16:40:04Z"
+  }
+}

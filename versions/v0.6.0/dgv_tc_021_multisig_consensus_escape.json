@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-021",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-501: Escalation Not Implemented",
+  "claim_name": "Multi-Sig Consensus Escape",
+  "claim_definition": "Verifies that if an agent attempts to bypass required multi-signature validation rings (e.g., presenting forged signatures or incomplete consensus sets), the WEDGE check refuses the action.",
+  "scope": "runtime CLI execution",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-MCE-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "insufficient_consensus_signatures"
+      },
+      "mandatory": true,
+      "description": "Verifies that a transaction requiring M=2 signatures fails when only 1 signature is provided or a signature is forged."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "rejection_reason"
+  ],
+  "pass_threshold": {
+    "rejection_expected": true
+  },
+  "version": "0.4.0",
+  "expiry": "2027-06-13T00:00:00Z"
+}
