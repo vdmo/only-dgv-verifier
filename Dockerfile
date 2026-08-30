@@ -25,7 +25,8 @@ FROM python:3.10-slim-bookworm
 LABEL org.opencontainers.image.title="DGV Verification Kit"
 LABEL org.opencontainers.image.version="1.0.0"
 LABEL org.opencontainers.image.description="Deterministic & Governance Verified — reproducible verification container"
-LABEL org.opencontainers.image.source="https://github.com/vdmo/only-dgv-verifier"
+LABEL org.opencontainers.image.authors="vdmo"
+LABEL org.opencontainers.image.source="https://github.com/only-institute/only-dgv-verifier"
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \

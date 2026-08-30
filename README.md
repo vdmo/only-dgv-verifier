@@ -2,6 +2,8 @@
 
 **Deterministic & Governance Verified (DGV) — v1.0.0**
 
+**Author:** [vdmo](https://github.com/vdmo)
+
 A certification specification and verification suite for AI systems, agent runtimes, and governance layers that want to make public claims about determinism, policy enforcement, controllability, auditability, refusal behavior, or related properties.
 
 DGV converts vague governance language into explicit, reproducible evidence. It uses pass/fail tests where possible, and rubric-based scoring where exact-output testing is not sufficient. A claim may only be advertised if the system has passed the relevant published tests for the exact benchmark version.
@@ -254,6 +256,12 @@ only-dgv-verifier/
 ├── requirements.txt        # Python dependencies
 └── release/                # Release packaging
 ```
+
+---
+
+## Author
+
+This project was authored by vdmo.
 
 ---
 
