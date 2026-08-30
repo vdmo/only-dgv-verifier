@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-062",
+  "svrnos_layer": "L1: Authorization",
+  "ger_mapping": "GER-201: Policy Bypass Attempt",
+  "claim_name": "Negative: Policy Bypass Detection",
+  "claim_definition": "The verifier MUST detect and reject attempts to bypass policy enforcement. When given a script that attempts to execute a restricted operation, the verifier MUST block it and report the violation.",
+  "scope": "dgv-verifier CLI execution \u2014 negative test",
+  "test_type": "negative",
+  "test_cases": [
+    {
+      "id": "TC-NEG-062-01",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nbypass_policy()\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Negative test: script contains a bypass_policy() call that attempts to circumvent governance. Verifier MUST reject the script and report the violation."
+    }
+  ],
+  "metrics": [
+    "policy_violation_detected",
+    "bypass_blocked"
+  ],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-08-30T00:00:00Z",
+  "negative_test": true
+}

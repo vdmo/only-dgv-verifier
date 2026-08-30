@@ -8,7 +8,8 @@
   "compliance_refs": null,
   "threat_model_tie_in": null,
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:37Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:29Z",
   "status": "passed",
   "results": [
     {
@@ -39,9 +40,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:8500ce6347c91a08c3197a559768061dbbeee172a782fa922b65ac7b8a748a3e",
-    "signature": "dgv-sha256:8500ce6347c91a08c3197a559768061dbbeee172a782fa922b65ac7b8a748a3e",
+    "transaction_id": "dgv-sha256:c9958fa7504f0271074e9178422f8f4ea28b966068710f42d7afe76731b3ae82",
+    "signature": "dgv-sha256:c9958fa7504f0271074e9178422f8f4ea28b966068710f42d7afe76731b3ae82",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:37Z"
+    "timestamp": "2026-08-30T18:30:29Z"
   }
 }

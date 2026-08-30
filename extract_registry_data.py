@@ -33,16 +33,24 @@ def normalize_layer(layer: str) -> str:
 
 def main():
     certifications = []
+    seen_card_ids = set()
     for ev_file in sorted(EVIDENCE_DIR.glob("*_evidence.json")):
+        # Skip LLM evidence files (they duplicate test card IDs)
+        if "_llm_evidence" in ev_file.name:
+            continue
         with open(ev_file) as f:
             evidence = json.load(f)
 
         test_card_id = evidence.get("test_card_id", "")
-        test_card_name = evidence.get("test_card_name", "")
-        claim_class = evidence.get("claim_class", "")
+        if test_card_id in seen_card_ids:
+            continue
+        seen_card_ids.add(test_card_id)
+        claim_class = evidence.get("claim_name", evidence.get("claim_class", ""))
         svrnos_layer = normalize_layer(evidence.get("svrnos_layer", ""))
         benchmark_version = evidence.get("benchmark_version", "1.0.0")
         verified_timestamp = evidence.get("verified_timestamp", "")
+        execution_mode = evidence.get("execution_mode", "native")
+        is_negative = evidence.get("negative_test", False)
 
         # Use the receipt hash from the evidence file's settlement_receipt
         settlement = evidence.get("settlement_receipt", {})
@@ -57,13 +65,17 @@ def main():
         except (ValueError, TypeError):
             expiry = "2027-08-30T00:00:00Z"
 
+        # Badge status includes execution mode
+        badge = f"verified:{execution_mode}"
+
         cert = {
             "claim_id": test_card_id.replace("DGV-TC-", "DGV-CL-"),
             "claim_name": claim_class,
             "test_card_id": test_card_id,
             "test_card_version": benchmark_version,
+            "execution_mode": execution_mode,
             "svrnos_layer": svrnos_layer,
-            "badge_status": "verified",
+            "badge_status": badge,
             "certified_at": verified_timestamp,
             "expires_at": expiry,
             "evidence": {
@@ -75,6 +87,8 @@ def main():
                 },
             },
         }
+        if is_negative:
+            cert["notes"] = "Negative test card — verifies the verifier correctly detects and rejects violations."
         certifications.append(cert)
 
     registry = {

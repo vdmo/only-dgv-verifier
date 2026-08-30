@@ -215,31 +215,54 @@ Evidence should be immutable or versioned so that later edits do not erase the o
 
 ## 11. Badge Policy
 
-DGV uses three badge states:
-- **Unverified**: System has not run the DGV test cards or has failed to upload evidence.
-- **Verified**: System has passed all DGV tests and uploaded public evidence with a valid cryptographic receipt, but has not completed external audit.
-- **Gold**: System has passed all mandatory criteria, met all thresholds, and has had its evidence verified by independent, third-party audit or automated zero-knowledge proofs.
+DGV uses four badge states, each tied to an execution mode that reflects the depth of verification:
 
-### 11.1 Badge Enforcement Rules
+### 11.1 Execution Modes
+
+Every evidence package MUST include an `execution_mode` field indicating how the test was executed:
+
+| Mode | Meaning | Trust Level |
+|---|---|---|
+| `simulation` | Test ran through a simulated enforcement path within the verifier binary | Benchmark development — proves the verifier handles the case, not that a deployed system does |
+| `native` | Test ran against the native verifier binary in a controlled environment | Verifier-level proof — proves the binary correctly evaluates the test card |
+| `live` | Test ran against a deployed system in its production environment | Deployment-level proof — proves the actual running system handles the case |
+| `audited_live` | Test ran against a deployed system with independent third-party observation | Highest trust — proves the system handles the case under external scrutiny |
+
+A `simulation` pass MUST NOT be advertised as equivalent to a `native`, `live`, or `audited_live` pass. The execution mode is part of the certification claim and is enforced by the registry schema.
+
+### 11.2 Badge States
+
+- **Unverified**: System has not run the DGV test cards or has failed to upload evidence.
+- **Verified**: System has passed all DGV tests and uploaded public evidence with a valid cryptographic receipt, but has not completed external audit. The badge MUST include the execution mode (e.g., `verified:simulation`, `verified:native`, `verified:live`).
+- **Gold**: System has passed all mandatory criteria, met all thresholds, and has had its evidence verified by independent, third-party audit or automated zero-knowledge proofs. The badge MUST include the execution mode (e.g., `gold:audited_live`).
+
+### 11.3 Badge Enforcement Rules
 
 Badge status is enforced by the `verify_registry.py` tool and the public registry schema:
 
 1. **`verified`** requires:
    - A complete, publicly accessible evidence package (`package_uri`).
    - A valid receipt (`anchor_method`, `transaction_id`) that recomputes correctly.
+   - An `execution_mode` field in the evidence package.
    - All mandatory test cases passed.
    - Certification has not expired.
+   - The badge string MUST match the execution mode (e.g., `verified:native` for native execution).
 
 2. **`gold`** additionally requires:
-   - An `independent_audit` record with `auditor`, `report_uri`, and `audit_date`.
+   - An `independent_audit` record with `auditor`, `report_uri`, `audit_date`, and `audit_digest`.
    - The audit report must be publicly accessible.
    - The audit must cover the exact system version and benchmark version claimed.
+   - The execution mode MUST be `audited_live` or `live` with external observation documented.
 
 3. **`unverified`** means no claim is being made. The system may still appear in the registry for transparency.
 
 4. **Expiry**: Any certification past its `expires_at` timestamp is automatically downgraded to `unverified` regardless of prior badge status.
 
 5. **Re-certification trigger**: A change to the system under test (any version bump) or a major DGV benchmark version bump invalidates all existing certifications for that system.
+
+6. **Execution mode escalation**: A system may upgrade its badge by re-running tests at a higher execution mode (e.g., `verified:simulation` → `verified:native` → `verified:live` → `gold:audited_live`). Each escalation requires new evidence packages with the updated execution mode.
+
+7. **Execution mode downgrade protection**: If a system's deployment changes such that a previously `live` certification no longer reflects the current deployment, the certification MUST be downgraded to `unverified` until new `live` evidence is produced.
 
 ## 12. Claim Language Rules
 

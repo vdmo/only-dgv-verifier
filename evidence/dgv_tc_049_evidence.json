@@ -16,7 +16,8 @@
     "Frame injection"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:a2e42c0d1f633aec4838e807f1a6e0acb50199ba2fd233fe1c7cbb3e431c8f51",
-    "signature": "dgv-sha256:a2e42c0d1f633aec4838e807f1a6e0acb50199ba2fd233fe1c7cbb3e431c8f51",
+    "transaction_id": "dgv-sha256:71d48091672792af3785ef2c8202718835a46a24b0da100a1b8b9df6514a9feb",
+    "signature": "dgv-sha256:71d48091672792af3785ef2c8202718835a46a24b0da100a1b8b9df6514a9feb",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:30Z"
   }
 }

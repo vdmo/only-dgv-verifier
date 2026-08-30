@@ -1,0 +1,35 @@
+{
+  "test_card_id": "DGV-TC-061",
+  "claim_name": "Negative: Non-Deterministic Output Detection",
+  "svrnos_layer": "L1: Authorization",
+  "ger_mapping": "GER-101: Determinism Violation",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "1.0.0",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-NEG-061-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "unknown_simulate_case"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:7c787f9f5573438ed8572d9d9906847e798d07940bcced2899d09a78a3ee4879",
+    "signature": "dgv-sha256:7c787f9f5573438ed8572d9d9906847e798d07940bcced2899d09a78a3ee4879",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-08-30T18:30:30Z"
+  }
+}

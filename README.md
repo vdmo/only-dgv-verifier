@@ -16,13 +16,16 @@ DGV converts vague governance language into explicit, reproducible evidence. It 
 |---|---|
 | `dgv-verifier` | Native Rust engine — evaluates state, mathematical scripts, and governance constraints. Generates verifiable JSON receipts with provenance signatures, explanation traces, and audit logs. |
 | `only-gate` | Native Rust engine — validates hardware/crypto constraints: ML-KEM-768 post-quantum key encapsulation, SHAKE-256 conformance, GPU TEE attestation, basis-freshness checks. |
-| `test_cards/` | 60 test cards covering 35 claim classes across all 7 SVRNOS governance layers. |
-| `evidence/` | Cryptographic evidence packages with SHA-256 content-hash receipts for every test card. |
-| `dgv_runner.py` | Test runner — executes all 60 cards against the native engines and generates evidence. |
-| `verify_registry.py` | Registry verifier — validates the public claims registry, recomputes receipts, enforces badge rules. |
-| `registry.json` | Public claims registry — append-only record of certified systems and their claims. |
-| `registry.schema.json` | JSON Schema (Draft 2020-12) for the public claims registry. |
-| `spec.md` | The DGV Specification v1.0.0 — stable standard with change control, dispute resolution, and badge enforcement. |
+| `test_cards/` | 65 test cards (60 positive + 5 negative/adversarial) covering 35 claim classes across all 7 SVRNOS governance layers. |
+| `evidence/` | Cryptographic evidence packages with SHA-256 content-hash receipts for every test card. Each includes an `execution_mode` field (simulation, native, live, or audited_live). |
+| `dgv_runner.py` | Test runner — executes all cards against the native engines and generates evidence with execution mode metadata. |
+| `verify_registry.py` | Registry verifier — validates the public claims registry, recomputes receipts, enforces badge rules, checks cross-consistency. |
+| `registry.json` | Public claims registry — append-only record of certified systems and their claims with execution-mode-qualified badges. |
+| `registry.schema.json` | JSON Schema (Draft 2020-12) for the public claims registry, including execution_mode and audit metadata. |
+| `spec.md` | The DGV Specification v1.0.0 — stable standard with change control, dispute resolution, badge enforcement, and execution mode separation. |
+| `TRUST_ROOT.md` | Trust model documentation — explains binary-only distribution rationale, NDA-gated source review paths, and the full trust chain. |
+| `BUILD_PROVENANCE.md` | Build chain documentation — toolchain, dependencies, checksums, SLSA provenance level. |
+| `CHECKSUMS.txt` | SHA-256 checksums for verifier binaries. |
 | `RECEIPT_VERIFICATION.md` | Procedure for independently verifying evidence receipts. |
 
 ---
@@ -117,9 +120,9 @@ Pre-compiled release binaries for both engines are in `/bin`. This allows runnin
 
 ---
 
-## The 60 Test Cards
+## The 65 Test Cards
 
-The suite covers 35 claim classes organized into 7 families mapped to the SVRNOS 7-Layer Governance Model:
+The suite covers 35 claim classes organized into 7 families mapped to the SVRNOS 7-Layer Governance Model, plus 5 negative/adversarial test cards that prove the verifier correctly detects and rejects violations:
 
 | Family | SVRNOS Layer | Cards | Key Claims |
 |---|---|---|---|
@@ -130,6 +133,7 @@ The suite covers 35 claim classes organized into 7 families mapped to the SVRNOS
 | Session & State | L5: Session & State | TC-008, 018, 029, 056, 059, 060 | Stability, spectral drift, model drift, sustained ambiguity, silent decay, persistent state |
 | Risk Interpretation | L6: Risk Interpretation | TC-001, 002, 004, 011, 013, 019, 025, 058 | Determinism, boundary, hierarchy, explanation, bias, repair, DPIA, correct-but-unauthorized |
 | Application Enforcement | L7: Application Enforcement | TC-003, 005, 010, 020, 021, 023, 024, 032, 057 | Policy, refusal, latency, revocation, multi-sig, escalation, legal hold, HITL, lawful continuation |
+| **Negative Tests** | Multiple | **TC-061, 062, 063, 064, 065** | Non-determinism detection, policy bypass detection, provenance forgery detection, receipt tampering detection, adversarial input rejection |
 
 See `spec.md` Section 16.1 for the complete Layer Alignment Matrix with GER mappings.
 
@@ -137,13 +141,32 @@ See `spec.md` Section 16.1 for the complete Layer Alignment Matrix with GER mapp
 
 ## Badge System
 
+Badges now include execution mode to prevent confusion between simulated, native, live, and audited verification:
+
 | Badge | Meaning | Requirements |
 |---|---|---|
 | **Unverified** | No claim being made | System may appear in registry for transparency |
-| **Verified** | Self-attested + public evidence | All mandatory cases passed + valid receipt + not expired |
-| **Gold** | Independently audited | All verified requirements + independent audit record |
+| **Verified:simulation** | Simulated enforcement pass | All mandatory cases passed in simulation mode + valid receipt |
+| **Verified:native** | Verifier binary pass | All mandatory cases passed against native binary + valid receipt |
+| **Verified:live** | Deployed system pass | All mandatory cases passed against production system + valid receipt |
+| **Gold:audited_live** | Independently audited | All verified requirements + independent audit record with NDA-gated source review |
 
-Badge rules are enforced by `verify_registry.py`. Any certification past its `expires_at` timestamp is automatically downgraded to `unverified`.
+A `simulation` pass cannot be advertised as equivalent to a `native` or `live` pass. Badge rules are enforced by `verify_registry.py`. Any certification past its `expires_at` timestamp is automatically downgraded to `unverified`.
+
+---
+
+## Trust Model
+
+The verifier engines are distributed as precompiled binaries. The source code is not public due to IP protection (PIR algorithms, patent-pending work). Trust is established through:
+
+1. **Deterministic execution** — same input always produces same output
+2. **Binary provenance** — SHA-256 checksums, build documentation (see `BUILD_PROVENANCE.md`)
+3. **Execution mode transparency** — every evidence package states how the test was run
+4. **NDA-gated source review** — third parties can review source under NDA and issue attestations
+
+For the full trust model, including NDA review paths (Attestation Review and Sandbox Review), see [`TRUST_ROOT.md`](TRUST_ROOT.md).
+
+For NDA-gated review requests: **trust@only.institute**
 
 ---
 

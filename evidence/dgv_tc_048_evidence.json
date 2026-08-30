@@ -16,7 +16,8 @@
     "Network partition"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:8c4956c110aabaccedc6913b246c446ae45d9fd394b7c7efffe3476dacfc9fb0",
-    "signature": "dgv-sha256:8c4956c110aabaccedc6913b246c446ae45d9fd394b7c7efffe3476dacfc9fb0",
+    "transaction_id": "dgv-sha256:0b4a0b452c4411111addb2cc8b3275ca622fc9cc103ae5ac6ab135f6aef92583",
+    "signature": "dgv-sha256:0b4a0b452c4411111addb2cc8b3275ca622fc9cc103ae5ac6ab135f6aef92583",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:30Z"
   }
 }

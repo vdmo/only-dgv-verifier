@@ -185,8 +185,14 @@ def main():
             evidence = cert.get("evidence", {})
             has_audit = "independent_audit" in evidence
             has_receipt = "receipt" in evidence
+            exec_mode = cert.get("execution_mode", "unknown")
 
-            if badge == "gold":
+            # Parse badge: can be "verified:native", "gold:audited_live", etc.
+            badge_parts = badge.split(":")
+            badge_base = badge_parts[0]
+            badge_mode = badge_parts[1] if len(badge_parts) > 1 else None
+
+            if badge_base == "gold":
                 if not has_audit:
                     print("    [FAIL] gold badge requires independent_audit record")
                     errors += 1
@@ -194,14 +200,33 @@ def main():
                     audit = evidence["independent_audit"]
                     print(f"    [OK]   Independent audit: {audit.get('auditor', '?')}")
                     print(f"           Report: {audit.get('report_uri', '?')}")
-            elif badge == "verified":
+                    print(f"           Type: {audit.get('audit_type', '?')}")
+                    # Gold requires audited_live or live execution mode
+                    if exec_mode not in ("audited_live", "live"):
+                        print(f"    [FAIL] gold badge requires execution_mode 'audited_live' or 'live', got '{exec_mode}'")
+                        errors += 1
+                if not has_receipt:
+                    print("    [FAIL] gold badge requires a receipt")
+                    errors += 1
+            elif badge_base == "verified":
                 if not has_receipt:
                     print("    [FAIL] verified badge requires a receipt")
                     errors += 1
                 else:
                     print("    [OK]   Receipt present")
-            elif badge == "unverified":
+                # Verify badge mode matches execution_mode
+                if badge_mode and badge_mode != exec_mode:
+                    print(f"    [FAIL] badge mode '{badge_mode}' does not match execution_mode '{exec_mode}'")
+                    errors += 1
+                else:
+                    print(f"    [OK]   Execution mode: {exec_mode}")
+            elif badge_base == "unverified":
                 print("    [INFO] No verification claim made")
+
+            # ── Execution mode consistency check ──
+            if exec_mode not in ("simulation", "native", "live", "audited_live"):
+                print(f"    [FAIL] Invalid execution_mode: {exec_mode}")
+                errors += 1
 
             # ── Receipt hash verification ──
             if not args.skip_receipts and has_receipt:
@@ -236,7 +261,56 @@ def main():
                 else:
                     print(f"    [SKIP] Unknown anchor method: {anchor}")
 
-    # ── 3. Summary ───────────────────────────────────────────────────────
+    # ── 3. Cross-consistency checks ─────────────────────────────────────
+    print(f"\n{'─' * 60}")
+    print("Cross-Consistency Checks")
+    print(f"{'─' * 60}")
+
+    for system in registry["systems"]:
+        certs = system["certifications"]
+        versions = set()
+        benchmark_versions = set()
+        exec_modes = set()
+        card_ids = set()
+
+        for cert in certs:
+            versions.add(cert.get("test_card_version", ""))
+            benchmark_versions.add(cert.get("test_card_version", ""))
+            exec_modes.add(cert.get("execution_mode", ""))
+            card_ids.add(cert.get("test_card_id", ""))
+
+            # Check evidence file exists
+            ev_uri = cert.get("evidence", {}).get("package_uri", "")
+            ev_path = resolve_evidence_path(ev_uri, args.evidence_dir)
+            if not ev_path.exists():
+                print(f"  [FAIL] Evidence file missing for {cert['test_card_id']}: {ev_path.name}")
+                errors += 1
+
+        # Version consistency
+        if len(versions) > 1:
+            print(f"  [WARN] Multiple test card versions found: {versions}")
+            warnings += 1
+        else:
+            print(f"  [OK]   Version consistency: all {len(certs)} certs at v{versions.pop() if versions else '?'}")
+
+        # Execution mode distribution
+        print(f"  [INFO] Execution modes: {dict((m, sum(1 for c in certs if c.get('execution_mode') == m)) for m in exec_modes)}")
+
+        # Check for duplicate test card IDs
+        if len(card_ids) != len(certs):
+            print(f"  [FAIL] Duplicate test card IDs detected ({len(card_ids)} unique vs {len(certs)} certs)")
+            errors += 1
+        else:
+            print(f"  [OK]   No duplicate test card IDs ({len(card_ids)} unique)")
+
+        # Check all benchmark versions match registry version
+        reg_bv = registry.get("dgv_benchmark_version", "")
+        for bv in benchmark_versions:
+            if bv and reg_bv and bv != reg_bv:
+                print(f"  [FAIL] Benchmark version mismatch: cert has {bv}, registry has {reg_bv}")
+                errors += 1
+
+    # ── 4. Summary ───────────────────────────────────────────────────────
     print(f"\n{'=' * 60}")
     print("SUMMARY")
     print(f"{'=' * 60}")

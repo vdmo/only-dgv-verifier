@@ -16,7 +16,8 @@
     "Silent data corruption in transit"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:c7c38361b218d9af8ead911ff9d99a14c7c472292f388c182ac5413d526bcec2",
-    "signature": "dgv-sha256:c7c38361b218d9af8ead911ff9d99a14c7c472292f388c182ac5413d526bcec2",
+    "transaction_id": "dgv-sha256:7747987b89143ff83b7ee31830f437e7311d4c36717ab27038d025921b124dc2",
+    "signature": "dgv-sha256:7747987b89143ff83b7ee31830f437e7311d4c36717ab27038d025921b124dc2",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:30Z"
   }
 }

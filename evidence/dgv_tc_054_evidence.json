@@ -16,7 +16,8 @@
     "Insider threat execution"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:ce9898de079e6651d7f94474c0131002dfc0dfdb3a4ddb008c395782c363ff28",
-    "signature": "dgv-sha256:ce9898de079e6651d7f94474c0131002dfc0dfdb3a4ddb008c395782c363ff28",
+    "transaction_id": "dgv-sha256:eaf818684e77ab0984f69aeea23e7f5eabdc30c218d4c5cc264d80180af1b773",
+    "signature": "dgv-sha256:eaf818684e77ab0984f69aeea23e7f5eabdc30c218d4c5cc264d80180af1b773",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:30Z"
   }
 }

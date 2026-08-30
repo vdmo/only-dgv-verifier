@@ -16,7 +16,8 @@
     "Unauthorized filesystem access"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:29Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:886cedd84b9f19e168ce22e99650ba793230e37a7d6d54f5aab730746cfdd27f",
-    "signature": "dgv-sha256:886cedd84b9f19e168ce22e99650ba793230e37a7d6d54f5aab730746cfdd27f",
+    "transaction_id": "dgv-sha256:5f23fcfdb9c88823b58be94bebb3be31a5397ed8b14569ae3e0b204434ea4d14",
+    "signature": "dgv-sha256:5f23fcfdb9c88823b58be94bebb3be31a5397ed8b14569ae3e0b204434ea4d14",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:29Z"
   }
 }

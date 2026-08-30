@@ -16,7 +16,8 @@
     "VRAM manipulation"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:d3909f89f39621353236765eac3e4a98524b408f78ab7d0d176b45f7aed3ede8",
-    "signature": "dgv-sha256:d3909f89f39621353236765eac3e4a98524b408f78ab7d0d176b45f7aed3ede8",
+    "transaction_id": "dgv-sha256:af36d438a338e2167f951fcb6cdd0371423f5c71c23093f84b20f381aea74ed9",
+    "signature": "dgv-sha256:af36d438a338e2167f951fcb6cdd0371423f5c71c23093f84b20f381aea74ed9",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:30Z"
   }
 }

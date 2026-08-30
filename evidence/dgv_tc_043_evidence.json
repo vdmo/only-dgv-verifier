@@ -21,7 +21,8 @@
     "Race conditions mutating stale state"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:29Z",
   "status": "passed",
   "results": [
     {
@@ -47,9 +48,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:8b0acd301305995acec4652826b07c1e4e238790e4df6048d9356d3b10900734",
-    "signature": "dgv-sha256:8b0acd301305995acec4652826b07c1e4e238790e4df6048d9356d3b10900734",
+    "transaction_id": "dgv-sha256:d5088ff78fb81fba6be1ba28717cf9e794ce5af087fa7e7984ac4de3ef7057a0",
+    "signature": "dgv-sha256:d5088ff78fb81fba6be1ba28717cf9e794ce5af087fa7e7984ac4de3ef7057a0",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:29Z"
   }
 }

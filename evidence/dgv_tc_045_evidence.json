@@ -16,7 +16,8 @@
     "Replay attacks across nodes"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:0b5a864e14ef437884313ab5855589b69f9a5f13e0b75bca0d99d485be8ef428",
-    "signature": "dgv-sha256:0b5a864e14ef437884313ab5855589b69f9a5f13e0b75bca0d99d485be8ef428",
+    "transaction_id": "dgv-sha256:55b93dc37873df72ec36346694e355b7c6aa12d179434c821f3aee698b8759ab",
+    "signature": "dgv-sha256:55b93dc37873df72ec36346694e355b7c6aa12d179434c821f3aee698b8759ab",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:30Z"
   }
 }

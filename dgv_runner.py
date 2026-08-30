@@ -96,6 +96,7 @@ def evaluate_case(run_res: dict, expected: dict, pass_threshold: dict) -> bool:
       - "pass": bool — check run_res["pass"]
       - "runs_identical": bool — checked externally by multi-run logic
       - "max_residual": float — checked against run_res["residual_final"]
+      - "failure_reason": str — for negative tests, check run_res contains this reason
       - Any other key: run_res[key] must equal expected[key]
     Returns True if all checks pass.
     """
@@ -109,6 +110,13 @@ def evaluate_case(run_res: dict, expected: dict, pass_threshold: dict) -> bool:
                 return False
         elif key == "runs_identical":
             pass  # handled by multi-run logic externally
+        elif key == "failure_reason":
+            # For negative tests: verify the failure reason is present
+            actual_reason = (run_res.get("failure_reason") or
+                             run_res.get("rejection_reason") or
+                             run_res.get("error") or "")
+            if val not in str(actual_reason):
+                return False
         elif key == "measurement_fields_present":
             measurement = run_res.get("measurement", {})
             for field in val:
@@ -142,6 +150,9 @@ def parse_args():
     p.add_argument('--card', type=str, help='Run a single test card by ID (e.g. DGV-TC-001)')
     p.add_argument('--case', type=str, help='Run a single test case by ID (e.g. DGV-TC-001-01)')
     p.add_argument('--dry-run', action='store_true', help='List cards/cases that would run and exit')
+    p.add_argument('--execution-mode', type=str, default='native',
+                   choices=['simulation', 'native', 'live', 'audited_live'],
+                   help='Execution mode for evidence packages (default: native)')
     return p.parse_args()
 
 
@@ -270,6 +281,7 @@ def main():
                 "compliance_refs": card.get("compliance_refs"),
                 "threat_model_tie_in": card.get("threat_model_tie_in"),
                 "benchmark_version": "1.0.0",
+                "execution_mode": args.execution_mode,
                 "executor": "only-gate",
                 "verified_timestamp": time.strftime(
                     "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
@@ -422,6 +434,7 @@ def main():
             "compliance_refs": card.get("compliance_refs"),
             "threat_model_tie_in": card.get("threat_model_tie_in"),
             "benchmark_version": "1.0.0",
+            "execution_mode": args.execution_mode,
             "verified_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "status": "passed" if card_passed else "failed",
             "results": evidence_cases,

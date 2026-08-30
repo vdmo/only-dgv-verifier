@@ -1,0 +1,34 @@
+{
+  "id": "DGV-TC-064",
+  "svrnos_layer": "L4: Evidence Transport",
+  "ger_mapping": "GER-401: Receipt Tampering",
+  "claim_name": "Negative: Receipt Tampering Detection",
+  "claim_definition": "The registry verifier MUST detect tampered receipts. When a receipt hash does not match the recomputed evidence hash, the verifier MUST flag it as invalid.",
+  "scope": "verify_registry.py \u2014 negative test",
+  "test_type": "negative",
+  "test_cases": [
+    {
+      "id": "TC-NEG-064-01",
+      "input": {
+        "script": "",
+        "payload": 0,
+        "tamper_receipt": true
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Negative test: modifies a receipt hash in the registry to simulate tampering. Registry verifier MUST detect the mismatch and report failure."
+    }
+  ],
+  "metrics": [
+    "tampering_detected",
+    "hash_mismatch_flagged"
+  ],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-08-30T00:00:00Z",
+  "negative_test": true
+}

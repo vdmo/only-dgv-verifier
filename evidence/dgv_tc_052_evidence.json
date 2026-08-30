@@ -16,7 +16,8 @@
     "Routing manipulation"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:f2c55f261c3aa45d82068f8600fec1d5fbefb098eb4f15a3666d6b31d977c3a8",
-    "signature": "dgv-sha256:f2c55f261c3aa45d82068f8600fec1d5fbefb098eb4f15a3666d6b31d977c3a8",
+    "transaction_id": "dgv-sha256:4fc56a24d5581e2ef52792d575398b2e05fb27fdbf18dab932ef8bb378903e46",
+    "signature": "dgv-sha256:4fc56a24d5581e2ef52792d575398b2e05fb27fdbf18dab932ef8bb378903e46",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:30Z"
   }
 }

@@ -1,0 +1,35 @@
+{
+  "test_card_id": "DGV-TC-062",
+  "claim_name": "Negative: Policy Bypass Detection",
+  "svrnos_layer": "L1: Authorization",
+  "ger_mapping": "GER-201: Policy Bypass Attempt",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "1.0.0",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-NEG-062-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "unknown_simulate_case"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:68f7ba6fa38e51d7526b6fac9d3e0ae9f66df33d90195a1858cc3f83719d57b4",
+    "signature": "dgv-sha256:68f7ba6fa38e51d7526b6fac9d3e0ae9f66df33d90195a1858cc3f83719d57b4",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-08-30T18:30:30Z"
+  }
+}

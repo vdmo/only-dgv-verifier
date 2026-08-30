@@ -1,0 +1,34 @@
+{
+  "id": "DGV-TC-063",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-301: Provenance Forgery",
+  "claim_name": "Negative: Provenance Forgery Detection",
+  "claim_definition": "The verifier MUST detect forged provenance signatures. When given a script with an invalid provenance signature, the verifier MUST reject it and report the forgery.",
+  "scope": "dgv-verifier CLI execution \u2014 negative test",
+  "test_type": "negative",
+  "test_cases": [
+    {
+      "id": "TC-NEG-063-01",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "forge_provenance": true
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Negative test: injects a forged provenance signature. Verifier MUST detect the invalid signature and reject the execution."
+    }
+  ],
+  "metrics": [
+    "forgery_detected",
+    "provenance_validated"
+  ],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-08-30T00:00:00Z",
+  "negative_test": true
+}

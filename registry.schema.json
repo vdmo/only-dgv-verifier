@@ -92,6 +92,7 @@
         "claim_name",
         "test_card_id",
         "test_card_version",
+        "execution_mode",
         "badge_status",
         "certified_at",
         "expires_at",
@@ -108,6 +109,11 @@
           "description": "e.g. DGV-TC-001"
         },
         "test_card_version": { "type": "string" },
+        "execution_mode": {
+          "type": "string",
+          "enum": ["simulation", "native", "live", "audited_live"],
+          "description": "How the test was executed. simulation = simulated enforcement path; native = verifier binary in controlled environment; live = deployed system in production; audited_live = deployed system with independent observation"
+        },
         "svrnos_layer": {
           "type": "string",
           "enum": [
@@ -125,8 +131,14 @@
         "ger_mapping": { "type": "string" },
         "badge_status": {
           "type": "string",
-          "enum": ["unverified", "verified", "gold"],
-          "description": "unverified = no evidence or failed; verified = self-attested + public evidence; gold = independent audit or cryptographic proof"
+          "enum": [
+            "unverified",
+            "verified:simulation",
+            "verified:native",
+            "verified:live",
+            "gold:audited_live"
+          ],
+          "description": "Badge includes execution mode. unverified = no evidence; verified:simulation = simulated pass; verified:native = verifier binary pass; verified:live = deployed system pass; gold:audited_live = independently audited deployed system pass"
         },
         "scope": { "type": "string" },
         "excluded_scope": { "type": "string" },
@@ -169,14 +181,36 @@
             "independent_audit": {
               "type": "object",
               "additionalProperties": false,
-              "description": "Present only for gold badge",
+              "description": "Present only for gold:audited_live badge",
               "properties": {
                 "auditor": { "type": "string" },
                 "report_uri": { "type": "string", "format": "uri" },
                 "audit_date": { "type": "string", "format": "date" },
-                "audit_digest": { "type": "string" }
+                "audit_digest": { "type": "string" },
+                "audit_type": {
+                  "type": "string",
+                  "enum": ["source_review", "sandbox_review", "runtime_observation", "zk_proof"],
+                  "description": "Type of independent audit performed"
+                },
+                "review_path": {
+                  "type": "string",
+                  "enum": ["attestation", "sandbox", "runtime", "automated"],
+                  "description": "NDA review path used (attestation = source review under NDA; sandbox = controlled environment review; runtime = live observation; automated = ZK proof verification)"
+                },
+                "nda_reference": {
+                  "type": "string",
+                  "description": "Optional reference to NDA agreement (e.g. NDA-2026-001). Does not expose party details."
+                },
+                "scope": {
+                  "type": "string",
+                  "description": "What was reviewed (e.g. 'verifier source, build chain, receipt hashing')"
+                },
+                "findings": {
+                  "type": "string",
+                  "description": "Summary of audit findings (pass/fail per component)"
+                }
               },
-              "required": ["auditor", "report_uri", "audit_date"]
+              "required": ["auditor", "report_uri", "audit_date", "audit_digest", "audit_type"]
             }
           }
         },

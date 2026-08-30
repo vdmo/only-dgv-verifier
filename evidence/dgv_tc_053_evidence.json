@@ -16,7 +16,8 @@
     "Stale keys post-incident"
   ],
   "benchmark_version": "1.0.0",
-  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "execution_mode": "native",
+  "verified_timestamp": "2026-08-30T18:30:30Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +34,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:98eeb00cf4a25910f19c04602378cc9ac6502ecfd3f02390eb25303b50219dee",
-    "signature": "dgv-sha256:98eeb00cf4a25910f19c04602378cc9ac6502ecfd3f02390eb25303b50219dee",
+    "transaction_id": "dgv-sha256:b637d116fc45c32822a1c2f06efbf31d2171104724101c149a80566c941492a5",
+    "signature": "dgv-sha256:b637d116fc45c32822a1c2f06efbf31d2171104724101c149a80566c941492a5",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T02:42:38Z"
+    "timestamp": "2026-08-30T18:30:30Z"
   }
 }
