@@ -1,0 +1,84 @@
+{
+  "test_card_id": "DGV-TC-056",
+  "claim_name": "Sustained Ambiguity Holding",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-433: Premature Epistemic Collapse",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-SAH-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "collapse_reason": null,
+        "committed": false,
+        "gate_status": "HOLD",
+        "interpretations_maintained": 2,
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true
+      }
+    },
+    {
+      "case_id": "TC-SAH-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "collapse_reason": null,
+        "committed": false,
+        "gate_status": "HOLD",
+        "interpretations_maintained": 3,
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true
+      }
+    },
+    {
+      "case_id": "TC-SAH-003",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "collapse_reason": "eliminating_constraint_satisfied",
+        "committed": true,
+        "gate_status": "OPEN",
+        "interpretations_maintained": 1,
+        "pass": true,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true
+      }
+    },
+    {
+      "case_id": "TC-SAH-004",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "committed": false,
+        "gate_status": "CLOSED",
+        "interpretations_maintained": 2,
+        "pass": false,
+        "premature_collapse_detected": true,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "premature_epistemic_collapse_detected"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:f2743e3107a787ef3a83546b31438c3bb167a4a323b6e2bfd0c010cd6fa8223b",
+    "signature": "dgv-sha256:f2743e3107a787ef3a83546b31438c3bb167a4a323b6e2bfd0c010cd6fa8223b",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-08-30T02:42:38Z"
+  }
+}

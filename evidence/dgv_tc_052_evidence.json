@@ -15,8 +15,8 @@
     "Payload tampering before decryption",
     "Routing manipulation"
   ],
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +33,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:27a729eac3cf56d2cfb0175e88d58f10a746f8af23d03e504364fd965a3c31e5",
-    "signature": "dgv-sha256:27a729eac3cf56d2cfb0175e88d58f10a746f8af23d03e504364fd965a3c31e5",
+    "transaction_id": "dgv-sha256:f2c55f261c3aa45d82068f8600fec1d5fbefb098eb4f15a3666d6b31d977c3a8",
+    "signature": "dgv-sha256:f2c55f261c3aa45d82068f8600fec1d5fbefb098eb4f15a3666d6b31d977c3a8",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:04Z"
+    "timestamp": "2026-08-30T02:42:38Z"
   }
 }

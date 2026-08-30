@@ -7,8 +7,8 @@
   "required_preconditions": null,
   "compliance_refs": null,
   "threat_model_tie_in": null,
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:37Z",
   "status": "passed",
   "results": [
     {
@@ -17,31 +17,31 @@
       "runs_count": null,
       "runs_identical": null,
       "output_sample": {
-        "pass": true,
+        "aibom": {
+          "builder_uri": "https://github.com/only-engine/only-engine/.github/workflows/release.yml",
+          "model_id": "only-engine-v1.3.0",
+          "slsa_level": 2,
+          "weights_digest": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"
+        },
         "gate_status": "OPEN",
+        "indices_healed": [],
+        "key_origin": "tee_sealed",
+        "pass": true,
+        "provenance_algorithm": "Ed25519",
+        "provenance_signature": "ed25519:7d3a8f2c1e4b9d6f0a5c8e2b4d7f1a3e6c9d2f5b8e1c4a7f0d3b6e9c2a5f8d1b",
+        "provenance_verified": true,
         "rejection_reason": null,
         "residual_final": 0.0,
-        "indices_healed": [],
-        "revealed": null,
-        "provenance_signature": "ed25519:7d3a8f2c1e4b9d6f0a5c8e2b4d7f1a3e6c9d2f5b8e1c4a7f0d3b6e9c2a5f8d1b",
-        "provenance_algorithm": "Ed25519",
-        "key_origin": "tee_sealed",
-        "provenance_verified": true,
-        "aibom": {
-          "model_id": "only-engine-v1.3.0",
-          "weights_digest": "sha256:a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
-          "slsa_level": 2,
-          "builder_uri": "https://github.com/only-engine/only-engine/.github/workflows/release.yml"
-        }
+        "revealed": null
       }
     }
   ],
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:68f4dc005739816def510436c6d8ac1af31e432a4c0cecc65f24d617730e2d19",
-    "signature": "dgv-sha256:68f4dc005739816def510436c6d8ac1af31e432a4c0cecc65f24d617730e2d19",
+    "transaction_id": "dgv-sha256:2c3d545807921df4b642f71fe8cc8605c1ce331dc287fb9e4d2f90ff4112d184",
+    "signature": "dgv-sha256:2c3d545807921df4b642f71fe8cc8605c1ce331dc287fb9e4d2f90ff4112d184",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:03Z"
+    "timestamp": "2026-08-30T02:42:37Z"
   }
 }

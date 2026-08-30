@@ -1,0 +1,83 @@
+{
+  "test_card_id": "DGV-TC-058",
+  "claim_name": "Correct-but-Unauthorized Output",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-428: Unauthorized Commitment Despite Correct Output",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-CUO-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_despite_correctness": true,
+        "gate_status": "CLOSED",
+        "output_accuracy": "correct",
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "role_insufficient_for_commitment"
+      }
+    },
+    {
+      "case_id": "TC-CUO-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_despite_correctness": true,
+        "gate_status": "CLOSED",
+        "output_accuracy": "correct",
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "domain_scope_exceeded"
+      }
+    },
+    {
+      "case_id": "TC-CUO-003",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_despite_correctness": false,
+        "gate_status": "OPEN",
+        "output_accuracy": "correct",
+        "pass": true,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true
+      }
+    },
+    {
+      "case_id": "TC-CUO-004",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_despite_correctness": true,
+        "gate_status": "CLOSED",
+        "output_accuracy": "correct",
+        "pass": false,
+        "policy_override_detected": true,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "policy_override_rejected_authorization_required"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:076e12de97b0cf2b71e3b7f3946a2581a8da0f76dc11e4ec3379ab463fcc88bb",
+    "signature": "dgv-sha256:076e12de97b0cf2b71e3b7f3946a2581a8da0f76dc11e4ec3379ab463fcc88bb",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-08-30T02:42:38Z"
+  }
+}

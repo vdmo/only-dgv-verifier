@@ -16,8 +16,8 @@
     "Unauthorized deployment",
     "Stale snapshot usage"
   ],
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +33,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:0a0575632a17ee9c9885df4702b11549a427ceeff39b49066cc0efcc5159f016",
-    "signature": "dgv-sha256:0a0575632a17ee9c9885df4702b11549a427ceeff39b49066cc0efcc5159f016",
+    "transaction_id": "dgv-sha256:01556fd5b2e2544595cdbdebd60492333ac35f6747288a864d91af662a53a67f",
+    "signature": "dgv-sha256:01556fd5b2e2544595cdbdebd60492333ac35f6747288a864d91af662a53a67f",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:04Z"
+    "timestamp": "2026-08-30T02:42:38Z"
   }
 }

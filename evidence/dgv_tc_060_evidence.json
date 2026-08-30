@@ -1,0 +1,105 @@
+{
+  "test_card_id": "DGV-TC-060",
+  "claim_name": "Persistent State Consistency Across Turns",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-434: Unresolved State Silently Forgotten Across Turns",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-PSC-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "committed": false,
+        "gate_status": "HOLD",
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "turn": 1,
+        "unresolved_state_persisted": true
+      }
+    },
+    {
+      "case_id": "TC-PSC-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "committed": false,
+        "gate_status": "HOLD",
+        "pass": false,
+        "prior_burden_active": true,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "prior_unresolved_condition_still_binding",
+        "turn": 2,
+        "unresolved_state_persisted": true
+      }
+    },
+    {
+      "case_id": "TC-PSC-003",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "collapse_reason": "prior_unresolved_condition_eliminated",
+        "committed": true,
+        "gate_status": "OPEN",
+        "pass": true,
+        "prior_burden_active": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "turn": 3,
+        "unresolved_state_persisted": false
+      }
+    },
+    {
+      "case_id": "TC-PSC-004",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "committed": false,
+        "forced_forget_detected": true,
+        "gate_status": "CLOSED",
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "unresolved_state_erasure_attempted",
+        "turn": 1,
+        "unresolved_state_persisted": true
+      }
+    },
+    {
+      "case_id": "TC-PSC-005",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "committed": true,
+        "gate_status": "OPEN",
+        "pass": true,
+        "prior_burden_active": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "turn": 2,
+        "unresolved_state_persisted": false
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:8e09d7ee4b6609feceb52b1eb47b69b3fdbee3b88ed31428bb27ca70b075575f",
+    "signature": "dgv-sha256:8e09d7ee4b6609feceb52b1eb47b69b3fdbee3b88ed31428bb27ca70b075575f",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-08-30T02:42:38Z"
+  }
+}

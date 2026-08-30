@@ -7,8 +7,8 @@
   "required_preconditions": null,
   "compliance_refs": null,
   "threat_model_tie_in": null,
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:37Z",
   "status": "passed",
   "results": [
     {
@@ -17,31 +17,31 @@
       "runs_count": null,
       "runs_identical": null,
       "output_sample": {
-        "pass": false,
+        "attestation_freshness_seconds": 86400,
+        "enclave_boot_hash": "sha256:deadbeef00000000000000000000000000000000000000000000000000000000",
         "gate_status": "CLOSED",
-        "rejection_reason": "invalid_rlwe_enclave_signature",
-        "tee_provider": "software",
+        "indices_healed": [],
+        "key_origin": "software_sealed",
         "measurement": {
           "pcr0": "0000000000000000000000000000000000000000000000000000000000000000",
           "pcr1": "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969",
           "pcr2": "0000000000000000000000000000000000000000000000000000000000000000"
         },
-        "attestation_freshness_seconds": 86400,
-        "key_origin": "software_sealed",
-        "signature_algorithm": "Ed25519",
-        "enclave_boot_hash": "sha256:deadbeef00000000000000000000000000000000000000000000000000000000",
+        "pass": false,
+        "rejection_reason": "invalid_rlwe_enclave_signature",
         "residual_final": null,
-        "indices_healed": [],
-        "revealed": null
+        "revealed": null,
+        "signature_algorithm": "Ed25519",
+        "tee_provider": "software"
       }
     }
   ],
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:ec361573ccf4dd633b977db1cc0ccf28ed70c95fb8b74e3b4abb8fc00e9265a4",
-    "signature": "dgv-sha256:ec361573ccf4dd633b977db1cc0ccf28ed70c95fb8b74e3b4abb8fc00e9265a4",
+    "transaction_id": "dgv-sha256:8500ce6347c91a08c3197a559768061dbbeee172a782fa922b65ac7b8a748a3e",
+    "signature": "dgv-sha256:8500ce6347c91a08c3197a559768061dbbeee172a782fa922b65ac7b8a748a3e",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:03Z"
+    "timestamp": "2026-08-30T02:42:37Z"
   }
 }

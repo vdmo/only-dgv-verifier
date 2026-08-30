@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+*.so
+
+# Debug / probe scripts (not part of the published suite)
+probe_all_cases.py
+probe_binary.sh
+probe_expected.py
+probe_original.py
+check_results.py
+check_passes.py
+run_new_cards.sh
+run_two_cards.sh
+validate_new_cards.py
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*.Zone.Identifier

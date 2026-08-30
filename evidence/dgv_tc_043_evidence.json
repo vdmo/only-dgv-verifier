@@ -20,8 +20,8 @@
     "State-desync attacks",
     "Race conditions mutating stale state"
   ],
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
   "status": "passed",
   "results": [
     {
@@ -47,9 +47,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:12e4699f5f8a163311fbe23e7e4be4682590e044171a78d8bdab3f34c70c8348",
-    "signature": "dgv-sha256:12e4699f5f8a163311fbe23e7e4be4682590e044171a78d8bdab3f34c70c8348",
+    "transaction_id": "dgv-sha256:8b0acd301305995acec4652826b07c1e4e238790e4df6048d9356d3b10900734",
+    "signature": "dgv-sha256:8b0acd301305995acec4652826b07c1e4e238790e4df6048d9356d3b10900734",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:04Z"
+    "timestamp": "2026-08-30T02:42:38Z"
   }
 }

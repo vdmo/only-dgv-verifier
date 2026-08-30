@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dgv.dev/schemas/public-registry/v1.0.0.json",
+  "title": "DGV Public Claims Registry",
+  "description": "Append-only public registry of systems certified under the Deterministic & Governance Verified (DGV) benchmark.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "registry_version",
+    "generated_at",
+    "dgv_benchmark_version",
+    "systems"
+  ],
+  "properties": {
+    "registry_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic version of this registry document"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "UTC timestamp when this registry snapshot was produced"
+    },
+    "dgv_benchmark_version": {
+      "type": "string",
+      "description": "DGV test-suite version this registry applies to (e.g. 1.0.0)"
+    },
+    "registry_anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional cryptographic or GitOps anchor for the entire registry",
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["gitops-sha256", "scitt", "ed25519", "none"]
+        },
+        "value": { "type": "string" },
+        "verification_procedure": { "type": "string", "format": "uri" }
+      },
+      "required": ["method"]
+    },
+    "systems": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/SystemEntry" }
+    }
+  },
+  "$defs": {
+    "SystemEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "system_id",
+        "system_name",
+        "system_version",
+        "publisher",
+        "certifications"
+      ],
+      "properties": {
+        "system_id": {
+          "type": "string",
+          "minLength": 3,
+          "description": "Stable unique identifier (UUID or reverse-DNS)"
+        },
+        "system_name": { "type": "string", "minLength": 1 },
+        "system_version": { "type": "string", "minLength": 1 },
+        "publisher": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string" },
+            "url": { "type": "string", "format": "uri" },
+            "contact": { "type": "string" }
+          }
+        },
+        "description": { "type": "string" },
+        "homepage": { "type": "string", "format": "uri" },
+        "source_repository": { "type": "string", "format": "uri" },
+        "certifications": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/Certification" }
+        }
+      }
+    },
+    "Certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "claim_name",
+        "test_card_id",
+        "test_card_version",
+        "badge_status",
+        "certified_at",
+        "expires_at",
+        "evidence"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "description": "Stable claim identifier (e.g. DGV-CL-001)"
+        },
+        "claim_name": { "type": "string" },
+        "test_card_id": {
+          "type": "string",
+          "description": "e.g. DGV-TC-001"
+        },
+        "test_card_version": { "type": "string" },
+        "svrnos_layer": {
+          "type": "string",
+          "enum": [
+            "L1: Compute Substrate",
+            "L1: Authorization",
+            "L2: Component & Provenance",
+            "L2: Compute Verification",
+            "L3: Routing & Boundary",
+            "L4: Evidence Transport",
+            "L5: Session & State",
+            "L6: Risk Interpretation",
+            "L7: Application Enforcement"
+          ]
+        },
+        "ger_mapping": { "type": "string" },
+        "badge_status": {
+          "type": "string",
+          "enum": ["unverified", "verified", "gold"],
+          "description": "unverified = no evidence or failed; verified = self-attested + public evidence; gold = independent audit or cryptographic proof"
+        },
+        "scope": { "type": "string" },
+        "excluded_scope": { "type": "string" },
+        "certified_at": { "type": "string", "format": "date-time" },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "re_certification_policy": {
+          "type": "string",
+          "description": "e.g. Required on any system version change or DGV benchmark major version bump"
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["package_uri", "receipt"],
+          "properties": {
+            "package_uri": {
+              "type": "string",
+              "format": "uri",
+              "description": "URL or content-addressed path to the evidence package"
+            },
+            "receipt": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["anchor_method", "transaction_id"],
+              "properties": {
+                "anchor_method": {
+                  "type": "string",
+                  "enum": [
+                    "sha256-content-hash",
+                    "scitt",
+                    "ed25519-signed",
+                    "gitops-sha256"
+                  ]
+                },
+                "transaction_id": { "type": "string" },
+                "signature": { "type": "string" },
+                "verification_procedure": { "type": "string", "format": "uri" },
+                "timestamp": { "type": "string", "format": "date-time" }
+              }
+            },
+            "independent_audit": {
+              "type": "object",
+              "additionalProperties": false,
+              "description": "Present only for gold badge",
+              "properties": {
+                "auditor": { "type": "string" },
+                "report_uri": { "type": "string", "format": "uri" },
+                "audit_date": { "type": "string", "format": "date" },
+                "audit_digest": { "type": "string" }
+              },
+              "required": ["auditor", "report_uri", "audit_date"]
+            }
+          }
+        },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

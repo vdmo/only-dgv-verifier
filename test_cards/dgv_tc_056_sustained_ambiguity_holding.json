@@ -1,0 +1,98 @@
+{
+  "id": "DGV-TC-056",
+  "executor": "dgv-verifier",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-433: Premature Epistemic Collapse",
+  "replay_protection_required": true,
+  "claim_name": "Sustained Ambiguity Holding",
+  "claim_definition": "Verifies that when candidate output contains unresolved referents, ambiguous authority, or competing interpretations, the system maintains multiple admissible interpretations in parallel without collapsing to a single committed answer. The correct behaviour is to hold ambiguity open as live state until eliminating constraints resolve or reject candidates. Premature collapse into a single interpretation is a governance failure.",
+  "scope": "only-lang dgv-verifier CLI execution; multi-interpretation state resolution; PEF-style persistent ambiguity substrate",
+  "excluded_scope": "Inputs with a single unambiguous interpretation; cases where eliminating constraints are already present at first evaluation",
+  "test_type": "metamorphic",
+  "test_cases": [
+    {
+      "id": "TC-SAH-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "ambiguous_referents": ["sector_alpha", "sector_beta"],
+        "competing_interpretations": 2
+      },
+      "expected": {
+        "gate_status": "HOLD",
+        "interpretations_maintained": 2,
+        "committed": false,
+        "collapse_reason": null
+      },
+      "mandatory": true,
+      "description": "Two admissible interpretations exist for the same input. The system must maintain both without committing to either. Gate status HOLD indicates sustained ambiguity, not refusal or approval."
+    },
+    {
+      "id": "TC-SAH-002",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "ambiguous_referents": ["sector_alpha", "sector_beta", "sector_gamma"],
+        "competing_interpretations": 3
+      },
+      "expected": {
+        "gate_status": "HOLD",
+        "interpretations_maintained": 3,
+        "committed": false,
+        "collapse_reason": null
+      },
+      "mandatory": true,
+      "description": "Three admissible interpretations. The system must scale sustained holding to N interpretations without forcing collapse. Confirms the holding mechanism is not limited to binary ambiguity."
+    },
+    {
+      "id": "TC-SAH-003",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "ambiguous_referents": ["sector_alpha", "sector_beta"],
+        "competing_interpretations": 2,
+        "eliminating_constraint": "sector_beta_rejected"
+      },
+      "expected": {
+        "gate_status": "OPEN",
+        "interpretations_maintained": 1,
+        "committed": true,
+        "collapse_reason": "eliminating_constraint_satisfied"
+      },
+      "mandatory": true,
+      "description": "Metamorphic: same input as TC-SAH-001 but with an eliminating constraint that rejects one interpretation. The system must now collapse to the remaining candidate and open the gate. Proves the system can distinguish sustained ambiguity from resolved ambiguity."
+    },
+    {
+      "id": "TC-SAH-004",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "ambiguous_referents": ["sector_alpha", "sector_beta"],
+        "competing_interpretations": 2,
+        "force_collapse": true
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "premature_epistemic_collapse_detected",
+        "interpretations_maintained": 2,
+        "committed": false
+      },
+      "mandatory": true,
+      "description": "Negative control: the system is instructed to collapse ambiguity prematurely. The governance layer must detect the forced collapse, block it, and maintain the original interpretations. Proves the holding invariant is enforced, not optional."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "interpretations_maintained",
+    "committed",
+    "collapse_reason",
+    "premature_collapse_detected"
+  ],
+  "pass_threshold": {
+    "sustained_holding_enforced": true,
+    "premature_collapse_blocked": true,
+    "eliminating_constraint_resolution_verified": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-27T00:00:00Z"
+}

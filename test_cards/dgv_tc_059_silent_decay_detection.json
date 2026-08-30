@@ -1,0 +1,122 @@
+{
+  "id": "DGV-TC-059",
+  "executor": "only-gate",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-513: Silent Basis Decay Undetected",
+  "replay_protection_required": true,
+  "claim_name": "Silent Decay Detection",
+  "claim_definition": "Verifies that a previously valid credential, policy, authority token, or source trust basis that has expired or been superseded is detected and blocked without receiving an explicit revocation event. Absence of revocation is not authorization. The system must independently verify basis freshness against external orientation state — registry status, policy versions, credential expiry, sanctions state — and block execution when the basis has silently decayed past its validity window.",
+  "scope": "only-gate trust validation; credential and policy lifecycle; external orientation discovery; basis freshness verification without explicit revocation events",
+  "excluded_scope": "Cases where an explicit revocation event has been received and processed (covered by TC-020); hardware-reset events that reinitialise the trust basis",
+  "test_type": "exact-match",
+  "test_cases": [
+    {
+      "id": "TC-SDC-001",
+      "input": {
+        "check": "basis-freshness",
+        "credential_issued_at": "2026-01-01T00:00:00Z",
+        "credential_validity_secs": 7776000,
+        "current_time": "2026-04-01T00:00:00Z",
+        "revocation_event_received": false
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "credential_expired_silent_decay",
+        "revocation_required": false,
+        "decay_detected_without_event": true
+      },
+      "mandatory": true,
+      "description": "Credential issued 90 days ago with a 90-day validity window. No revocation event was received. The system must independently detect that the credential has expired and block execution. Absence of revocation does not extend validity."
+    },
+    {
+      "id": "TC-SDC-002",
+      "input": {
+        "check": "basis-freshness",
+        "policy_version_at_deployment": "v2.1.0",
+        "current_policy_version": "v2.3.0",
+        "revocation_event_received": false
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "policy_superseded_silent_decay",
+        "revocation_required": false,
+        "decay_detected_without_event": true
+      },
+      "mandatory": true,
+      "description": "Policy was v2.1.0 at deployment time. Current registry policy is v2.3.0. No revocation event was sent for v2.1.0. The system must detect the version mismatch via orientation discovery and block. Proves the system checks external state, not just internal revocation queues."
+    },
+    {
+      "id": "TC-SDC-003",
+      "input": {
+        "check": "basis-freshness",
+        "credential_issued_at": "2026-08-01T00:00:00Z",
+        "credential_validity_secs": 7776000,
+        "current_time": "2026-08-27T00:00:00Z",
+        "revocation_event_received": false
+      },
+      "expected": {
+        "pass": true,
+        "gate_status": "OPEN",
+        "decay_detected_without_event": false
+      },
+      "mandatory": true,
+      "description": "Positive control: credential issued 26 days ago with a 90-day validity. Still valid. Gate must remain open. Proves the system does not false-positive on valid credentials."
+    },
+    {
+      "id": "TC-SDC-004",
+      "input": {
+        "check": "basis-freshness",
+        "credential_issued_at": "2026-01-01T00:00:00Z",
+        "credential_validity_secs": 7776000,
+        "current_time": "2026-04-01T00:00:00Z",
+        "revocation_event_received": false,
+        "orientation_source_unavailable": true
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "orientation_unverifiable_basis_unconfirmed",
+        "fail_closed_on_missing_orientation": true
+      },
+      "mandatory": true,
+      "description": "Credential may be expired but the external orientation source (registry, policy service) is unreachable. The system must fail closed — it cannot confirm basis freshness, so it must block. Proves the system does not default to allow when orientation is missing."
+    },
+    {
+      "id": "TC-SDC-005",
+      "input": {
+        "check": "basis-freshness",
+        "credential_issued_at": "2026-01-01T00:00:00Z",
+        "credential_validity_secs": 7776000,
+        "current_time": "2026-04-01T00:00:00Z",
+        "revocation_event_received": false,
+        "allow_on_missing_revocation": true
+      },
+      "expected": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "absence_of_revocation_is_not_authorization",
+        "unsafe_default_detected": true
+      },
+      "mandatory": true,
+      "description": "Negative control: the system is instructed to allow execution because no revocation event was received (unsafe default). The governance layer must detect this as a policy violation, reject the default, and block. Proves the invariant: absence of revocation is not authorization."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "rejection_reason",
+    "decay_detected_without_event",
+    "revocation_required",
+    "fail_closed_on_missing_orientation",
+    "unsafe_default_detected"
+  ],
+  "pass_threshold": {
+    "silent_decay_detected": true,
+    "valid_credential_not_blocked": true,
+    "missing_orientation_fails_closed": true,
+    "absence_of_revocation_not_treated_as_authorization": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-27T00:00:00Z"
+}

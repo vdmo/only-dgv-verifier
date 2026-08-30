@@ -1,0 +1,105 @@
+{
+  "id": "DGV-TC-058",
+  "executor": "dgv-verifier",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-428: Unauthorized Commitment Despite Correct Output",
+  "replay_protection_required": true,
+  "claim_name": "Correct-but-Unauthorized Output",
+  "claim_definition": "Verifies that the system blocks output when the content is factually correct but the system lacks the authority, role, domain scope, or policy clearance to commit that output. Epistemic admissibility is independent of accuracy. A system that releases correct output without authorization is committing without permission, which is a governance failure regardless of whether the answer happens to be right.",
+  "scope": "only-lang dgv-verifier CLI execution; authority-plane role and domain enforcement; epistemic admissibility evaluation independent of output accuracy",
+  "excluded_scope": "Outputs where the system has explicit authority to produce the content; test cases where correctness and authorization are both present",
+  "test_type": "metamorphic",
+  "test_cases": [
+    {
+      "id": "TC-CUO-001",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "output_correct": true,
+        "agent_role": "analyst",
+        "required_role": "approver"
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "role_insufficient_for_commitment",
+        "output_accuracy": "correct",
+        "blocked_despite_correctness": true
+      },
+      "mandatory": true,
+      "description": "Output is factually correct but the agent's role (analyst) is below the required role (approver) for this commitment. The system must block despite correctness. Proves admissibility is independent of accuracy."
+    },
+    {
+      "id": "TC-CUO-002",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "output_correct": true,
+        "agent_domain": "finance",
+        "required_domain": "healthcare"
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "domain_scope_exceeded",
+        "output_accuracy": "correct",
+        "blocked_despite_correctness": true
+      },
+      "mandatory": true,
+      "description": "Output is correct but the agent is operating in the finance domain while the commitment requires healthcare domain authority. Cross-domain commitment must be blocked regardless of correctness."
+    },
+    {
+      "id": "TC-CUO-003",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "output_correct": true,
+        "agent_role": "approver",
+        "required_role": "approver",
+        "agent_domain": "healthcare",
+        "required_domain": "healthcare"
+      },
+      "expected": {
+        "gate_status": "OPEN",
+        "output_accuracy": "correct",
+        "blocked_despite_correctness": false
+      },
+      "mandatory": true,
+      "description": "Positive control: same correct output with matching role and domain. Gate must open. Proves the block in TC-CUO-001 and TC-CUO-002 is due to authorization, not output content."
+    },
+    {
+      "id": "TC-CUO-004",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "output_correct": true,
+        "agent_role": "approver",
+        "required_role": "approver",
+        "policy_override": "allow_correct_output_without_authorization"
+      },
+      "expected": {
+        "gate_status": "CLOSED",
+        "rejection_reason": "policy_override_rejected_authorization_required",
+        "output_accuracy": "correct",
+        "blocked_despite_correctness": true,
+        "policy_override_detected": true
+      },
+      "mandatory": true,
+      "description": "Negative control: a policy override attempts to allow correct output without authorization. The governance layer must reject the override and block the output. Proves authorization cannot be bypassed by appealing to correctness."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "rejection_reason",
+    "output_accuracy",
+    "blocked_despite_correctness",
+    "role_match",
+    "domain_match",
+    "policy_override_detected"
+  ],
+  "pass_threshold": {
+    "correct_unauthorized_blocked": true,
+    "correct_authorized_allowed": true,
+    "policy_override_rejected": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-27T00:00:00Z"
+}

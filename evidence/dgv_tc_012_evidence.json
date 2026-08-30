@@ -7,8 +7,8 @@
   "required_preconditions": null,
   "compliance_refs": null,
   "threat_model_tie_in": null,
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:37Z",
   "status": "passed",
   "results": [
     {
@@ -17,11 +17,11 @@
       "runs_count": null,
       "runs_identical": null,
       "output_sample": {
-        "pass": false,
         "gate_status": "CLOSED",
+        "indices_healed": [],
+        "pass": false,
         "rejection_reason": "adversarial_prompt_injection_detected",
         "residual_final": null,
-        "indices_healed": [],
         "revealed": null
       }
     },
@@ -31,11 +31,11 @@
       "runs_count": null,
       "runs_identical": null,
       "output_sample": {
-        "pass": false,
         "gate_status": "CLOSED",
+        "indices_healed": [],
+        "pass": false,
         "rejection_reason": "adversarial_prompt_injection_detected",
         "residual_final": null,
-        "indices_healed": [],
         "revealed": null
       }
     },
@@ -45,42 +45,42 @@
       "runs_count": null,
       "runs_identical": null,
       "output_sample": {
-        "pass": true,
-        "gate_status": "OPEN",
-        "residual_final": 0.0,
-        "residual_history": [
-          "0.000000"
-        ],
-        "indices_healed": [
-          2
-        ],
-        "revealed": -4723.371916,
         "audit_history": [
           {
             "action": "evaluate",
             "status": "verified"
           }
         ],
-        "provenance_signature": "ed25519:authentic",
-        "provenance_verified": true,
+        "disparate_impact_ratio": 1.0,
+        "drift": 0.0,
         "explanation_trace": {
           "resolved_rules": [
             "CORE-MATH"
           ]
         },
-        "disparate_impact_ratio": 1.0,
+        "gate_status": "OPEN",
+        "indices_healed": [
+          2
+        ],
         "log_complete": true,
-        "revealed_matches": true,
-        "drift": 0.0
+        "pass": true,
+        "provenance_signature": "ed25519:authentic",
+        "provenance_verified": true,
+        "residual_final": 0.0,
+        "residual_history": [
+          "0.000000"
+        ],
+        "revealed": 1000.0000000000009,
+        "revealed_matches": true
       }
     }
   ],
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:1fbb4c43f29379f212e7d4e454d77585919f552ee53325705cc6f4a5fcc8c1d2",
-    "signature": "dgv-sha256:1fbb4c43f29379f212e7d4e454d77585919f552ee53325705cc6f4a5fcc8c1d2",
+    "transaction_id": "dgv-sha256:8b839021edd1cdc260b175220857fbb27a468509300f51a1f468e795bb12cb15",
+    "signature": "dgv-sha256:8b839021edd1cdc260b175220857fbb27a468509300f51a1f468e795bb12cb15",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:03Z"
+    "timestamp": "2026-08-30T02:42:37Z"
   }
 }

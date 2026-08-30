@@ -1,0 +1,129 @@
+{
+  "id": "DGV-TC-060",
+  "executor": "dgv-verifier",
+  "svrnos_layer": "L5: Session & State",
+  "ger_mapping": "GER-434: Unresolved State Silently Forgotten Across Turns",
+  "replay_protection_required": true,
+  "claim_name": "Persistent State Consistency Across Turns",
+  "claim_definition": "Verifies that unresolved conditions, ambiguity burdens, and inadmissibility states from prior turns persist across subsequent turns and continue to constrain commitment decisions. A system that silently forgets an unresolved condition from turn 1 and allows commitment in turn 3 is committing without resolving the original admissibility burden. The persistent epistemic state substrate must distinguish active, unresolved, potential, echo, and reconstructed state — and unresolved state must remain binding until eliminated by admissibility constraints, not erased by the passage of turns.",
+  "scope": "only-lang dgv-verifier CLI execution; multi-turn session state; PEF-style persistent epistemic substrate; cross-turn admissibility burden tracking",
+  "excluded_scope": "Stateless API calls with no session context; single-turn evaluations where no prior unresolved state exists",
+  "test_type": "metamorphic",
+  "test_cases": [
+    {
+      "id": "TC-PSC-001",
+      "input": {
+        "turn": 1,
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "unresolved_condition": "ambiguous_referent_sector_alpha",
+        "gate_status_turn1": "HOLD"
+      },
+      "expected": {
+        "turn": 1,
+        "gate_status": "HOLD",
+        "unresolved_state_persisted": true,
+        "committed": false
+      },
+      "mandatory": true,
+      "description": "Turn 1: input contains an unresolved referent. The system must hold and persist the unresolved state. This establishes the admissibility burden that must carry forward."
+    },
+    {
+      "id": "TC-PSC-002",
+      "input": {
+        "turn": 2,
+        "session_id": "same_as_turn_1",
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "no_reference_to_prior_ambiguity": true
+      },
+      "expected": {
+        "turn": 2,
+        "gate_status": "HOLD",
+        "unresolved_state_persisted": true,
+        "prior_burden_active": true,
+        "committed": false,
+        "rejection_reason": "prior_unresolved_condition_still_binding"
+      },
+      "mandatory": true,
+      "description": "Turn 2: new input in the same session does not reference the prior ambiguity. The system must still hold because the unresolved condition from turn 1 is still binding. Proves the system does not silently forget unresolved state across turns."
+    },
+    {
+      "id": "TC-PSC-003",
+      "input": {
+        "turn": 3,
+        "session_id": "same_as_turn_1",
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "eliminating_constraint": "ambiguous_referent_sector_alpha_resolved"
+      },
+      "expected": {
+        "turn": 3,
+        "gate_status": "OPEN",
+        "unresolved_state_persisted": false,
+        "prior_burden_active": false,
+        "committed": true,
+        "collapse_reason": "prior_unresolved_condition_eliminated"
+      },
+      "mandatory": true,
+      "description": "Turn 3: an eliminating constraint resolves the ambiguity from turn 1. The system must now open the gate because the prior admissibility burden has been resolved. Proves the system tracks burden resolution, not just burden persistence."
+    },
+    {
+      "id": "TC-PSC-004",
+      "input": {
+        "turn": 1,
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "unresolved_condition": "ambiguous_referent_sector_alpha",
+        "gate_status_turn1": "HOLD",
+        "force_forget_unresolved": true
+      },
+      "expected": {
+        "turn": 1,
+        "gate_status": "CLOSED",
+        "rejection_reason": "unresolved_state_erasure_attempted",
+        "unresolved_state_persisted": true,
+        "committed": false,
+        "forced_forget_detected": true
+      },
+      "mandatory": true,
+      "description": "Negative control: the system is instructed to forget the unresolved condition. The governance layer must detect the erasure attempt, block it, and preserve the unresolved state. Proves the persistence invariant is enforced, not optional."
+    },
+    {
+      "id": "TC-PSC-005",
+      "input": {
+        "turn": 2,
+        "session_id": "different_session",
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "turn": 2,
+        "gate_status": "OPEN",
+        "unresolved_state_persisted": false,
+        "prior_burden_active": false,
+        "committed": true
+      },
+      "mandatory": true,
+      "description": "Cross-session control: same input as TC-PSC-002 but in a different session. No prior unresolved state exists. Gate must open. Proves the persistence is session-scoped — the system does not hallucinate unresolved state from unrelated sessions."
+    }
+  ],
+  "metrics": [
+    "gate_status",
+    "unresolved_state_persisted",
+    "prior_burden_active",
+    "committed",
+    "collapse_reason",
+    "forced_forget_detected",
+    "session_isolation_verified"
+  ],
+  "pass_threshold": {
+    "unresolved_state_persists_across_turns": true,
+    "prior_burden_constrains_future_commitments": true,
+    "burden_resolution_tracked": true,
+    "forced_erasure_blocked": true,
+    "session_isolation_enforced": true
+  },
+  "version": "0.5.0",
+  "expiry": "2028-06-27T00:00:00Z"
+}

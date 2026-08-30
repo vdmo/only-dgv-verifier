@@ -7,8 +7,8 @@
   "required_preconditions": null,
   "compliance_refs": null,
   "threat_model_tie_in": null,
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:37Z",
   "status": "passed",
   "results": [
     {
@@ -17,11 +17,11 @@
       "runs_count": null,
       "runs_identical": null,
       "output_sample": {
-        "pass": false,
         "gate_status": "CLOSED",
+        "indices_healed": [],
+        "pass": false,
         "rejection_reason": "token_double_spend_detected",
         "residual_final": null,
-        "indices_healed": [],
         "revealed": null
       }
     }
@@ -29,9 +29,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:64123d500d77e3780859af3e759f2f6f47473a92e9f0c0ab4f506abfc245d25e",
-    "signature": "dgv-sha256:64123d500d77e3780859af3e759f2f6f47473a92e9f0c0ab4f506abfc245d25e",
+    "transaction_id": "dgv-sha256:6a7e27e52cb6491cb23aabd00436d9787736fa26f869ea03814d31e9967c9d8e",
+    "signature": "dgv-sha256:6a7e27e52cb6491cb23aabd00436d9787736fa26f869ea03814d31e9967c9d8e",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:03Z"
+    "timestamp": "2026-08-30T02:42:37Z"
   }
 }

@@ -1,0 +1,101 @@
+{
+  "test_card_id": "DGV-TC-057",
+  "claim_name": "Lawful Continuation After Block",
+  "svrnos_layer": "L7: Application Enforcement",
+  "ger_mapping": "GER-503: Governed Continuation Path Absent",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-LCB-001",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_state_preserved": true,
+        "continuation_path": "request_clarification",
+        "gate_status": "CLOSED",
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "insufficient_evidence"
+      }
+    },
+    {
+      "case_id": "TC-LCB-002",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_state_preserved": true,
+        "continuation_path": "request_reattestation",
+        "gate_status": "CLOSED",
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "missing_authority"
+      }
+    },
+    {
+      "case_id": "TC-LCB-003",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_state_preserved": true,
+        "continuation_path": "escalate_to_human",
+        "gate_status": "CLOSED",
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "high_consequence_no_basis"
+      }
+    },
+    {
+      "case_id": "TC-LCB-004",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_state_preserved": true,
+        "continuation_path": "request_freshness_restoration",
+        "gate_status": "CLOSED",
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "stale_information",
+        "retry_permitted_after_refresh": true
+      }
+    },
+    {
+      "case_id": "TC-LCB-005",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "blocked_state_preserved": true,
+        "continuation_path": "request_clarification",
+        "continuation_path_absent_detected": true,
+        "gate_status": "CLOSED",
+        "governance_violation": true,
+        "pass": false,
+        "provenance_signature": "ed25519:authentic_core",
+        "provenance_verified": true,
+        "rejection_reason": "insufficient_evidence"
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:09627e4dec622ed9ee7e406a791f08c32157a0a12e0ae88c800a2ebc70b5470c",
+    "signature": "dgv-sha256:09627e4dec622ed9ee7e406a791f08c32157a0a12e0ae88c800a2ebc70b5470c",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-08-30T02:42:38Z"
+  }
+}

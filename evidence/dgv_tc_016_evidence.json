@@ -7,8 +7,8 @@
   "required_preconditions": null,
   "compliance_refs": null,
   "threat_model_tie_in": null,
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:03Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:37Z",
   "status": "passed",
   "results": [
     {
@@ -17,28 +17,28 @@
       "runs_count": null,
       "runs_identical": null,
       "output_sample": {
-        "pass": false,
-        "gate_status": "CLOSED",
-        "rejection_reason": "invalid_codon_delegation_lineage",
+        "chain_leaf_id": "spiffe://only-engine/sub-agent-7f3a",
+        "chain_root_id": "spiffe://only-engine/orchestrator",
         "delegation_chain_depth": 3,
         "delegation_chain_valid": false,
-        "chain_root_id": "spiffe://only-engine/orchestrator",
-        "chain_leaf_id": "spiffe://only-engine/sub-agent-7f3a",
-        "scope_monotonic": false,
-        "scope_violation": "sub_agent_scope_exceeds_orchestrator",
-        "manifest_artifact_8_present": true,
-        "residual_final": null,
+        "gate_status": "CLOSED",
         "indices_healed": [],
-        "revealed": null
+        "manifest_artifact_8_present": true,
+        "pass": false,
+        "rejection_reason": "invalid_codon_delegation_lineage",
+        "residual_final": null,
+        "revealed": null,
+        "scope_monotonic": false,
+        "scope_violation": "sub_agent_scope_exceeds_orchestrator"
       }
     }
   ],
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:17df0289fd6549e01a5dc9249dc813b29796e73b85dd2c15c47fda77bcfebe5e",
-    "signature": "dgv-sha256:17df0289fd6549e01a5dc9249dc813b29796e73b85dd2c15c47fda77bcfebe5e",
+    "transaction_id": "dgv-sha256:cd869b4214ced4b5dd9c84f8b696e350707185e8f09d2110fb73ad8b4a593316",
+    "signature": "dgv-sha256:cd869b4214ced4b5dd9c84f8b696e350707185e8f09d2110fb73ad8b4a593316",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:03Z"
+    "timestamp": "2026-08-30T02:42:37Z"
   }
 }

@@ -15,8 +15,8 @@
     "Container escape",
     "Unauthorized filesystem access"
   ],
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +33,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:02096c705d5365f07ec2da9ce7fe7e56cb9192f792e986187d20ee9bca2ba59c",
-    "signature": "dgv-sha256:02096c705d5365f07ec2da9ce7fe7e56cb9192f792e986187d20ee9bca2ba59c",
+    "transaction_id": "dgv-sha256:886cedd84b9f19e168ce22e99650ba793230e37a7d6d54f5aab730746cfdd27f",
+    "signature": "dgv-sha256:886cedd84b9f19e168ce22e99650ba793230e37a7d6d54f5aab730746cfdd27f",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:04Z"
+    "timestamp": "2026-08-30T02:42:38Z"
   }
 }

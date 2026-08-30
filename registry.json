@@ -1,0 +1,1118 @@
+{
+  "registry_version": "1.0.0",
+  "generated_at": "2026-08-30T02:46:16Z",
+  "dgv_benchmark_version": "1.0.0",
+  "systems": [
+    {
+      "system_id": "only-engine",
+      "system_name": "Only Engine",
+      "system_version": "1.3.0",
+      "publisher": {
+        "name": "PIR Institute",
+        "url": "https://github.com/vdmo"
+      },
+      "description": "Deterministic AI agent runtime with governance enforcement",
+      "source_repository": "https://github.com/vdmo/only-engine",
+      "certifications": [
+        {
+          "claim_id": "DGV-CL-001",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-001",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_001_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:f042abd03dea6123880e851f345986cc319b6e543b5e96e4c298677cdad96a8f",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-002",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-002",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_002_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:cc9574868e65d0ecca630d3b0976c2d2e9242a0230f5b1fa45a129d955a5bd3b",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-003",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-003",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_003_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:991b8bdef2d1a925c8d77447cd4eaa2a521ac19bde102aca0c15dc9fcf6eaf17",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-004",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-004",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_004_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:ec04ec516c95e9e660701803981741279ccc8e6298514bb39ace087089b9e99e",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-005",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-005",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_005_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:b97d14d6f16141b12fdaf8c49e970f70a3e6cbc1389ad7b04cbb9a1eecb31c50",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-006",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-006",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L4: Evidence Transport",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_006_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:82f2a219d23c90f8554e7a450eca633170e09e9df70daff755e35c4665a90a8e",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-007",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-007",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_007_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:75bc989bc9ebe6e4d372149c652041865ba7a625770d15e360b87a0f1510597b",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-008",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-008",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_008_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:50f90859195023944af063ab4447bec9f3652fffe435345edd55214951ee28b4",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-009",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-009",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_009_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:3d1c8f9b9bc35925d834d82f56f550b4831702e265ed2cf9ca439a8fe3b2117c",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-010",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-010",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_010_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:0bf868a508b74c623a58a5fe8e63e48fa561059a9190bf75033a2dc663b2e686",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-011",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-011",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_011_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:c95083401be622fe3100454810a60656fd99b14d4df49604bd10c964f63cc422",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-012",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-012",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L3: Routing & Boundary",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_012_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:8b839021edd1cdc260b175220857fbb27a468509300f51a1f468e795bb12cb15",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-012",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-012",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Authorization",
+          "badge_status": "verified",
+          "certified_at": "2026-07-28T16:58:04Z",
+          "expires_at": "2027-07-28T16:58:04Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_012_llm_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "llm-sha256:a83973717514e9a36295930e0274e4352327d102a5e1dd303fd9a2f1e2d2d63d",
+              "timestamp": "2026-07-28T16:58:04Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-013",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-013",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_013_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:2e6da76aebf5586460bad773012f4e4f7d43f35154271e9594fa8947fca92a21",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-014",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-014",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_014_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:2c3d545807921df4b642f71fe8cc8605c1ce331dc287fb9e4d2f90ff4112d184",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-015",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-015",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L4: Evidence Transport",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_015_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:27297699b43321d154fe8a006b9216fbfdc3d1d29f96fcf66535756828c7446c",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-016",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-016",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_016_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:cd869b4214ced4b5dd9c84f8b696e350707185e8f09d2110fb73ad8b4a593316",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-017",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-017",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Compute Substrate",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_017_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:8500ce6347c91a08c3197a559768061dbbeee172a782fa922b65ac7b8a748a3e",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-018",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-018",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_018_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:fa7a6bccbb42259e715477bfc47da39ea40ff3aa86f14a220836c680e4f0c8b5",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-019",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-019",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_019_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:01fd967d2fe47e18809169fdaa79f3a42eba05806ce82a906104a4df1300aaf2",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-020",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-020",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_020_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:95ddbfd8f7bf2f45ffaa8218aded0f2bbe7e093dceefb10cca69831b5a1c7e22",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-021",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-021",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_021_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:36e1a8bcce4ef18b60e6e90d3cc96dd98065a187265b2967bf8e9392f02a3f53",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-022",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-022",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_022_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:6a7e27e52cb6491cb23aabd00436d9787736fa26f869ea03814d31e9967c9d8e",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-023",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-023",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_023_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:1baa794fbe58cbe5f29a6080a71e3426af63f97ce91a9c81702775b9997fa9bb",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-024",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-024",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_024_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:f58e848c25b59c2c4dc65f7ac867cb66e1e946c58b6f0480d2192d469335677e",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-025",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-025",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_025_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:b7a59a0fa34228ca2115d50141b83d8fde48005908739754b4cbfdd7f723104d",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-026",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-026",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_026_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:5bf603e08ac736b0afa76816aa790ab92f9fc6e52d98f997aa41c84d8d439c2e",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-027",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-027",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Compute Verification",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_027_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:2dcc830906206194a54f7fa26a0e4d49bb888b50344791f43bec4154dde6e96e",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-028",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-028",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Authorization",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_028_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:999fa891c5174fff0d1656de8168d4707f3ed0a8f8702109310beb828a7111aa",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-029",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-029",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_029_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:35934a1fe3f1c81f58231835fc29af2ce5c6d099f2b7415a9d23477a0938d069",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-030",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-030",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L4: Evidence Transport",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_030_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:dc7b2fd29380fe4bc426febaff3e6da8375c733b3ee6a7d37992a8b94190cb13",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-031",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-031",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_031_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:015c0df08f3e9a2aea33a8ffbf48443fe92ebdfd91c9df65998ad05a6a7bf42a",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-032",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-032",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_032_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:13c2bfb52baad7de7d127f92005e56c1cb6e53abd5e82fc7e9af466d6c3aed64",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-033",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-033",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L3: Routing & Boundary",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:37Z",
+          "expires_at": "2027-08-30T02:42:37Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_033_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:48789c3c1fcf0bc9a01e1e3a96ad80789c1e29f2bd8494bd7927640811bb0fa6",
+              "timestamp": "2026-08-30T02:42:37Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-034",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-034",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Compute Substrate",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_034_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:82a04a2c56107e0b6751504501afd45be1b4e9fccdcb4f9a6da950fc446d91e3",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-035",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-035",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L4: Evidence Transport",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_035_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:6c69035438bf9cf5de15d6b54fcd3ca574890d4631af49d2d5d62ee5de97406d",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-036",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-036",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_036_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:a7222db712f2286e333b210445189659aa13c1324d88010bf7017225bad0f732",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-037",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-037",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_037_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:727024ff8eb81529ec24344130a321624163369c06889f2359953b43657c3be5",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-038",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-038",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_038_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:39757b85a00ce9ee26acf35356f6d71a04e050c0d0f15615748e82da69a79954",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-039",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-039",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L4: Evidence Transport",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_039_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:cf06d67a2802a6bcb47f56c8185ce761dcba38001e3c5aa4c2d09cadbb5adb5f",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-040",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-040",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Compute Substrate",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_040_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:082b816ea4debf178df464234bb4fc3a73700136a930be374aefc75843cf5f87",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-041",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-041",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Compute Substrate",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_041_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:bf238862c0806b52feeba36afb6c6f5328f9193dd443d3350b15da30098b66e8",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-042",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-042",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_042_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:1316e9ff43c472c359e6545de503c02105818efb031bd9354c5b2d98df143322",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-043",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-043",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_043_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:8b0acd301305995acec4652826b07c1e4e238790e4df6048d9356d3b10900734",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-044",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-044",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Compute Substrate",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_044_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:886cedd84b9f19e168ce22e99650ba793230e37a7d6d54f5aab730746cfdd27f",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-045",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-045",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_045_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:0b5a864e14ef437884313ab5855589b69f9a5f13e0b75bca0d99d485be8ef428",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-046",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-046",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L4: Evidence Transport",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_046_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:c7c38361b218d9af8ead911ff9d99a14c7c472292f388c182ac5413d526bcec2",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-047",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-047",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Compute Substrate",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_047_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:d54016673f33ba485c5ee3bed464640a6218fe51fdcbd253e368f6fcab266afe",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-048",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-048",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L1: Compute Substrate",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_048_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:8c4956c110aabaccedc6913b246c446ae45d9fd394b7c7efffe3476dacfc9fb0",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-049",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-049",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L4: Evidence Transport",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_049_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:a2e42c0d1f633aec4838e807f1a6e0acb50199ba2fd233fe1c7cbb3e431c8f51",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-050",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-050",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_050_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:01556fd5b2e2544595cdbdebd60492333ac35f6747288a864d91af662a53a67f",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-051",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-051",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_051_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:4cb9a95bd3b89ef5474e49479d1fa884428920adcc6c752d093b13fd818a3ed5",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-052",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-052",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L3: Routing & Boundary",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_052_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:f2c55f261c3aa45d82068f8600fec1d5fbefb098eb4f15a3666d6b31d977c3a8",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-053",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-053",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_053_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:98eeb00cf4a25910f19c04602378cc9ac6502ecfd3f02390eb25303b50219dee",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-054",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-054",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_054_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:ce9898de079e6651d7f94474c0131002dfc0dfdb3a4ddb008c395782c363ff28",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-055",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-055",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_055_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:d3909f89f39621353236765eac3e4a98524b408f78ab7d0d176b45f7aed3ede8",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-056",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-056",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_056_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:f2743e3107a787ef3a83546b31438c3bb167a4a323b6e2bfd0c010cd6fa8223b",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-057",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-057",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L7: Application Enforcement",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_057_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:09627e4dec622ed9ee7e406a791f08c32157a0a12e0ae88c800a2ebc70b5470c",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-058",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-058",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_058_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:076e12de97b0cf2b71e3b7f3946a2581a8da0f76dc11e4ec3379ab463fcc88bb",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-059",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-059",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_059_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:81886f01b8b848aa1e1143b87b6d1cd422df35abd8646aec5785df1d1724372e",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-060",
+          "claim_name": "",
+          "test_card_id": "DGV-TC-060",
+          "test_card_version": "1.0.0",
+          "svrnos_layer": "L5: Session & State",
+          "badge_status": "verified",
+          "certified_at": "2026-08-30T02:42:38Z",
+          "expires_at": "2027-08-30T02:42:38Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_060_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:8e09d7ee4b6609feceb52b1eb47b69b3fdbee3b88ed31428bb27ca70b075575f",
+              "timestamp": "2026-08-30T02:42:38Z"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

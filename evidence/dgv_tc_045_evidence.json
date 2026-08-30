@@ -15,8 +15,8 @@
     "Session hijacking",
     "Replay attacks across nodes"
   ],
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +33,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:d7c971d6b67eebf14195b529aa5efcd47382fdce269fff055746e799e5f38ae0",
-    "signature": "dgv-sha256:d7c971d6b67eebf14195b529aa5efcd47382fdce269fff055746e799e5f38ae0",
+    "transaction_id": "dgv-sha256:0b5a864e14ef437884313ab5855589b69f9a5f13e0b75bca0d99d485be8ef428",
+    "signature": "dgv-sha256:0b5a864e14ef437884313ab5855589b69f9a5f13e0b75bca0d99d485be8ef428",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:04Z"
+    "timestamp": "2026-08-30T02:42:38Z"
   }
 }

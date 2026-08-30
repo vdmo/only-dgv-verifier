@@ -15,8 +15,8 @@
     "Man-in-the-middle attacks",
     "Silent data corruption in transit"
   ],
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +33,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:7a8fe622241784ca4275235a2e19d39f300628641cd752eadb2727f219740189",
-    "signature": "dgv-sha256:7a8fe622241784ca4275235a2e19d39f300628641cd752eadb2727f219740189",
+    "transaction_id": "dgv-sha256:c7c38361b218d9af8ead911ff9d99a14c7c472292f388c182ac5413d526bcec2",
+    "signature": "dgv-sha256:c7c38361b218d9af8ead911ff9d99a14c7c472292f388c182ac5413d526bcec2",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:04Z"
+    "timestamp": "2026-08-30T02:42:38Z"
   }
 }

@@ -15,8 +15,8 @@
     "Session hijacking post-login",
     "Insider threat execution"
   ],
-  "benchmark_version": "0.7.0",
-  "verified_timestamp": "2026-07-28T16:40:04Z",
+  "benchmark_version": "1.0.0",
+  "verified_timestamp": "2026-08-30T02:42:38Z",
   "status": "passed",
   "results": [
     {
@@ -33,9 +33,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:81be4549a6a31238b3275f43e9c26d63aaf353ff2e2426b6d35c2791cfabe6a5",
-    "signature": "dgv-sha256:81be4549a6a31238b3275f43e9c26d63aaf353ff2e2426b6d35c2791cfabe6a5",
+    "transaction_id": "dgv-sha256:ce9898de079e6651d7f94474c0131002dfc0dfdb3a4ddb008c395782c363ff28",
+    "signature": "dgv-sha256:ce9898de079e6651d7f94474c0131002dfc0dfdb3a4ddb008c395782c363ff28",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-07-28T16:40:04Z"
+    "timestamp": "2026-08-30T02:42:38Z"
   }
 }

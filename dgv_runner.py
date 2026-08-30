@@ -166,7 +166,7 @@ def main():
         )
 
     print(f"Found dgv-verifier binary at: {bin_path}")
-    print("Starting DGV Verification Suite v0.7.0...")
+    print("Starting DGV Verification Suite v1.0.0...")
 
     overall_success = True
 
@@ -269,7 +269,7 @@ def main():
                 "required_preconditions": card.get("required_preconditions"),
                 "compliance_refs": card.get("compliance_refs"),
                 "threat_model_tie_in": card.get("threat_model_tie_in"),
-                "benchmark_version": "0.7.0",
+                "benchmark_version": "1.0.0",
                 "executor": "only-gate",
                 "verified_timestamp": time.strftime(
                     "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
@@ -315,7 +315,7 @@ def main():
                 extra_args = [sim_flag] if sim_flag else []
                 
             # Native Rust verification for Advanced Constraints
-            if card["id"].startswith("DGV-TC-04") or card["id"].startswith("DGV-TC-05"):
+            if card["id"].startswith("DGV-TC-04") or card["id"].startswith("DGV-TC-05") or card["id"].startswith("DGV-TC-06"):
                 extra_args.append(f"--simulate-case={case['id']}")
 
             # Multi-run evaluation for determinism / stability cards
@@ -421,7 +421,7 @@ def main():
             "required_preconditions": card.get("required_preconditions"),
             "compliance_refs": card.get("compliance_refs"),
             "threat_model_tie_in": card.get("threat_model_tie_in"),
-            "benchmark_version": "0.7.0",
+            "benchmark_version": "1.0.0",
             "verified_timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "status": "passed" if card_passed else "failed",
             "results": evidence_cases,
@@ -472,7 +472,7 @@ def main():
 
     if overall_success:
         print(
-            "\nAll DGV Test Cards passed successfully! System is DGV v0.7.0 compliant."
+            "\nAll DGV Test Cards passed successfully! System is DGV v1.0.0 compliant."
         )
         sys.exit(0)
     else:
