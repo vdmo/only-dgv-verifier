@@ -5,7 +5,7 @@
   "claim_name": "TRACE Profile Conformance",
   "claim_definition": "Verifies that the Only OS gateway session produces a signed GatewayClaim JWT carrying EAT profile tag `tag:agentrust.io,2026:trace-v0.1` that passes all four mandatory TRACE Level 1 test modules (TR-ENV, TR-SIG, TR-RTE, TR-POL) when executed against the agentrust-io/trace-tests conformance suite. The claim binds five attestation anchors: `eat_profile` (EAT profile URI), `trace.runtime.platform` (TEE or software-mode platform identity), `trace.policy.bundle_hash` (SHA-256 of the enforced policy bundle), `trace.cnf.jwk` (confirmation key bound to the session), and `gateway.audit_chain` (root-to-tip hash chain covering the session audit log). A session whose GatewayClaim JWT fails any mandatory module is treated as an unverifiable evidence unit and triggers GER-339.",
   "scope": "Only OS gateway session TRACE claim output; trace-tests conformance suite Level 1",
-  "excluded_scope": "TR-TXN (Phase 2 tool-call transcript binding), TR-ANC (SCITT transparency anchoring), TR-SCA (SLSA provenance) — scheduled for DGV v0.6.0",
+  "excluded_scope": "TR-TXN (Phase 2 tool-call transcript binding), TR-ANC (SCITT transparency anchoring), TR-SCA (SLSA provenance) \u2014 scheduled for DGV v0.6.0",
   "test_type": "rubric-based",
   "test_cases": [
     {
@@ -13,7 +13,9 @@
       "input": {
         "gateway_claim_jwt": "artifacts/gateway_claim.jwt",
         "trace_module": "TR-ENV",
-        "cli_args": ["--trace-module=TR-ENV"]
+        "cli_args": [
+          "--trace-module=TR-ENV"
+        ]
       },
       "expected": {
         "module": "TR-ENV",
@@ -35,7 +37,9 @@
       "input": {
         "gateway_claim_jwt": "artifacts/gateway_claim.jwt",
         "trace_module": "TR-SIG",
-        "cli_args": ["--trace-module=TR-SIG"]
+        "cli_args": [
+          "--trace-module=TR-SIG"
+        ]
       },
       "expected": {
         "module": "TR-SIG",
@@ -51,7 +55,9 @@
       "input": {
         "gateway_claim_jwt": "artifacts/gateway_claim.jwt",
         "trace_module": "TR-RTE",
-        "cli_args": ["--trace-module=TR-RTE"]
+        "cli_args": [
+          "--trace-module=TR-RTE"
+        ]
       },
       "expected": {
         "module": "TR-RTE",
@@ -67,7 +73,9 @@
       "input": {
         "gateway_claim_jwt": "artifacts/gateway_claim.jwt",
         "trace_module": "TR-POL",
-        "cli_args": ["--trace-module=TR-POL"]
+        "cli_args": [
+          "--trace-module=TR-POL"
+        ]
       },
       "expected": {
         "module": "TR-POL",
@@ -95,6 +103,6 @@
     "minimum_pass_rate": 1.0
   },
   "evidence": "evidence/dgv_tc_030_evidence.json",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-24T00:00:00Z"
 }

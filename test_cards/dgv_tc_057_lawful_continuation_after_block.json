@@ -5,7 +5,7 @@
   "ger_mapping": "GER-503: Governed Continuation Path Absent",
   "replay_protection_required": true,
   "claim_name": "Lawful Continuation After Block",
-  "claim_definition": "Verifies that after a gate closure (refusal, escalation, or containment), the system determines and offers a governed continuation path — clarification request, re-attestation prompt, escalation route, or constrained retry. A block that leaves the user or downstream system with no governed next step is a governance failure. The blocked condition must remain state-bearing and constrain future decisions.",
+  "claim_definition": "Verifies that after a gate closure (refusal, escalation, or containment), the system determines and offers a governed continuation path \u2014 clarification request, re-attestation prompt, escalation route, or constrained retry. A block that leaves the user or downstream system with no governed next step is a governance failure. The blocked condition must remain state-bearing and constrain future decisions.",
   "scope": "only-lang dgv-verifier CLI execution; post-block continuation routing; Governor-layer lawful continuation corridors",
   "excluded_scope": "Blocks caused by hardware faults or network failures where no continuation path is computationally available",
   "test_type": "metamorphic",
@@ -75,7 +75,7 @@
         "retry_permitted_after_refresh": true
       },
       "mandatory": true,
-      "description": "Metamorphic: block due to stale information must produce a freshness-restoration path AND permit retry after the stale condition is resolved. Proves the blocked state is state-bearing — it constrains and enables the next decision, not just dead-ends."
+      "description": "Metamorphic: block due to stale information must produce a freshness-restoration path AND permit retry after the stale condition is resolved. Proves the blocked state is state-bearing \u2014 it constrains and enables the next decision, not just dead-ends."
     },
     {
       "id": "TC-LCB-005",
@@ -109,6 +109,6 @@
     "blocked_state_state_bearing": true,
     "absent_path_detected_as_violation": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-27T00:00:00Z"
 }

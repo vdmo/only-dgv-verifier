@@ -4,7 +4,7 @@
   "svrnos_layer": "L4: Evidence Transport",
   "ger_mapping": "GER-339: Distributed Verification Gap",
   "claim_name": "Zero-Knowledge Audit Export Integrity",
-  "claim_definition": "Verifies that Only OS produces a real Groth16 BN254 zkSNARK proof over the ComplianceSquare circuit: the prover demonstrates knowledge of a compliance score s such that s² equals a public commitment, without revealing s. The arkworks ark-groth16 0.6 crate performs real trusted setup, proving, and pairing-based verification. A tampered public input (wrong commitment) is rejected by the verifier.",
+  "claim_definition": "Verifies that Only OS produces a real Groth16 BN254 zkSNARK proof over the ComplianceSquare circuit: the prover demonstrates knowledge of a compliance score s such that s\u00b2 equals a public commitment, without revealing s. The arkworks ark-groth16 0.6 crate performs real trusted setup, proving, and pairing-based verification. A tampered public input (wrong commitment) is rejected by the verifier.",
   "scope": "Only OS ZKP compliance export path; Groth16 BN254 proof system; privacy-preserving audit for regulated industries",
   "excluded_scope": "Full on-chain SNARK anchoring; ZKP latency certification; recursive proofs",
   "test_type": "rubric-based",
@@ -25,7 +25,7 @@
         "real_snark": true
       },
       "mandatory": true,
-      "description": "Real Groth16 BN254 zkSNARK: only-gate runs trusted setup for the ComplianceSquare circuit (score²=commitment), generates a real proof that score=42 satisfies 42²=1764, and verifies with the honest public commitment. The verifier never learns score=42."
+      "description": "Real Groth16 BN254 zkSNARK: only-gate runs trusted setup for the ComplianceSquare circuit (score\u00b2=commitment), generates a real proof that score=42 satisfies 42\u00b2=1764, and verifies with the honest public commitment. The verifier never learns score=42."
     },
     {
       "id": "TC-ZKP-002",
@@ -60,6 +60,6 @@
     "tampered_proof_rejected": true,
     "real_snark": true
   },
-  "version": "0.6.0",
+  "version": "1.0.0",
   "expiry": "2029-06-25T00:00:00Z"
 }

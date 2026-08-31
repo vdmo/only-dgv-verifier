@@ -65,6 +65,6 @@
     "snapshot_validation_latency": "< 50ms"
   },
   "evidence": "evidence/dgv_tc_043_receipt.json",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "expiry": "2027-01-01T00:00:00Z"
 }

@@ -16,16 +16,18 @@ DGV converts vague governance language into explicit, reproducible evidence. It 
 |---|---|
 | `dgv-verifier` | Native Rust engine — evaluates state, mathematical scripts, and governance constraints. Generates verifiable JSON receipts with provenance signatures, explanation traces, and audit logs. |
 | `only-gate` | Native Rust engine — validates hardware/crypto constraints: ML-KEM-768 post-quantum key encapsulation, SHAKE-256 conformance, GPU TEE attestation, basis-freshness checks. |
-| `test_cards/` | 65 test cards (60 positive + 5 negative/adversarial) covering 35 claim classes across all 7 SVRNOS governance layers. |
-| `evidence/` | Cryptographic evidence packages with SHA-256 content-hash receipts for every test card. Each includes an `execution_mode` field (simulation, native, live, or audited_live). |
-| `dgv_runner.py` | Test runner — executes all cards against the native engines and generates evidence with execution mode metadata. |
-| `verify_registry.py` | Registry verifier — validates the public claims registry, recomputes receipts, enforces badge rules, checks cross-consistency. |
-| `registry.json` | Public claims registry — append-only record of certified systems and their claims with execution-mode-qualified badges. |
-| `registry.schema.json` | JSON Schema (Draft 2020-12) for the public claims registry, including execution_mode and audit metadata. |
+| `test_cards/` | 69 test cards (60 positive + 9 negative/adversarial/mutation/replay) covering 35 claim classes across all 7 SVRNOS governance layers. |
+| `evidence/` | Cryptographic evidence packages with SHA-256 content-hash receipts for every test card. Each includes `execution_mode`, `binary_checksum`, `build_provenance`, and `negative_test` fields. |
+| `dgv_runner.py` | Test runner — executes all cards against the native engines and generates evidence with execution mode, binary checksum, and build provenance metadata. |
+| `verify_registry.py` | Registry verifier — validates the public claims registry, recomputes receipts, enforces badge rules, checks cross-consistency (test card ↔ evidence, binary checksums, version matching, negative_test flags). |
+| `registry.json` | Public claims registry — append-only record of certified systems and their claims with execution-mode-qualified badges. Includes an example gold certification with NDA-gated audit metadata. |
+| `registry.schema.json` | JSON Schema (Draft 2020-12) for the public claims registry, including execution_mode, binary_checksum, and audit metadata. |
 | `spec.md` | The DGV Specification v1.0.0 — stable standard with change control, dispute resolution, badge enforcement, and execution mode separation. |
-| `TRUST_ROOT.md` | Trust model documentation — explains binary-only distribution rationale, NDA-gated source review paths, and the full trust chain. |
-| `BUILD_PROVENANCE.md` | Build chain documentation — toolchain, dependencies, checksums, SLSA provenance level. |
-| `CHECKSUMS.txt` | SHA-256 checksums for verifier binaries. |
+| `TRUST_ROOT.md` | Trust model documentation — explains binary-only distribution rationale, NDA-gated source review paths (Attestation + Sandbox), and the full trust chain. |
+| `BUILD_PROVENANCE.md` | Build chain documentation — toolchain, dependencies, checksums, SLSA Level 2 provenance, GPG signing. |
+| `CHECKSUMS.txt` | SHA-256 checksums for verifier binaries (GPG-signed). |
+| `CHECKSUMS.txt.sig` | GPG detached signature for CHECKSUMS.txt (Ed25519). |
+| `RELEASE_SIGNING_KEY.asc` | Public GPG key for verifying release signatures. |
 | `RECEIPT_VERIFICATION.md` | Procedure for independently verifying evidence receipts. |
 
 ---
@@ -120,9 +122,9 @@ Pre-compiled release binaries for both engines are in `/bin`. This allows runnin
 
 ---
 
-## The 65 Test Cards
+## The 69 Test Cards
 
-The suite covers 35 claim classes organized into 7 families mapped to the SVRNOS 7-Layer Governance Model, plus 5 negative/adversarial test cards that prove the verifier correctly detects and rejects violations:
+The suite covers 35 claim classes organized into 7 families mapped to the SVRNOS 7-Layer Governance Model, plus 9 negative/adversarial/mutation/replay test cards that prove the verifier correctly detects and rejects violations:
 
 | Family | SVRNOS Layer | Cards | Key Claims |
 |---|---|---|---|
@@ -134,6 +136,8 @@ The suite covers 35 claim classes organized into 7 families mapped to the SVRNOS
 | Risk Interpretation | L6: Risk Interpretation | TC-001, 002, 004, 011, 013, 019, 025, 058 | Determinism, boundary, hierarchy, explanation, bias, repair, DPIA, correct-but-unauthorized |
 | Application Enforcement | L7: Application Enforcement | TC-003, 005, 010, 020, 021, 023, 024, 032, 057 | Policy, refusal, latency, revocation, multi-sig, escalation, legal hold, HITL, lawful continuation |
 | **Negative Tests** | Multiple | **TC-061, 062, 063, 064, 065** | Non-determinism detection, policy bypass detection, provenance forgery detection, receipt tampering detection, adversarial input rejection |
+| **Mutation Tests** | Multiple | **TC-066, 067, 068** | Mutated input detection, bit-flip corruption detection, weight mutation detection |
+| **Replay Tests** | L1: Authorization | **TC-069** | Replay attack detection |
 
 See `spec.md` Section 16.1 for the complete Layer Alignment Matrix with GER mappings.
 
@@ -157,12 +161,13 @@ A `simulation` pass cannot be advertised as equivalent to a `native` or `live` p
 
 ## Trust Model
 
-The verifier engines are distributed as precompiled binaries. The source code is not public due to IP protection (PIR algorithms, patent-pending work). Trust is established through:
+The verifier engines are distributed as precompiled binaries. The source code is not public due to IP protection (PIR algorithms, patent-pending work). Trust is established through a four-layer defense-in-depth approach:
 
 1. **Deterministic execution** — same input always produces same output
-2. **Binary provenance** — SHA-256 checksums, build documentation (see `BUILD_PROVENANCE.md`)
-3. **Execution mode transparency** — every evidence package states how the test was run
-4. **NDA-gated source review** — third parties can review source under NDA and issue attestations
+2. **Binary provenance** — SHA-256 checksums (GPG-signed with Ed25519), build documentation, SLSA Level 2 (see `BUILD_PROVENANCE.md`)
+3. **Execution chain in evidence** — every evidence package includes `binary_checksum` (SHA-256 of the verifier binary that produced it) and `build_provenance` (SLSA level, toolchain, target). The receipt hash covers these fields, closing the source → build → binary → evidence → registry chain.
+4. **Execution mode transparency** — every evidence package states how the test was run (simulation, native, live, audited_live)
+5. **NDA-gated source review** — third parties can review source under NDA (Attestation or Sandbox path) and issue signed attestations published in the registry
 
 For the full trust model, including NDA review paths (Attestation Review and Sandbox Review), see [`TRUST_ROOT.md`](TRUST_ROOT.md).
 

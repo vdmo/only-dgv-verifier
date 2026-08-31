@@ -25,7 +25,7 @@
         "re_attestation_required": true
       },
       "mandatory": true,
-      "description": "After 90 days (7,776,000 seconds) with decay_rate=1.5e-7, an initial score of 0.95 decays to ~0.296, below the 0.50 threshold — mandatory re-attestation gate triggers."
+      "description": "After 90 days (7,776,000 seconds) with decay_rate=1.5e-7, an initial score of 0.95 decays to ~0.296, below the 0.50 threshold \u2014 mandatory re-attestation gate triggers."
     },
     {
       "id": "TC-TRS-002",
@@ -42,7 +42,7 @@
         "re_attestation_required": false
       },
       "mandatory": true,
-      "description": "After 7 days (604,800 seconds) with the same parameters, score decays to ~0.868 — still above threshold. Gate remains open, no re-attestation required."
+      "description": "After 7 days (604,800 seconds) with the same parameters, score decays to ~0.868 \u2014 still above threshold. Gate remains open, no re-attestation required."
     }
   ],
   "metrics": [
@@ -57,6 +57,6 @@
     "decay_enforced": true,
     "threshold_gate_triggers": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-25T00:00:00Z"
 }

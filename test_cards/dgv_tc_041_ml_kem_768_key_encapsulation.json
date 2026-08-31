@@ -41,7 +41,7 @@
         "real_kem": true
       },
       "mandatory": true,
-      "description": "ML-KEM-768 implicit rejection (CCA2 security): a tampered ciphertext cannot yield the sender's shared secret. only-gate confirms the honest encap/decap cycle matches, then documents that the implicit rejection property holds — tampered ciphertexts produce pseudorandom secrets, never the honest one."
+      "description": "ML-KEM-768 implicit rejection (CCA2 security): a tampered ciphertext cannot yield the sender's shared secret. only-gate confirms the honest encap/decap cycle matches, then documents that the implicit rejection property holds \u2014 tampered ciphertexts produce pseudorandom secrets, never the honest one."
     }
   ],
   "metrics": [
@@ -57,6 +57,6 @@
     "honest_encap_decap_produces_matching_secrets": true,
     "implicit_rejection_confirmed": true
   },
-  "version": "0.6.0",
+  "version": "1.0.0",
   "expiry": "2029-06-25T00:00:00Z"
 }

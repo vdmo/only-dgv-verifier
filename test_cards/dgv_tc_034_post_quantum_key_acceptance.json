@@ -42,7 +42,7 @@
         "real_verification": true
       },
       "mandatory": true,
-      "description": "Real Ed25519 backward compatibility: only-gate generates a fresh Ed25519 keypair (ed25519-dalek 2.x), signs the manifest, and verifies. Confirms migration readiness — Ed25519 must continue to work alongside ML-DSA-65."
+      "description": "Real Ed25519 backward compatibility: only-gate generates a fresh Ed25519 keypair (ed25519-dalek 2.x), signs the manifest, and verifies. Confirms migration readiness \u2014 Ed25519 must continue to work alongside ML-DSA-65."
     },
     {
       "id": "TC-PQC-003",
@@ -77,6 +77,6 @@
     "ed25519_still_accepted": true,
     "tampered_ml_dsa_rejected": true
   },
-  "version": "0.6.0",
+  "version": "1.0.0",
   "expiry": "2029-06-25T00:00:00Z"
 }

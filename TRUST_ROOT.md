@@ -162,20 +162,20 @@ Specification (public)
     ↓ defines
 Test Cards (public, schema-validated)
     ↓ executed by
-Verifier Binary (checksummed, signed, deterministic)
+Verifier Binary (checksummed, GPG-signed, deterministic)
     ↓ produces
-Evidence Package (public, includes execution_mode)
+Evidence Package (public, includes execution_mode + binary_checksum + build_provenance)
     ↓ hashed by
-SHA-256 Receipt (public, independently recomputable)
+SHA-256 Receipt (public, independently recomputable, covers binary_checksum)
     ↓ recorded in
-Public Registry (schema-validated, append-only)
+Public Registry (schema-validated, append-only, cross-validated)
     ↓ validated by
-verify_registry.py (public, MIT licensed)
+verify_registry.py (public, MIT licensed, cross-validates test cards ↔ evidence ↔ checksums)
     ↓ optionally upgraded by
-Independent Audit (NDA-gated, attestation published)
+Independent Audit (NDA-gated, attestation published with audit_digest)
 ```
 
-Every arrow is verifiable. The only opaque box is the verifier binary, and its outputs are deterministic, checksummed, and independently reproducible.
+Every arrow is verifiable. The execution chain is now closed: each evidence package records which binary produced it (via `binary_checksum`), and the receipt hash covers that field. This means you can verify that a specific binary (matching a specific checksum in `CHECKSUMS.txt`) produced a specific evidence package. The only opaque box is the verifier binary's source code, and its outputs are deterministic, checksummed, GPG-signed, and independently reproducible.
 
 ---
 
@@ -183,9 +183,9 @@ Every arrow is verifiable. The only opaque box is the verifier binary, and its o
 
 ### What this model does NOT prove
 
-1. **The binary contains no bugs.** Source review (NDA path) reduces this risk but cannot eliminate it. The deterministic execution model ensures that any bug is reproducible and detectable.
+1. **The binary contains no bugs.** Source review (NDA path) reduces this risk but cannot eliminate it. The deterministic execution model ensures that any bug is reproducible and detectable. Negative/mutation/replay test cards (TC-061 through TC-069) provide additional assurance that the verifier correctly rejects invalid inputs.
 
-2. **The binary matches a specific source version.** Without reproducible builds from public source, we cannot prove the binary was compiled from a specific source commit. The NDA-gated review path addresses this for parties that require it.
+2. **The binary matches a specific source version.** Without reproducible builds from public source, we cannot prove the binary was compiled from a specific source commit. The NDA-gated review path (including build verification under NDA) addresses this for parties that require it.
 
 3. **The PIR mathematics are correct.** The mathematical foundations of PIR are published separately in academic papers. The verifier implements these constructions, but the correctness of the mathematics themselves is a separate question.
 
@@ -193,9 +193,11 @@ Every arrow is verifiable. The only opaque box is the verifier binary, and its o
 
 1. **The binary is deterministic.** Same input → same output, every time, on every machine.
 2. **The evidence is authentic.** Receipt hashes match, evidence packages are complete, and the registry is consistent.
-3. **The execution mode is transparent.** You know exactly whether a test was simulated, native, live, or audited.
-4. **The test coverage is public.** All 60 test cards are visible and challengeable.
-5. **The badge claims are enforced.** The registry schema prevents over-claiming.
+3. **The execution chain is closed.** Each evidence package includes `binary_checksum` (SHA-256 of the verifier binary) and `build_provenance`. The receipt hash covers these fields. You can verify that a specific binary produced a specific evidence package.
+4. **The execution mode is transparent.** You know exactly whether a test was simulated, native, live, or audited.
+5. **The test coverage is public.** All 69 test cards (60 positive + 9 negative/mutation/replay) are visible and challengeable.
+6. **The badge claims are enforced.** The registry schema prevents over-claiming, and `verify_registry.py` cross-validates test cards against evidence.
+7. **The binaries are signed.** GPG-signed checksums (Ed25519) allow independent verification that the binaries have not been tampered with.
 
 ---
 
@@ -203,9 +205,9 @@ Every arrow is verifiable. The only opaque box is the verifier binary, and its o
 
 | Version | Feature | Status |
 |---|---|---|
-| v0.1.0 | Binary checksums, execution_mode field, badge separation | **This release** |
-| v0.2.0 | GPG-signed releases, SLSA Level 2 provenance | Planned |
-| v0.3.0 | Reproducible build from source (NDA-gated build verification) | Planned |
+| v0.1.0 | Binary checksums, execution_mode field, badge separation | Done |
+| v0.2.0 | GPG-signed releases (Ed25519), SLSA Level 2, binary_checksum in evidence, execution chain closed, negative/mutation/replay tests, cross-validation | **This release** |
+| v0.3.0 | Reproducible build from source (NDA-gated build verification), SLSA Level 3 | Planned |
 | v1.0.0 | Full source publication after IP protection finalized | Future |
 
 ---

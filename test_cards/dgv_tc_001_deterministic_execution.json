@@ -36,11 +36,14 @@
       "description": "Metamorphic: introduces a sector-0 corruption then verifies the solver still heals to zero residual identically across 5 runs, confirming corruption recovery is also deterministic."
     }
   ],
-  "metrics": ["output_identity", "residual_zero_tolerance"],
+  "metrics": [
+    "output_identity",
+    "residual_zero_tolerance"
+  ],
   "pass_threshold": {
     "allowed_variance": 0.0,
     "max_residual": 1e-12
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2027-06-24T00:00:00Z"
 }

@@ -9,7 +9,19 @@
   "threat_model_tie_in": null,
   "benchmark_version": "1.0.0",
   "execution_mode": "native",
-  "verified_timestamp": "2026-08-30T18:30:29Z",
+  "binary_checksum": {
+    "dgv_verifier_sha256": "f7b107b8491500644091648e53a22d9a19af615ac59cc3f4bbfdb3c327dfd7ac",
+    "only_gate_sha256": "2b06443755be4f0241eeb69a41e387b10127c3129f1cdb59be17588829a83f21"
+  },
+  "build_provenance": {
+    "build_doc": "BUILD_PROVENANCE.md",
+    "checksums_file": "CHECKSUMS.txt",
+    "slsa_level": 2,
+    "toolchain": "rust-stable",
+    "target": "x86_64-unknown-linux-gnu",
+    "optimization": "release (opt-level=3, lto=true)"
+  },
+  "verified_timestamp": "2026-08-31T12:26:41Z",
   "status": "passed",
   "results": [
     {
@@ -40,9 +52,9 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:c9958fa7504f0271074e9178422f8f4ea28b966068710f42d7afe76731b3ae82",
-    "signature": "dgv-sha256:c9958fa7504f0271074e9178422f8f4ea28b966068710f42d7afe76731b3ae82",
+    "transaction_id": "dgv-sha256:601a7052c6715af7244db32d327b6d5bcbe479b604c39a4a364877f841dbded0",
+    "signature": "dgv-sha256:601a7052c6715af7244db32d327b6d5bcbe479b604c39a4a364877f841dbded0",
     "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
-    "timestamp": "2026-08-30T18:30:29Z"
+    "timestamp": "2026-08-31T12:26:41Z"
   }
 }

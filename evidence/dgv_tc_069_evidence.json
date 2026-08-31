@@ -1,0 +1,48 @@
+{
+  "test_card_id": "DGV-TC-069",
+  "claim_name": "Negative: Replay Attack Detection",
+  "svrnos_layer": "L1: Authorization",
+  "ger_mapping": "GER-202: Replay Attack Detection",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "1.0.0",
+  "execution_mode": "native",
+  "binary_checksum": {
+    "dgv_verifier_sha256": "f7b107b8491500644091648e53a22d9a19af615ac59cc3f4bbfdb3c327dfd7ac",
+    "only_gate_sha256": "2b06443755be4f0241eeb69a41e387b10127c3129f1cdb59be17588829a83f21"
+  },
+  "build_provenance": {
+    "build_doc": "BUILD_PROVENANCE.md",
+    "checksums_file": "CHECKSUMS.txt",
+    "slsa_level": 2,
+    "toolchain": "rust-stable",
+    "target": "x86_64-unknown-linux-gnu",
+    "optimization": "release (opt-level=3, lto=true)"
+  },
+  "verified_timestamp": "2026-08-31T12:26:43Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-NEG-069-01",
+      "passed": true,
+      "runs_count": null,
+      "runs_identical": null,
+      "output_sample": {
+        "pass": false,
+        "gate_status": "CLOSED",
+        "rejection_reason": "unknown_simulate_case"
+      }
+    }
+  ],
+  "negative_test": true,
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:7e8bd409426af541466c637023715e2fbe4c935f91794a8d0dd610eee3117cf3",
+    "signature": "dgv-sha256:7e8bd409426af541466c637023715e2fbe4c935f91794a8d0dd610eee3117cf3",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-08-31T12:26:43Z"
+  }
+}

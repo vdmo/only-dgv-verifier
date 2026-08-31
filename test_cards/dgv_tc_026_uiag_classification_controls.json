@@ -28,6 +28,6 @@
   "pass_threshold": {
     "encryption_required": "AES-256"
   },
-  "version": "0.4.0",
+  "version": "1.0.0",
   "expiry": "2027-06-13T00:00:00Z"
 }

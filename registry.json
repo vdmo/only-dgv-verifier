@@ -1,6 +1,6 @@
 {
   "registry_version": "1.0.0",
-  "generated_at": "2026-08-30T18:32:19Z",
+  "generated_at": "2026-08-31T12:26:43Z",
   "dgv_benchmark_version": "1.0.0",
   "systems": [
     {
@@ -22,14 +22,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:28Z",
-          "expires_at": "2027-08-30T18:30:28Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_001_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:a24537c9d16944b16f59fccd013cc9334b78bcfc37dba139e602cebfc03e2355",
-              "timestamp": "2026-08-30T18:30:28Z"
+              "transaction_id": "dgv-sha256:4ceb239e0c98984aa663a00d5a831a61999eccdb09db06beed4cc754f68775e6",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -41,14 +41,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:28Z",
-          "expires_at": "2027-08-30T18:30:28Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_002_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:482590d9e6392e3653d3d49724ee82b316d30a5266d19b29eea6566993e9f5e9",
-              "timestamp": "2026-08-30T18:30:28Z"
+              "transaction_id": "dgv-sha256:7a932087ffc6c6f4f525f6fbf0c2321417c1dca37f18de30902d21eb6d0f78b3",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -60,14 +60,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:28Z",
-          "expires_at": "2027-08-30T18:30:28Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_003_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:108b61061eb79def6762f506b935fc459c33f1d720a4b4324a81eaefb7337a20",
-              "timestamp": "2026-08-30T18:30:28Z"
+              "transaction_id": "dgv-sha256:3b65439a776d15e090c6b6a6d9e3bf521e80289ef4dc4f6a6edf165c91833c1f",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -79,14 +79,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:28Z",
-          "expires_at": "2027-08-30T18:30:28Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_004_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:6474c0664888f92a29d62e67447a41bbc32b3ca094e8336fcd191ab97142931b",
-              "timestamp": "2026-08-30T18:30:28Z"
+              "transaction_id": "dgv-sha256:b68459dcf1e68c63e5d133d1877088c1fee91541c024a90b052d04e135ca6e8d",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -98,14 +98,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:28Z",
-          "expires_at": "2027-08-30T18:30:28Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_005_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:65b8a2adbe125b3a8bbbaa4563207841f49ca313f3e413f716ea75d838134816",
-              "timestamp": "2026-08-30T18:30:28Z"
+              "transaction_id": "dgv-sha256:1f333aaf14f73ca85401ea7038599ac60c68fcdf90e54b4c07846e4cd9b97c73",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -117,14 +117,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L4: Evidence Transport",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:28Z",
-          "expires_at": "2027-08-30T18:30:28Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_006_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:c7f6cb49b97593cdf89e31c28f403abff47a66ee4df6c4618ba2dc86aba6b845",
-              "timestamp": "2026-08-30T18:30:28Z"
+              "transaction_id": "dgv-sha256:b6c764576b476f3520fb988c2611bfdd6a17aaccc6bcda5e01ae54219abfdd2c",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -136,14 +136,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:28Z",
-          "expires_at": "2027-08-30T18:30:28Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_007_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:902fa973051e69356675cb30e6a5f0fd6fb5636c4ab8cb7e55ca0b0fc8f471da",
-              "timestamp": "2026-08-30T18:30:28Z"
+              "transaction_id": "dgv-sha256:a2b7a205ec05096e2e2aa01ea530d47a228d0643d8c15f6f96e6a3a73bb9b910",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -155,14 +155,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_008_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:a310810e6b3168f850b6d0f5f7e6b25e1bb3099ad06f5e791b0dce18181405e4",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:76148bd1674df943588ff7f36d3b6e1bf18aaea4abcb4f36328e7d810b12b1a5",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -174,14 +174,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_009_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:21ba9fc023cc7869d31961850e3a471d79a51e81d288e9c798e3bc55b0de3229",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:558529301452580d8a9ed238c6b6d60b2554ab566a938359f413907633d4889a",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -193,14 +193,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_010_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:e3f63b0f4b20b6173532fed21ee4eece8f57e5e984cdee6537103198fca98dcd",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:faa0b6e018ec76726aa1354faf66af1d0304647ad737591159a8f1822b68732e",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -212,14 +212,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:40Z",
+          "expires_at": "2027-08-31T12:26:40Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_011_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:0354f47b9cf43c8b992003e1bc35a99692532028d11aa625c4a3a19a8289ea35",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:03e6c13639c2a1272e4a07778e8f65848c4d475f6fa270e334187151005e6479",
+              "timestamp": "2026-08-31T12:26:40Z"
             }
           }
         },
@@ -231,14 +231,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L3: Routing & Boundary",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_012_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:9b3288e2fd35abf1a5153eb5a574704bbc2d80b3431d125f1c5a133c8f2696b1",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:3ae7388de8824afa0ca44280f6f513d8326129d5d56642af0b9d9f8b296f2424",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -250,14 +250,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_013_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:8376eaef27fc67fe95eefd3630b7d1f59fc593c48dd9ce6553e44d108f53af1e",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:8aa3b07b02784e4605c8a659b63cba1b844ad219db18a60ab89c00190d87e4f3",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -269,14 +269,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_014_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:a17f68747dfd3c7ae49e14940d2ca547ca57b3e83e83496f53f2a62cdb691c9b",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:bcb70113ff6b84a89b437d84ffbf2f85a67763b81762ea89919d8fddad8bb4f1",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -288,14 +288,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L4: Evidence Transport",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_015_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:cd81ed871492e1cdf6d679db252687354cb4365e53e9da17f5d6dafbb289a34d",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:60a09d5067d4ef599ff35dba909e47dde3f3e4ee6866672dbd86637b0cd12bc2",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -307,14 +307,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_016_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:972113966980db359b1ebf3944ebdc24702eb37c0e572290b2055befdbe823e1",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:9d17a15a15c5a5fe74308d28129ceaed77d49457233c16782c4744445d2e27cb",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -326,14 +326,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Compute Substrate",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_017_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:c9958fa7504f0271074e9178422f8f4ea28b966068710f42d7afe76731b3ae82",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:601a7052c6715af7244db32d327b6d5bcbe479b604c39a4a364877f841dbded0",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -345,14 +345,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_018_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:6c346af03bfacd3fcffe4650a321875d78476cfeb7da44436e9266873eb923f9",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:37a73bbb9071731f140d5f7002aee99498e3589c7bbbba27b240ffeb20114532",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -364,14 +364,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_019_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:7b7d95ccb3e4d855ab1c17eebb28be943569c629aa3e57adc9d2b6228aff0b5e",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:515c7914d410aa54c649badf5a3381ca68736d552b1f2ebcd8ff18a65f2ffee1",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -383,14 +383,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_020_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:9c688488c9d1c0e713f9820d6672195f787f033a98f67e4377d15afc049e1dbb",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:b7a64b330f1fc613e031ffba69efb5c6ad620f2772b724e0ebb52009634c95df",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -402,14 +402,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_021_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:709a471615a1526bc7786a78010e57f01d9cd7d34327bb388569f0399eb1f975",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:fd53d31f8114cb7e8497e30f5a89a24531803813efc6ce875ee86d8625707112",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -421,14 +421,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_022_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:784adc5d7bd9a580d894485e5510bde758d3b1dd57b975711b4c2d4a2e393b7d",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:c960f7a173bc16cafbbb1ad8eca5eff9026c12f4c426fd21314f914c1e474859",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -440,14 +440,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_023_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:494460e06bf19b5f02e9064aa45ae19e344e84e2c41b0d51fc9b4ee3bdab8bca",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:46fab76cf08f615fc52cece29ae6dcc5ab75d555d36b66f06ac14ebdfcc320af",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -459,14 +459,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_024_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:bababf6b1190bd9bbf4d050dd37f83a3f266c054db489c04cb369cbe68250c21",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:e1a0618e8c4652caea2222706be5857ae37638994de2041f70fa16f11914afca",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -478,14 +478,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_025_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:05abe87a52ae782dcb9dfa621fd0beab9e29b69d647f3e408db90e388f161d30",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:da9b67b3df46484bb288327749aff8a8cacd4988524c62162c518d872768811c",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -497,14 +497,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_026_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:2dff9d06c78c107e3b82909502ac6b001663c396071ab89455c4b5ba615e65f0",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:09c8a164305a35ce09fcbc97bd8c0cc3ef93e38b4ccb04e9a0550578c16f3d2c",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -516,14 +516,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Compute Verification",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_027_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:9315ec31a3b9a61dad76c7bd261e384f215b90b1c81dfb501c8b7d5eafd99c53",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:b629a672301c69dcf2be3bf74a1c2654b8383c3995ea4d1c29db6de1f5b7280c",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -535,14 +535,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Authorization",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_028_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:afbea105b985f2568b478ef7aadfd9e3576de685e5b8b1f7388063e9b1a4f223",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:edeec01401d570c4bc675056174263a18c6864bcbbaa90948c8b756356666f20",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -554,14 +554,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_029_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:b70cea2cbe8a4ca669ba55eabf3e0d08fd42d0bef472f9c2c9b763b45e1f0b12",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:e00f58b7239ef4981828152de75f5ab739df866e633c5d74700edfc018437515",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -573,14 +573,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L4: Evidence Transport",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_030_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:e468d0dc2b0631a49eafab75909bc314732050ba0e97a214ba1533f0033c219a",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:110e41bf1f0d11b85959a9e36bfd1bfe2e61389389abec5c545684d0562eeb8c",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -592,14 +592,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_031_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:dcedfe2096b9f924e5606e60438dd9ba06af8f101b3d4019ee69db47d61315e6",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:0ca2356d188f1c07510332886b3a677086a19aa5cc9fefbcf1bd50f65aed9d2f",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -611,14 +611,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_032_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:91f43be539e37ec0a059bf6e0f9775f9b9ed17a7ff70aee237488a41ea214402",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:eefecbb06621ba6207546ee651a5c2a125061d976c61f37133c5301da9642743",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -630,14 +630,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L3: Routing & Boundary",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_033_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:60e590d0ff55bcf6f95ab3ec6086ee2635280041ca2c6adecc4ac7c2b283a265",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:6ebbddd4d8e00c484bc7c0ce056966d42b165098643a46790bbb718cf73e82cf",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -649,14 +649,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Compute Substrate",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:41Z",
+          "expires_at": "2027-08-31T12:26:41Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_034_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:9c545c63422ec87978419bc37e9955856401ca51cd8e985948a2e939226b8fb9",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:a8ab6685d68ea9ce53f93155c1cb7c1af91a713656d10ec9237bef82d6ed8280",
+              "timestamp": "2026-08-31T12:26:41Z"
             }
           }
         },
@@ -668,14 +668,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L4: Evidence Transport",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_035_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:aefc242824975e4402cf25ab07dddd7e24cb29abddd1b80ad85b931d49872ca1",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:91d561fca8d60597a9278fd0068f44f7fc4cc9fd5a67ca5d7462386fc067fa90",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -687,14 +687,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_036_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:c0fa844d1862f7d6a6240cfe2aa234cf0616db253b16988eb3650dee3d20a9ed",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:0614657f5c4949343b19b03faa480701d065de3d3c10357e9daddcc8f4c43af5",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -706,14 +706,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_037_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:bba18a82b5ec7e879f155e8b267735dec6068ca7ae40222e17b9c83a8fd7b0aa",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:94c12d30219be52c5f6f0eeb43a96a76f75a77f68ed44e3313fd24522b162ae1",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -725,14 +725,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_038_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:676fd5338a0601f5f0e0557d7a42f660deda006ed1a1e2115769a3ad9179e32c",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:1037126d9cc2a660121227c6820180bc36c58d324bc41ac9a661dadaecfa3da2",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -744,14 +744,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L4: Evidence Transport",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_039_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:478e0d7ff79f6692ad12fee4e7536dcadc664e0c3fcb64a1ae98d5ea8073a124",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:1b4a85d98cffe3d7e51817b481c56b1e798c30875c2f40d7f9af531a5d04e2a9",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -763,14 +763,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Compute Substrate",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_040_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:5f84977ea7791138184349b782a62e8658e1b1450cab4630821f29349f48edbd",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:342a724cd866dabba4646e3002596f392c857f9277e0933246bb6d07df5ec9d7",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -782,14 +782,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Compute Substrate",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_041_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:e9b681a61bc719816d716ee51b48eefda7f5d9c6187253ccaa14adc7c287b7b9",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:bf765e0c008c706f92712e33eef3a50d368d68b2b00ee3f9a6b5303d30ec1e38",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -801,14 +801,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_042_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:07a5a2494c4c948322c6c772860e4fbea8adff95061142d3a6e00af1617dcc0e",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:fea7b79cfc06904229e16098422dc2f561db07fc9b9bb94a1d4b07f5d785a625",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -820,14 +820,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_043_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:d5088ff78fb81fba6be1ba28717cf9e794ce5af087fa7e7984ac4de3ef7057a0",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:db3409646a2aef435152a71656142c01a3721d79464f1c6b2fad3474b49df885",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -839,14 +839,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Compute Substrate",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:29Z",
-          "expires_at": "2027-08-30T18:30:29Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_044_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:5f23fcfdb9c88823b58be94bebb3be31a5397ed8b14569ae3e0b204434ea4d14",
-              "timestamp": "2026-08-30T18:30:29Z"
+              "transaction_id": "dgv-sha256:f900faf5d475deb3952cb9e223e14147ea58d75c643c6c4af6917beaab105a35",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -858,14 +858,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_045_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:55b93dc37873df72ec36346694e355b7c6aa12d179434c821f3aee698b8759ab",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:f2e1e5741cb986e18080b4720220bd0ca0b4cf7559c874019eb418536ad86cc5",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -877,14 +877,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L4: Evidence Transport",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_046_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:7747987b89143ff83b7ee31830f437e7311d4c36717ab27038d025921b124dc2",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:205da93d0cf5ec521154dbf351b23369960706a96c28b0f0a448a1ee025b7efe",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -896,14 +896,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Compute Substrate",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_047_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:4f3a928d101e696f3040f6d33caabf65b0b44947a5d73fb62f538d19b075eb3d",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:91fc9b77e78458e3ca5dd148bc813d7cb4e983d8d47812886f4e9257bce4f54e",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -915,14 +915,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Compute Substrate",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_048_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:0b4a0b452c4411111addb2cc8b3275ca622fc9cc103ae5ac6ab135f6aef92583",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:d2a5daafb2c12f39fff5f743671421b23716c69f3c275d4d290ec95ae4839c34",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -934,14 +934,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L4: Evidence Transport",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_049_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:71d48091672792af3785ef2c8202718835a46a24b0da100a1b8b9df6514a9feb",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:61970f955d33336dff911c4beec246917a87feac3e0e9719412808b901f2616c",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -953,14 +953,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_050_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:ea80a56710144d0ef4a82180920a2540f60bd3926a177e0e3557159bd8cd763b",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:37be02fc65c6f907f1a46f101a478978ae2f1630dd9cf08881205119029f0f15",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -972,14 +972,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_051_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:af441b56c52a8857908720f2eaac8187c3a81c217c9de08b8dd4424625472ca1",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:295446d516c211fe15acc5737663c3b1a44f457a1c017d148abb44eb67ea80d3",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -991,14 +991,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L3: Routing & Boundary",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_052_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:4fc56a24d5581e2ef52792d575398b2e05fb27fdbf18dab932ef8bb378903e46",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:bd3ae2fa2e127a3d20781f4089df061f2f0eeb4651041fb6530acfa07e6385d6",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -1010,14 +1010,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_053_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:b637d116fc45c32822a1c2f06efbf31d2171104724101c149a80566c941492a5",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:def1e3d5299a345f92f37d4115d8c1c9bf4de24a21582e76a25be942f228da4d",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -1029,14 +1029,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_054_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:eaf818684e77ab0984f69aeea23e7f5eabdc30c218d4c5cc264d80180af1b773",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:97567d928cba15968ee42fb75c41a80c915a924e8bb01b8037029f063bec08b6",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -1048,14 +1048,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_055_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:af36d438a338e2167f951fcb6cdd0371423f5c71c23093f84b20f381aea74ed9",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:8d08e61b7b52b2436a159bbe5212e347cd97772b4b0f39df72eec8c3af3e0e55",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -1067,14 +1067,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:42Z",
+          "expires_at": "2027-08-31T12:26:42Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_056_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:afd429eee99929f9d8f6376b214984080ff9707a5af5d2fbc26f3962fcc83a57",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:62f6226bfe3b5ebac14e39d46a62e694f4b6a26ddd9e42c3c98edd2bd78abfb8",
+              "timestamp": "2026-08-31T12:26:42Z"
             }
           }
         },
@@ -1086,14 +1086,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L7: Application Enforcement",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_057_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:8499d0cc5b39c8082c315f9e035f7e1f8c97260f96c27e17442bdfa69934eaf9",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:8c22fea839e910d8a01a0e2d70c17834e036280cfdc33608aadfa446103176b5",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
           }
         },
@@ -1105,14 +1105,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L6: Risk Interpretation",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_058_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:75596dfa20adad3851c33a2d633fc579f023b103f04a1418e60196644848ee14",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:9e4cc969a7d4e54ba7daf7578d76efb25f09f3ff1632961c48d5250b3c71a029",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
           }
         },
@@ -1124,14 +1124,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_059_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:45d20828bfe4d0e7524279f9754745f0e83c1bb5d81c51db5fbc0735266613b4",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:d649bf3d03a0b9fb16754cdd7feef4ff9a6a12e2439df8c30fd54c9e4b07a412",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
           }
         },
@@ -1143,14 +1143,14 @@
           "execution_mode": "native",
           "svrnos_layer": "L5: Session & State",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_060_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:d10e9026192b71cf9bf286a956288a685200d7cb4c393428de59765777196a95",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:ff84fe325019a8b2019a99ebca5cac396acdbf840facbf41d5155323b5f1cd43",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
           }
         },
@@ -1162,16 +1162,17 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Authorization",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_061_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:7c787f9f5573438ed8572d9d9906847e798d07940bcced2899d09a78a3ee4879",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:1915325158b3ca95f2593c960db2cbd8a1ce7f9cef31167d46fbd72a2e00627c",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
-          }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
         },
         {
           "claim_id": "DGV-CL-062",
@@ -1181,16 +1182,17 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Authorization",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_062_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:68f7ba6fa38e51d7526b6fac9d3e0ae9f66df33d90195a1858cc3f83719d57b4",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:0e097e33629b54fbae6863a3c3eae2ee44814563e128237646af62b25235bdf7",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
-          }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
         },
         {
           "claim_id": "DGV-CL-063",
@@ -1200,16 +1202,17 @@
           "execution_mode": "native",
           "svrnos_layer": "L2: Component & Provenance",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_063_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:19e29d2e3502386f59ba713e1d16bdff32e399265ad289f67624b0ff329cac1a",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:6ac68eb5ac69504396f8847e8ee72fcf270fd766fa3b4b6dc6de0a37d55ac096",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
-          }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
         },
         {
           "claim_id": "DGV-CL-064",
@@ -1219,16 +1222,17 @@
           "execution_mode": "native",
           "svrnos_layer": "L4: Evidence Transport",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_064_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:dd533f828730f8f8cc7a0d24adf195da9df2dc19035bc2f804f66e3e7a819661",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:5c229dc4d0fafe00c1315536ca83e874682d674b8f5e165ef6fb9d90e20f3506",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
-          }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
         },
         {
           "claim_id": "DGV-CL-065",
@@ -1238,16 +1242,144 @@
           "execution_mode": "native",
           "svrnos_layer": "L1: Authorization",
           "badge_status": "verified:native",
-          "certified_at": "2026-08-30T18:30:30Z",
-          "expires_at": "2027-08-30T18:30:30Z",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
           "evidence": {
             "package_uri": "evidence/dgv_tc_065_evidence.json",
             "receipt": {
               "anchor_method": "sha256-content-hash",
-              "transaction_id": "dgv-sha256:5ba5e5a6fd986561fe60b12187fb7cfb851b65697db504bd42eed7762498e72f",
-              "timestamp": "2026-08-30T18:30:30Z"
+              "transaction_id": "dgv-sha256:7e65e5561d15645f1be168a6f4611e5ccddac54a4afd4b5ca29dc74688a8cb77",
+              "timestamp": "2026-08-31T12:26:43Z"
             }
-          }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-066",
+          "claim_name": "Negative: Mutated Input Detection",
+          "test_card_id": "DGV-TC-066",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified:native",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_066_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:1f2ea2d808c7bde8b85287346ae1e4be2af2ac59afb0745aad885e342a2580b6",
+              "timestamp": "2026-08-31T12:26:43Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-067",
+          "claim_name": "Negative: Bit-Flip Corruption Detection",
+          "test_card_id": "DGV-TC-067",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "verified:native",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_067_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:2c19200cfdeb642bdc74a42d972f65cf454130930ced27687685f4fabc0627f1",
+              "timestamp": "2026-08-31T12:26:43Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-068",
+          "claim_name": "Negative: Weight Mutation Detection",
+          "test_card_id": "DGV-TC-068",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L2: Component & Provenance",
+          "badge_status": "verified:native",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_068_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:5e879ab31dcf35fbf9a8967ff4186131477cf6911804ef41d68dfe4818041d97",
+              "timestamp": "2026-08-31T12:26:43Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-069",
+          "claim_name": "Negative: Replay Attack Detection",
+          "test_card_id": "DGV-TC-069",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L1: Authorization",
+          "badge_status": "verified:native",
+          "certified_at": "2026-08-31T12:26:43Z",
+          "expires_at": "2027-08-31T12:26:43Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_069_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:7e8bd409426af541466c637023715e2fbe4c935f91794a8d0dd610eee3117cf3",
+              "timestamp": "2026-08-31T12:26:43Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        }
+      ]
+    },
+    {
+      "system_id": "only-dgv-verifier",
+      "system_name": "DGV Verifier (Self-Certification Example)",
+      "system_version": "1.0.0",
+      "publisher": {
+        "name": "PIR Institute",
+        "url": "https://github.com/vdmo"
+      },
+      "description": "Example gold certification showing NDA-gated source review audit metadata. This is a template \u2014 actual gold certifications require a real third-party audit.",
+      "source_repository": "https://github.com/vdmo/only-dgv-verifier",
+      "certifications": [
+        {
+          "claim_id": "DGV-CL-GOLD-001",
+          "claim_name": "Deterministic Execution (Gold \u2014 Audited Live)",
+          "test_card_id": "DGV-TC-001",
+          "test_card_version": "1.0.0",
+          "execution_mode": "audited_live",
+          "svrnos_layer": "L6: Risk Interpretation",
+          "badge_status": "gold:audited_live",
+          "scope": "dgv-verifier binary v1.0.0 on x86_64-unknown-linux-gnu",
+          "certified_at": "2026-08-30T00:00:00Z",
+          "expires_at": "2027-08-30T00:00:00Z",
+          "re_certification_policy": "Required on any system version change or DGV benchmark major version bump",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_001_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:4ceb239e0c98984aa663a00d5a831a61999eccdb09db06beed4cc754f68775e6",
+              "verification_procedure": "https://github.com/vdmo/only-dgv-verifier/blob/main/RECEIPT_VERIFICATION.md",
+              "timestamp": "2026-08-30T00:00:00Z"
+            },
+            "independent_audit": {
+              "auditor": "Example Security Auditors LLC (NDA-2026-001)",
+              "report_uri": "https://example.com/audit-reports/dgv-verifier-v1.0.0-source-review.pdf",
+              "audit_date": "2026-08-15",
+              "audit_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+              "audit_type": "source_review",
+              "review_path": "attestation",
+              "nda_reference": "NDA-2026-001",
+              "scope": "verifier source, build chain, receipt hashing, PIR tension computation",
+              "findings": "PASS: All reviewed components match specification. Receipt hashing is correct. PIR tension computation is mathematically sound. No backdoors or bypass logic detected."
+            }
+          },
+          "notes": "EXAMPLE gold certification \u2014 demonstrates the schema for NDA-gated source review. This is not a real audit. Replace with actual audit metadata when a real third-party review is completed."
         }
       ]
     }

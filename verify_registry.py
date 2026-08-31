@@ -35,11 +35,41 @@ except ImportError:
 DEFAULT_REGISTRY = Path(__file__).parent / "registry.json"
 DEFAULT_SCHEMA = Path(__file__).parent / "registry.schema.json"
 DEFAULT_EVIDENCE_DIR = Path(__file__).parent / "evidence"
+DEFAULT_TEST_CARDS_DIR = Path(__file__).parent / "test_cards"
+DEFAULT_CHECKSUMS = Path(__file__).parent / "CHECKSUMS.txt"
 
 
 def load_json(path: Path):
     with path.open(encoding="utf-8") as f:
         return json.load(f)
+
+
+def load_checksums(path: Path) -> dict:
+    """Load CHECKSUMS.txt into a dict of {filepath: sha256}."""
+    checksums = {}
+    if not path.exists():
+        return checksums
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split(None, 1)
+            if len(parts) == 2:
+                checksums[parts[1].strip()] = parts[0].strip()
+    return checksums
+
+
+def find_test_card(test_card_id: str, cards_dir: Path) -> Path | None:
+    """Find a test card file by its ID."""
+    for f in cards_dir.glob("*.json"):
+        try:
+            data = load_json(f)
+            if data.get("id") == test_card_id:
+                return f
+        except (json.JSONDecodeError, KeyError):
+            continue
+    return None
 
 
 def verify_receipt(evidence_path: Path, expected_tx_id: str) -> tuple[bool, str]:
@@ -110,8 +140,20 @@ def main():
         help="Directory containing evidence packages"
     )
     parser.add_argument(
+        "--test-cards-dir", type=Path, default=DEFAULT_TEST_CARDS_DIR,
+        help="Directory containing test card definitions"
+    )
+    parser.add_argument(
+        "--checksums", type=Path, default=DEFAULT_CHECKSUMS,
+        help="Path to CHECKSUMS.txt for binary checksum verification"
+    )
+    parser.add_argument(
         "--skip-receipts", action="store_true",
         help="Skip receipt hash verification (schema + badge rules only)"
+    )
+    parser.add_argument(
+        "--skip-cross-validation", action="store_true",
+        help="Skip test card ↔ evidence cross-validation"
     )
     args = parser.parse_args()
 
@@ -129,11 +171,14 @@ def main():
 
     schema = load_json(args.schema)
     registry = load_json(args.registry)
+    checksums = load_checksums(args.checksums)
 
     print(f"\nRegistry version:    {registry.get('registry_version', '?')}")
     print(f"Benchmark version:   {registry.get('dgv_benchmark_version', '?')}")
     print(f"Generated at:        {registry.get('generated_at', '?')}")
     print(f"Systems:             {len(registry.get('systems', []))}")
+    if checksums:
+        print(f"Binary checksums:    {len(checksums)} entries from {args.checksums.name}")
 
     try:
         jsonschema.validate(instance=registry, schema=schema)
@@ -260,6 +305,65 @@ def main():
                     print(f"    [SKIP] SCITT receipt (external transparency log verification needed)")
                 else:
                     print(f"    [SKIP] Unknown anchor method: {anchor}")
+
+            # ── Binary checksum verification (execution chain) ──
+            if not args.skip_cross_validation:
+                package_uri = evidence.get("package_uri", "")
+                ev_path = resolve_evidence_path(package_uri, args.evidence_dir)
+                if ev_path.exists():
+                    ev_data = load_json(ev_path)
+                    bin_ck = ev_data.get("binary_checksum", {})
+                    verifier_sha = bin_ck.get("dgv_verifier_sha256")
+                    if verifier_sha and checksums:
+                        expected_ck = checksums.get("bin/dgv-verifier")
+                        if expected_ck:
+                            if verifier_sha == expected_ck:
+                                print(f"    [OK]   Binary checksum matches CHECKSUMS.txt")
+                            else:
+                                print(f"    [FAIL] Binary checksum mismatch: evidence has {verifier_sha[:16]}..., CHECKSUMS.txt has {expected_ck[:16]}...")
+                                errors += 1
+                        else:
+                            print(f"    [SKIP] dgv-verifier not in CHECKSUMS.txt")
+                    elif not verifier_sha:
+                        print(f"    [WARN] Evidence missing binary_checksum field")
+                        warnings += 1
+
+                    # ── Test card ↔ evidence cross-validation ──
+                    tc_id = cert.get("test_card_id", "")
+                    tc_path = find_test_card(tc_id, args.test_cards_dir)
+                    if tc_path:
+                        tc_data = load_json(tc_path)
+                        # Verify claim_name matches
+                        tc_claim = tc_data.get("claim_name", "")
+                        ev_claim = ev_data.get("claim_name", "")
+                        if tc_claim and ev_claim and tc_claim != ev_claim:
+                            print(f"    [FAIL] Claim name mismatch: test card='{tc_claim}', evidence='{ev_claim}'")
+                            errors += 1
+                        # Verify test card version matches benchmark version
+                        tc_version = tc_data.get("version", "")
+                        cert_version = cert.get("test_card_version", "")
+                        if tc_version and cert_version and tc_version != cert_version:
+                            print(f"    [FAIL] Version mismatch: test card v{tc_version}, cert v{cert_version}")
+                            errors += 1
+                        # Verify test card expiry is not past
+                        tc_expiry = tc_data.get("expiry", "")
+                        if tc_expiry:
+                            try:
+                                tc_exp_dt = datetime.fromisoformat(tc_expiry.replace("Z", "+00:00"))
+                                if tc_exp_dt < now:
+                                    print(f"    [WARN] Test card expired: {tc_expiry}")
+                                    warnings += 1
+                            except ValueError:
+                                pass
+                        # Verify negative_test flag consistency
+                        tc_neg = tc_data.get("negative_test", False)
+                        ev_neg = ev_data.get("negative_test", False)
+                        if tc_neg != ev_neg:
+                            print(f"    [FAIL] negative_test flag mismatch: test card={tc_neg}, evidence={ev_neg}")
+                            errors += 1
+                    else:
+                        print(f"    [WARN] Test card not found: {tc_id}")
+                        warnings += 1
 
     # ── 3. Cross-consistency checks ─────────────────────────────────────
     print(f"\n{'─' * 60}")

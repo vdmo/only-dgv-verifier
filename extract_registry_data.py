@@ -91,6 +91,14 @@ def main():
             cert["notes"] = "Negative test card — verifies the verifier correctly detects and rejects violations."
         certifications.append(cert)
 
+    # Read the real TC-001 receipt for the gold certification example
+    tc001_evidence_path = EVIDENCE_DIR / "dgv_tc_001_evidence.json"
+    tc001_receipt = ""
+    if tc001_evidence_path.exists():
+        with open(tc001_evidence_path) as f:
+            tc001_ev = json.load(f)
+        tc001_receipt = tc001_ev.get("settlement_receipt", {}).get("transaction_id", "")
+
     registry = {
         "registry_version": "1.0.0",
         "generated_at": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -107,7 +115,54 @@ def main():
                 "description": "Deterministic AI agent runtime with governance enforcement",
                 "source_repository": "https://github.com/vdmo/only-engine",
                 "certifications": certifications,
-            }
+            },
+            {
+                "system_id": "only-dgv-verifier",
+                "system_name": "DGV Verifier (Self-Certification Example)",
+                "system_version": "1.0.0",
+                "publisher": {
+                    "name": "PIR Institute",
+                    "url": "https://github.com/vdmo",
+                },
+                "description": "Example gold certification showing NDA-gated source review audit metadata. This is a template — actual gold certifications require a real third-party audit.",
+                "source_repository": "https://github.com/vdmo/only-dgv-verifier",
+                "certifications": [
+                    {
+                        "claim_id": "DGV-CL-GOLD-001",
+                        "claim_name": "Deterministic Execution (Gold — Audited Live)",
+                        "test_card_id": "DGV-TC-001",
+                        "test_card_version": "1.0.0",
+                        "execution_mode": "audited_live",
+                        "svrnos_layer": "L6: Risk Interpretation",
+                        "badge_status": "gold:audited_live",
+                        "scope": "dgv-verifier binary v1.0.0 on x86_64-unknown-linux-gnu",
+                        "certified_at": "2026-08-30T00:00:00Z",
+                        "expires_at": "2027-08-30T00:00:00Z",
+                        "re_certification_policy": "Required on any system version change or DGV benchmark major version bump",
+                        "evidence": {
+                            "package_uri": "evidence/dgv_tc_001_evidence.json",
+                            "receipt": {
+                                "anchor_method": "sha256-content-hash",
+                                "transaction_id": tc001_receipt,
+                                "verification_procedure": "https://github.com/vdmo/only-dgv-verifier/blob/main/RECEIPT_VERIFICATION.md",
+                                "timestamp": "2026-08-30T00:00:00Z",
+                            },
+                            "independent_audit": {
+                                "auditor": "Example Security Auditors LLC (NDA-2026-001)",
+                                "report_uri": "https://example.com/audit-reports/dgv-verifier-v1.0.0-source-review.pdf",
+                                "audit_date": "2026-08-15",
+                                "audit_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+                                "audit_type": "source_review",
+                                "review_path": "attestation",
+                                "nda_reference": "NDA-2026-001",
+                                "scope": "verifier source, build chain, receipt hashing, PIR tension computation",
+                                "findings": "PASS: All reviewed components match specification. Receipt hashing is correct. PIR tension computation is mathematically sound. No backdoors or bypass logic detected.",
+                            },
+                        },
+                        "notes": "EXAMPLE gold certification — demonstrates the schema for NDA-gated source review. This is not a real audit. Replace with actual audit metadata when a real third-party review is completed.",
+                    }
+                ],
+            },
         ],
     }
 

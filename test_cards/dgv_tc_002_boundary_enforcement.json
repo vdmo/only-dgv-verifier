@@ -33,10 +33,13 @@
       "description": "Boundary positive: a payload of 1 (minimum valid positive budget) must pass through the gate, confirming the boundary is exclusive of zero and inclusive of one."
     }
   ],
-  "metrics": ["boundary_rejection", "gate_status"],
+  "metrics": [
+    "boundary_rejection",
+    "gate_status"
+  ],
   "pass_threshold": {
     "rejection_expected": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2027-06-24T00:00:00Z"
 }

@@ -17,7 +17,11 @@
         "gate_status": "CLOSED",
         "rejection_reason": "invalid_rlwe_enclave_signature",
         "tee_provider": "software",
-        "measurement_fields_present": ["pcr0", "pcr1", "pcr2"],
+        "measurement_fields_present": [
+          "pcr0",
+          "pcr1",
+          "pcr2"
+        ],
         "signature_algorithm": "Ed25519",
         "key_origin": "software_sealed"
       },
@@ -36,6 +40,6 @@
   "pass_threshold": {
     "rejection_expected": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2027-06-24T00:00:00Z"
 }

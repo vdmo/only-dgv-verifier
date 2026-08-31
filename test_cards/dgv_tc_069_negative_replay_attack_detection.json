@@ -1,0 +1,31 @@
+{
+  "id": "DGV-TC-069",
+  "svrnos_layer": "L1: Authorization",
+  "ger_mapping": "GER-202: Replay Attack Detection",
+  "claim_name": "Negative: Replay Attack Detection",
+  "claim_definition": "The verifier MUST detect and reject replay attacks. When given a previously valid execution token that has already been consumed, the verifier MUST reject the replayed token and report the violation.",
+  "scope": "dgv-verifier CLI execution — negative replay test",
+  "test_type": "replay",
+  "test_cases": [
+    {
+      "id": "TC-NEG-069-01",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "replay_valid_token": true
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Negative replay test: provides a previously valid execution token that has already been consumed. The verifier MUST detect the replay attempt and reject it."
+    }
+  ],
+  "metrics": ["replay_detected", "token_freshness_validated"],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-08-30T00:00:00Z",
+  "negative_test": true
+}

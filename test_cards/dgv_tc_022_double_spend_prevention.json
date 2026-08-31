@@ -22,10 +22,13 @@
       "description": "Verifies that submitting a previously spent token to a second gateway is immediately blocked."
     }
   ],
-  "metrics": ["gate_status", "rejection_reason"],
+  "metrics": [
+    "gate_status",
+    "rejection_reason"
+  ],
   "pass_threshold": {
     "rejection_expected": true
   },
-  "version": "0.4.0",
+  "version": "1.0.0",
   "expiry": "2027-06-13T00:00:00Z"
 }

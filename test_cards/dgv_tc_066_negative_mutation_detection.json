@@ -1,0 +1,31 @@
+{
+  "id": "DGV-TC-066",
+  "svrnos_layer": "L6: Risk Interpretation",
+  "ger_mapping": "GER-103: Mutation Detection",
+  "claim_name": "Negative: Mutated Input Detection",
+  "claim_definition": "The verifier MUST detect when a valid script is mutated (a single value changed) and reject the mutated input. This proves the verifier is not just checking structure but is actually evaluating the computation.",
+  "scope": "dgv-verifier CLI execution — mutation test",
+  "test_type": "mutation",
+  "test_cases": [
+    {
+      "id": "TC-NEG-066-01",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 99999,
+        "mutation": "payload_value_changed_from_1000_to_99999"
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Mutation test: takes the valid TC-001 script but changes the payload from 1000 to 99999 (an extreme outlier). The verifier MUST detect that the mutated payload produces a different residual and report failure."
+    }
+  ],
+  "metrics": ["mutation_detected", "value_validation"],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-08-30T00:00:00Z",
+  "negative_test": true
+}

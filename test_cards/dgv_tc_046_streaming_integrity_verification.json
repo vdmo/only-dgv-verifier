@@ -42,6 +42,6 @@
     "stream_hash_latency": "< 100ms"
   },
   "evidence": "evidence/dgv_tc_046_receipt.json",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "expiry": "2027-01-01T00:00:00Z"
 }

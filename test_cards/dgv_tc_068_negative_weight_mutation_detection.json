@@ -1,0 +1,31 @@
+{
+  "id": "DGV-TC-068",
+  "svrnos_layer": "L2: Component & Provenance",
+  "ger_mapping": "GER-302: Weight Mutation Detection",
+  "claim_name": "Negative: Weight Mutation Detection",
+  "claim_definition": "The verifier MUST detect when model weights are mutated (a single weight value changed) and reject the mutated model. This proves the verifier validates component integrity against expected values.",
+  "scope": "dgv-verifier CLI execution — mutation test",
+  "test_type": "mutation",
+  "test_cases": [
+    {
+      "id": "TC-NEG-068-01",
+      "input": {
+        "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000,
+        "simulate_weight_mutation": true
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Mutation test: injects a weight mutation flag. The verifier MUST detect the mutated weights and report failure, proving it validates component integrity."
+    }
+  ],
+  "metrics": ["weight_mutation_detected", "component_integrity_validated"],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-08-30T00:00:00Z",
+  "negative_test": true
+}

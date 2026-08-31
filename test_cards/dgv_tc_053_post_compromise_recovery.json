@@ -42,6 +42,6 @@
     "recovery_time_ms": "< 500ms"
   },
   "evidence": "evidence/dgv_tc_053_receipt.json",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "expiry": "2027-01-01T00:00:00Z"
 }

@@ -51,6 +51,6 @@
     "phi_leakage_blocked": true,
     "clean_boundary_passes": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-24T00:00:00Z"
 }

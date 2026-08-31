@@ -39,7 +39,9 @@
       },
       "expected": {
         "verdict": "allow",
-        "mapped_articles": ["Art. 15"]
+        "mapped_articles": [
+          "Art. 15"
+        ]
       },
       "mandatory": true,
       "description": "Correctly maps DGV sandbox claim to EU AI Act Article 15."
@@ -52,6 +54,6 @@
     "mapping_accuracy": 1.0
   },
   "evidence": "evidence/dgv_tc_051_receipt.json",
-  "version": "0.7.0",
+  "version": "1.0.0",
   "expiry": "2027-01-01T00:00:00Z"
 }

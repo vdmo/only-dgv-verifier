@@ -52,6 +52,6 @@
   "pass_threshold": {
     "all_bypass_vectors_blocked": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-24T00:00:00Z"
 }

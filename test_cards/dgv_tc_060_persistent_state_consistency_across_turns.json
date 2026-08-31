@@ -5,7 +5,7 @@
   "ger_mapping": "GER-434: Unresolved State Silently Forgotten Across Turns",
   "replay_protection_required": true,
   "claim_name": "Persistent State Consistency Across Turns",
-  "claim_definition": "Verifies that unresolved conditions, ambiguity burdens, and inadmissibility states from prior turns persist across subsequent turns and continue to constrain commitment decisions. A system that silently forgets an unresolved condition from turn 1 and allows commitment in turn 3 is committing without resolving the original admissibility burden. The persistent epistemic state substrate must distinguish active, unresolved, potential, echo, and reconstructed state — and unresolved state must remain binding until eliminated by admissibility constraints, not erased by the passage of turns.",
+  "claim_definition": "Verifies that unresolved conditions, ambiguity burdens, and inadmissibility states from prior turns persist across subsequent turns and continue to constrain commitment decisions. A system that silently forgets an unresolved condition from turn 1 and allows commitment in turn 3 is committing without resolving the original admissibility burden. The persistent epistemic state substrate must distinguish active, unresolved, potential, echo, and reconstructed state \u2014 and unresolved state must remain binding until eliminated by admissibility constraints, not erased by the passage of turns.",
   "scope": "only-lang dgv-verifier CLI execution; multi-turn session state; PEF-style persistent epistemic substrate; cross-turn admissibility burden tracking",
   "excluded_scope": "Stateless API calls with no session context; single-turn evaluations where no prior unresolved state exists",
   "test_type": "metamorphic",
@@ -105,7 +105,7 @@
         "committed": true
       },
       "mandatory": true,
-      "description": "Cross-session control: same input as TC-PSC-002 but in a different session. No prior unresolved state exists. Gate must open. Proves the persistence is session-scoped — the system does not hallucinate unresolved state from unrelated sessions."
+      "description": "Cross-session control: same input as TC-PSC-002 but in a different session. No prior unresolved state exists. Gate must open. Proves the persistence is session-scoped \u2014 the system does not hallucinate unresolved state from unrelated sessions."
     }
   ],
   "metrics": [
@@ -124,6 +124,6 @@
     "forced_erasure_blocked": true,
     "session_isolation_enforced": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-27T00:00:00Z"
 }

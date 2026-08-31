@@ -38,18 +38,37 @@ The binaries are deterministic: given the same source and the same build environ
 
 Checksums are computed and published with every release. See `CHECKSUMS.txt` in the release artifacts.
 
+Checksums are GPG-signed with the DGV Release Signing key (Ed25519). The signature is in `CHECKSUMS.txt.sig` and the public key is in `RELEASE_SIGNING_KEY.asc`.
+
 To verify a binary:
 
 ```bash
+# 1. Import the release signing key
+gpg --import RELEASE_SIGNING_KEY.asc
+
+# 2. Verify the checksums file signature
+gpg --verify CHECKSUMS.txt.sig CHECKSUMS.txt
+
+# 3. Verify the binary checksum
 sha256sum bin/dgv-verifier
-# Compare against the published checksum
+# Compare against the checksum in CHECKSUMS.txt
 ```
+
+## Release Signing Key
+
+| Property | Value |
+|---|---|
+| Algorithm | EdDSA (Ed25519) |
+| Key ID | A2BE0CF8812FF724BD38A3730B349D7F61A16EF4 |
+| Identity | DGV Release Signing <release@only.institute> |
+| Expires | 2027-12-31 |
+| Public key | `RELEASE_SIGNING_KEY.asc` |
 
 ## SLSA Provenance Level
 
-Current: **SLSA Level 1** (build documented, source available to NDA reviewers)
+Current: **SLSA Level 2** (signed build provenance, GPG-signed checksums, documented build environment)
 
-Planned for v0.2.0: **SLSA Level 2** (signed build provenance, isolated build environment)
+Planned for v0.3.0: **SLSA Level 3** (reproducible builds from source, isolated build environment verified under NDA)
 
 ## Source Access
 

@@ -4,7 +4,7 @@
   "svrnos_layer": "L2: Component & Provenance",
   "ger_mapping": "GER-344: Hash Function Not Post-Quantum Safe",
   "claim_name": "SHAKE-256 Hash Conformance",
-  "claim_definition": "Verifies that the Only OS hashing subsystem provides SHAKE-256 (SHA-3 Extendable-Output Function, NIST FIPS 202) as a quantum-resistant alternative to SHA-2. SHAKE-256 is required for DGV Level 3 post-quantum readiness and is used for commitment schemes in ML-DSA and ML-KEM. Two properties are tested: (1) determinism — the same input always produces the same digest, and (2) non-collision resistance — distinct inputs produce distinct digests.",
+  "claim_definition": "Verifies that the Only OS hashing subsystem provides SHAKE-256 (SHA-3 Extendable-Output Function, NIST FIPS 202) as a quantum-resistant alternative to SHA-2. SHAKE-256 is required for DGV Level 3 post-quantum readiness and is used for commitment schemes in ML-DSA and ML-KEM. Two properties are tested: (1) determinism \u2014 the same input always produces the same digest, and (2) non-collision resistance \u2014 distinct inputs produce distinct digests.",
   "scope": "Only OS hash computation path; FIPS 202 SHAKE-256 XOF; post-quantum hash primitive baseline",
   "excluded_scope": "SHAKE-128; full NIST FIPS 202 Known Answer Test suite; streaming XOF usage",
   "test_type": "exact-match",
@@ -62,6 +62,6 @@
     "determinism_confirmed": true,
     "non_collision_confirmed": true
   },
-  "version": "0.6.0",
+  "version": "1.0.0",
   "expiry": "2029-06-25T00:00:00Z"
 }

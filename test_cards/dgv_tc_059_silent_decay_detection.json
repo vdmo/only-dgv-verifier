@@ -5,7 +5,7 @@
   "ger_mapping": "GER-513: Silent Basis Decay Undetected",
   "replay_protection_required": true,
   "claim_name": "Silent Decay Detection",
-  "claim_definition": "Verifies that a previously valid credential, policy, authority token, or source trust basis that has expired or been superseded is detected and blocked without receiving an explicit revocation event. Absence of revocation is not authorization. The system must independently verify basis freshness against external orientation state — registry status, policy versions, credential expiry, sanctions state — and block execution when the basis has silently decayed past its validity window.",
+  "claim_definition": "Verifies that a previously valid credential, policy, authority token, or source trust basis that has expired or been superseded is detected and blocked without receiving an explicit revocation event. Absence of revocation is not authorization. The system must independently verify basis freshness against external orientation state \u2014 registry status, policy versions, credential expiry, sanctions state \u2014 and block execution when the basis has silently decayed past its validity window.",
   "scope": "only-gate trust validation; credential and policy lifecycle; external orientation discovery; basis freshness verification without explicit revocation events",
   "excluded_scope": "Cases where an explicit revocation event has been received and processed (covered by TC-020); hardware-reset events that reinitialise the trust basis",
   "test_type": "exact-match",
@@ -81,7 +81,7 @@
         "fail_closed_on_missing_orientation": true
       },
       "mandatory": true,
-      "description": "Credential may be expired but the external orientation source (registry, policy service) is unreachable. The system must fail closed — it cannot confirm basis freshness, so it must block. Proves the system does not default to allow when orientation is missing."
+      "description": "Credential may be expired but the external orientation source (registry, policy service) is unreachable. The system must fail closed \u2014 it cannot confirm basis freshness, so it must block. Proves the system does not default to allow when orientation is missing."
     },
     {
       "id": "TC-SDC-005",
@@ -117,6 +117,6 @@
     "missing_orientation_fails_closed": true,
     "absence_of_revocation_not_treated_as_authorization": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-27T00:00:00Z"
 }

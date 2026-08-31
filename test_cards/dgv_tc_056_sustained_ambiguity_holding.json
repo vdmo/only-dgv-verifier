@@ -15,7 +15,10 @@
       "input": {
         "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
         "payload": 1000,
-        "ambiguous_referents": ["sector_alpha", "sector_beta"],
+        "ambiguous_referents": [
+          "sector_alpha",
+          "sector_beta"
+        ],
         "competing_interpretations": 2
       },
       "expected": {
@@ -32,7 +35,11 @@
       "input": {
         "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
         "payload": 1000,
-        "ambiguous_referents": ["sector_alpha", "sector_beta", "sector_gamma"],
+        "ambiguous_referents": [
+          "sector_alpha",
+          "sector_beta",
+          "sector_gamma"
+        ],
         "competing_interpretations": 3
       },
       "expected": {
@@ -49,7 +56,10 @@
       "input": {
         "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
         "payload": 1000,
-        "ambiguous_referents": ["sector_alpha", "sector_beta"],
+        "ambiguous_referents": [
+          "sector_alpha",
+          "sector_beta"
+        ],
         "competing_interpretations": 2,
         "eliminating_constraint": "sector_beta_rejected"
       },
@@ -67,7 +77,10 @@
       "input": {
         "script": "harmony(1e-12)\nevolve(2)\ndata(1000)\nresidual()",
         "payload": 1000,
-        "ambiguous_referents": ["sector_alpha", "sector_beta"],
+        "ambiguous_referents": [
+          "sector_alpha",
+          "sector_beta"
+        ],
         "competing_interpretations": 2,
         "force_collapse": true
       },
@@ -93,6 +106,6 @@
     "premature_collapse_blocked": true,
     "eliminating_constraint_resolution_verified": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-27T00:00:00Z"
 }

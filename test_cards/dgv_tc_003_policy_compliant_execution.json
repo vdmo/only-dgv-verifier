@@ -27,6 +27,6 @@
   "pass_threshold": {
     "max_residual": 1e-06
   },
-  "version": "0.4.0",
+  "version": "1.0.0",
   "expiry": "2027-06-13T00:00:00Z"
 }

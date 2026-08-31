@@ -53,6 +53,6 @@
     "tamper_detected_on_mismatch": true,
     "integrity_confirmed_on_match": true
   },
-  "version": "0.5.0",
+  "version": "1.0.0",
   "expiry": "2028-06-25T00:00:00Z"
 }
