@@ -194,6 +194,73 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - Admin auth is a single shared key (no per-user RBAC; production deployments should use OIDC/JWT)
 - TLS termination is handled by reverse proxy (nginx profile in docker-compose; the gate itself is plain HTTP)
 
+## 4b. Framework integration (Phase 3)
+
+Run `test_sdk_langchain.py` to verify the SDK + LangChain adapter:
+
+```bash
+python3 test_sdk_langchain.py          # SDK tests (11) + LangChain tests (4)
+python3 test_dgv_python.py              # PyO3 in-process tests (9)
+```
+
+Results from the current run:
+- **15 PASS** — SDK + LangChain tests
+- **9 PASS** — PyO3 in-process tests
+- **0 FAIL**
+
+**What was built:**
+
+| Component | File | Purpose |
+|---|---|---|
+| Python SDK | `dgv_sdk.py` | HTTP client for all 12 gate endpoints |
+| LangChain adapter | `dgv_langchain.py` | GovernedTool wrapper, GateTool, GovernanceCallbackHandler |
+| PyO3 bindings | `native/dgv-python/` | In-process governance evaluation without HTTP server |
+
+**Python SDK (`dgv_sdk.py`):**
+- `GateClient` class with methods for all endpoints: `govern()`, `execute()`, `verify()`, `health()`, `stats()`, `store_policy()`, `get_policy()`, `load_policy_file()`, `revoke()`, `list_revocations()`, `store_tenant_policy()`, `get_rate_limit()`, `update_rate_limit()`
+- Dataclass responses: `Decision`, `ExecutionResult`, `VerifyResult`, `HealthResult`, `StatsResult`, `PolicyRecord`, `RateLimitConfig`, `RevocationRecord`
+- `GateError` exception with HTTP status, error, and hint fields
+- `admin_key` parameter sets `X-Admin-Key` header for admin endpoints
+- Zero dependencies beyond stdlib (no requests/httpx required)
+
+**LangChain adapter (`dgv_langchain.py`):**
+- `GovernedTool` — wraps any existing LangChain `BaseTool` with governance: calls `/govern` then `/execute` then invokes the inner tool
+- `GateTool` — standalone governance evaluation tool that agents can call directly
+- `GovernanceCallbackHandler` — `BaseCallbackHandler` that intercepts tool calls for audit/monitoring
+- Graceful fallback when `langchain-core` is not installed (no hard dependency)
+
+**PyO3 bindings (`native/dgv-python/`):**
+- `dgv_python.Gate(storage_backend, database_url)` — in-process governance engine
+- `gate.govern(proposal_dict)` — evaluate a proposal, returns decision dict
+- `gate.execute(token_id, executor_id, tool, action, params)` — execute with token, returns receipt
+- `gate.verify(run_id)` — verify a decision by re-deriving the hash
+- `gate.revoke(actor_id, reason, revoked_by)` — revoke an actor
+- `gate.check_revocation(actor_id)` — check if actor is revoked
+- `gate.store_policy(tool, action, script, version)` — store a policy
+- `gate.verifying_key` — get the Ed25519 verifying key (hex)
+- Build: `maturin build --release` produces a `.whl` for `pip install`
+
+**Integration patterns:**
+
+```python
+# Pattern 1: HTTP SDK (works with remote gate)
+from dgv_sdk import GateClient
+client = GateClient("http://localhost:7878", admin_key="...")
+decision = client.govern(agent_id="my-agent", tool="send_email", action="send", params={...})
+if decision.allowed:
+    result = client.execute(token_id=decision.token_id, ...)
+
+# Pattern 2: LangChain GovernedTool (wraps existing tools)
+from dgv_langchain import GovernedTool
+governed_tool = GovernedTool(tool=existing_tool, gate_url="http://localhost:7878")
+result = governed_tool.invoke({"param": "value"})
+
+# Pattern 3: PyO3 in-process (no HTTP server needed)
+import dgv_python
+gate = dgv_python.Gate("sqlite", ":memory:")
+result = gate.govern({"request_id": "r1", "agent_id": "agent", "tool": "t", ...})
+```
+
 ## 5. What the auditor should review
 
 ### Priority 1: Math core correctness
@@ -254,8 +321,11 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 | "Admin auth on admin endpoints" | `test_gate.py` | **True** — 401 without key, 401 with wrong key, 200 with correct key |
 | "Formal soundness proof" | `FORMAL_SOUNDNESS_PROOF.md` | **True** — receipt integrity, path compliance, null effect on deny, replayability, continuing authority, distributed revocation all proven |
 | "Production deployment" | `Dockerfile.gate` + `docker-compose.gate.yml` | **True** — multi-stage Dockerfile, docker-compose with Postgres + replica + nginx TLS profile |
+| "Python SDK for gate" | `dgv_sdk.py` + `test_sdk_langchain.py` | **True** — 11/11 SDK tests pass; zero-dependency stdlib client covering all 12 endpoints |
+| "LangChain adapter" | `dgv_langchain.py` + `test_sdk_langchain.py` | **True** — 4/4 LangChain tests pass; GovernedTool, GateTool, GovernanceCallbackHandler |
+| "In-process governance (no HTTP)" | `native/dgv-python/` + `test_dgv_python.py` | **True** — 9/9 PyO3 tests pass; govern, execute, verify, revoke, policies without HTTP server |
 
-## 4b. Concurrent multi-instance test results
+## 4c. Concurrent multi-instance test results
 
 Run `test_concurrent_multi_instance.py` to verify two gate instances sharing a Postgres database:
 
@@ -279,6 +349,7 @@ Architecture verified:
 - Rate limit config is per-instance (not shared — each instance has its own config)
 - Rate limit counters are shared via the database (distributed rate limiting works correctly)
 - Non-revoked agents are unaffected
+
 | "Concurrent multi-instance" | `test_concurrent_multi_instance.py` | **True** — 11/11 tests pass with Postgres; revocation propagates without restart, decisions verifiable across instances |
 | "Objective Contract evaluates quotes" | `objective_contract.py` | **True** — 28/28 synthetic cases matched |
 | "Revocation is enforced at write boundary" | `revocation_store.py` | **True** — 36/36 local cases matched |
@@ -295,7 +366,10 @@ Architecture verified:
 - It does not constitute an audit — it is preparation for one
 - It does not claim post-quantum security merely because ML-DSA and ML-KEM dependencies exist (the auditor must verify correct usage)
 - It does not claim the L8/L9 commands implement full production authority management (they implement the test-card semantics, not a production authority store)
-- It does not claim the enforcement gate is production-ready (rate limit config is per-instance in memory; no auth on admin endpoints like PUT /config/rate-limit or POST /revocations)
+- It does not claim the enforcement gate is production-ready (rate limit config is per-instance in memory; admin auth is a single shared key, not OIDC/JWT)
+- It does not claim the LangChain adapter is a complete production integration (GovernedTool wraps individual tools; a full agent executor integration requires additional middleware)
+- It does not claim the PyO3 bindings cover all gate functionality (they provide core govern/execute/verify/revoke; admin endpoints like rate limit config require the HTTP API)
+- It does not claim Python package distribution is set up (the .whl builds locally via maturin; PyPI publication is not configured)
 - It does not claim the gate's default governance script is suitable for production use (it is a demonstration script; custom policies can be stored via API or loaded from YAML files)
 
 ## 8. Recommended audit scope

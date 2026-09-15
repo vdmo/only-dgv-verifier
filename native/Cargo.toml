@@ -8,6 +8,7 @@ members = [
     "dgv-verifier",
     "dgv-gate",
     "dgv-storage",
+    "dgv-python",
     "only-gate",
     "only-proxy",
     "only-heal",
