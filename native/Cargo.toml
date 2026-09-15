@@ -6,6 +6,8 @@ members = [
     "only-lang",
     "only-lang-wasm",
     "dgv-verifier",
+    "dgv-gate",
+    "dgv-storage",
     "only-gate",
     "only-proxy",
     "only-heal",

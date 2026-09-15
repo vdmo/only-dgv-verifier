@@ -2,7 +2,7 @@
 #
 # This Dockerfile provides a one-command, reproducible verification environment
 # for the DGV v1.0.0 test suite. Any third party can build this image and run
-# the full 60-card suite with identical results.
+# the full 69-card suite with identical results.
 #
 # Substrate:
 #   - Base: python:3.10-slim (Debian Bookworm)
@@ -54,6 +54,11 @@ COPY registry.json ./registry.json
 COPY registry.schema.json ./registry.schema.json
 COPY testcards.schema.json ./testcards.schema.json
 COPY spec.md ./spec.md
+COPY TRUST_ROOT.md ./TRUST_ROOT.md
+COPY BUILD_PROVENANCE.md ./BUILD_PROVENANCE.md
+COPY CHECKSUMS.txt ./CHECKSUMS.txt
+COPY CHECKSUMS.txt.sig ./CHECKSUMS.txt.sig
+COPY RELEASE_SIGNING_KEY.asc ./RELEASE_SIGNING_KEY.asc
 COPY RECEIPT_VERIFICATION.md ./RECEIPT_VERIFICATION.md
 COPY requirements.txt ./requirements.txt
 

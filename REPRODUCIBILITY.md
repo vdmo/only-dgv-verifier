@@ -152,7 +152,7 @@ same substrate:
 ## Verification Checklist for Third-Party Auditors
 
 1. [ ] Build or pull the Docker image
-2. [ ] Run `python3 dgv_runner.py` — all 60 cards must pass
+2. [ ] Run `python3 dgv_runner.py` — all 69 cards must pass
 3. [ ] Run `python3 verify_registry.py` — all receipts must verify
 4. [ ] Inspect `evidence/` — each file contains inputs, outputs, and receipt
 5. [ ] Read `spec.md` — understand what each claim means

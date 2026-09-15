@@ -1,0 +1,54 @@
+policies:
+  - tool: send_email
+    action: bulk_send
+    script: |
+      harmony(1e-12)
+      bind_authority("bulk-sender", "agent", "send_email")
+      bind_objective("bulk_send", ["bulk_send"])
+      evolve(2)
+      data(5000)
+      check_authority("bulk-sender")
+      check_objective_drift("bulk_send")
+      budget_limit(5000)
+      residual()
+    policy_version: v2
+  - tool: export_data
+    action: export
+    script: |
+      harmony(1e-12)
+      bind_authority("exporter", "agent", "export_data")
+      bind_objective("export", ["export"])
+      evolve(2)
+      data(10000)
+      check_authority("exporter")
+      check_objective_drift("export")
+      budget_limit(10000)
+      residual()
+
+tenant_policies:
+  acme-corp:
+    - tool: send_email
+      action: send
+      script: |
+        harmony(1e-12)
+        bind_authority("acme-agent", "tenant_user", "send_email")
+        bind_objective("send", ["send"])
+        evolve(2)
+        data(2000)
+        check_authority("acme-agent")
+        check_objective_drift("send")
+        budget_limit(2000)
+        residual()
+  beta-inc:
+    - tool: delete_file
+      action: delete
+      script: |
+        harmony(1e-12)
+        bind_authority("beta-admin", "admin", "delete_file")
+        bind_objective("delete", ["delete"])
+        evolve(2)
+        data(500)
+        check_authority("beta-admin")
+        check_objective_drift("delete")
+        budget_limit(500)
+        residual()

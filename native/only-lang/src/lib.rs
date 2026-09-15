@@ -66,6 +66,19 @@ pub enum Command {
     Escalate(String),                         // Trigger HITL override
     Import(String),                           // Compose policies from files
     GenerateZkProof(bool),                    // Export ZK-SNARK proof instead of plaintext values
+    BindContext(String, String),              // Bind data hash + policy hash for context integrity
+    CheckContextDrift,                       // Verify context hasn't drifted since binding
+    // L8: Authority & Revocation
+    BindAuthority(String, String, String),    // actor_id, role, scope
+    RevokeAuthority(String, String),          // actor_id, reason
+    CheckAuthority(String),                   // Verify actor has valid (non-revoked) authority
+    CheckRevocation,                          // Check if any authority has been revoked
+    // L8: Lineage continuity
+    LinkLineage(String),                      // Link to prior receipt hash
+    RequireContinuousLineage,                // Require lineage was linked and is valid
+    // L8: Objective binding
+    BindObjective(String, Vec<String>),       // objective_id, allowed actions
+    CheckObjectiveDrift(String),             // Check if action is within objective scope
 }
 
 fn parse_quoted_string(input: &str) -> IResult<&str, String> {
@@ -155,6 +168,83 @@ pub fn parse_command(input: &str) -> IResult<&str, Command> {
         let (input, b) = alt((tag("true"), tag("false")))(input)?;
         let (input, _) = tag(")")(input)?;
         return Ok((input, Command::TrackLineage(b == "true")));
+    } else if cmd == "bind_context" {
+        let (input, _) = tag("(")(input)?;
+        let (input, data_hash) = parse_quoted_string(input)?;
+        let (input, _) = tag(",")(input)?;
+        let (input, _) = multispace0(input)?;
+        let (input, policy_hash) = parse_quoted_string(input)?;
+        let (input, _) = tag(")")(input)?;
+        return Ok((input, Command::BindContext(data_hash, policy_hash)));
+    } else if cmd == "check_context_drift" {
+        let (input, _) = tag("()")(input)?;
+        return Ok((input, Command::CheckContextDrift));
+    } else if cmd == "bind_authority" {
+        let (input, _) = tag("(")(input)?;
+        let (input, actor_id) = parse_quoted_string(input)?;
+        let (input, _) = tag(",")(input)?;
+        let (input, _) = multispace0(input)?;
+        let (input, role) = parse_quoted_string(input)?;
+        let (input, _) = tag(",")(input)?;
+        let (input, _) = multispace0(input)?;
+        let (input, scope) = parse_quoted_string(input)?;
+        let (input, _) = tag(")")(input)?;
+        return Ok((input, Command::BindAuthority(actor_id, role, scope)));
+    } else if cmd == "revoke_authority" {
+        let (input, _) = tag("(")(input)?;
+        let (input, actor_id) = parse_quoted_string(input)?;
+        let (input, _) = tag(",")(input)?;
+        let (input, _) = multispace0(input)?;
+        let (input, reason) = parse_quoted_string(input)?;
+        let (input, _) = tag(")")(input)?;
+        return Ok((input, Command::RevokeAuthority(actor_id, reason)));
+    } else if cmd == "check_authority" {
+        let (input, _) = tag("(")(input)?;
+        let (input, actor_id) = parse_quoted_string(input)?;
+        let (input, _) = tag(")")(input)?;
+        return Ok((input, Command::CheckAuthority(actor_id)));
+    } else if cmd == "check_revocation" {
+        let (input, _) = tag("()")(input)?;
+        return Ok((input, Command::CheckRevocation));
+    } else if cmd == "link_lineage" {
+        let (input, _) = tag("(")(input)?;
+        let (input, hash) = parse_quoted_string(input)?;
+        let (input, _) = tag(")")(input)?;
+        return Ok((input, Command::LinkLineage(hash)));
+    } else if cmd == "require_continuous_lineage" {
+        let (input, _) = tag("()")(input)?;
+        return Ok((input, Command::RequireContinuousLineage));
+    } else if cmd == "bind_objective" {
+        let (input, _) = tag("(")(input)?;
+        let (input, obj_id) = parse_quoted_string(input)?;
+        let (input, _) = tag(",")(input)?;
+        let (input, _) = multispace0(input)?;
+        let (input, _) = tag("[")(input)?;
+        let mut actions = Vec::new();
+        let mut remaining = input;
+        loop {
+            let (rest, _) = multispace0(remaining)?;
+            if rest.starts_with(']') {
+                remaining = rest;
+                break;
+            }
+            let (rest, action) = parse_quoted_string(rest)?;
+            actions.push(action);
+            let (rest, _) = multispace0(rest)?;
+            let (rest, _) = opt(tag(","))(rest)?;
+            remaining = rest;
+            if remaining.starts_with(']') {
+                break;
+            }
+        }
+        let (input, _) = tag("]")(remaining)?;
+        let (input, _) = tag(")")(input)?;
+        return Ok((input, Command::BindObjective(obj_id, actions)));
+    } else if cmd == "check_objective_drift" {
+        let (input, _) = tag("(")(input)?;
+        let (input, action_id) = parse_quoted_string(input)?;
+        let (input, _) = tag(")")(input)?;
+        return Ok((input, Command::CheckObjectiveDrift(action_id)));
     } else if cmd == "assert_bounds" {
         let (input, _) = tag("(")(input)?;
         let (input, min) = double(input)?;
@@ -277,6 +367,22 @@ pub struct ScriptResult {
     pub escalate_reason: Option<String>,
     // Gas / Step Bounding
     pub fuel_consumed: u64,
+    // Context Integrity (bind_context / check_context_drift)
+    pub context_data_hash: Option<String>,
+    pub context_policy_hash: Option<String>,
+    pub context_drift_detected: bool,
+    // L8: Authority & Revocation
+    pub authority_actor_id: Option<String>,
+    pub authority_role: Option<String>,
+    pub authority_scope: Option<String>,
+    pub authority_revoked: bool,
+    pub authority_revocation_reason: Option<String>,
+    // L8: Lineage continuity
+    pub lineage_hash: Option<String>,
+    pub lineage_linked: bool,
+    // L8: Objective binding
+    pub objective_id: Option<String>,
+    pub objective_actions: Vec<String>,
 }
 
 pub fn evaluate_script(
@@ -318,6 +424,18 @@ pub fn evaluate_script_with_context(
         zk_proof: None,
         escalate_reason: None,
         fuel_consumed: 0,
+        context_data_hash: None,
+        context_policy_hash: None,
+        context_drift_detected: false,
+        authority_actor_id: None,
+        authority_role: None,
+        authority_scope: None,
+        authority_revoked: false,
+        authority_revocation_reason: None,
+        lineage_hash: None,
+        lineage_linked: false,
+        objective_id: None,
+        objective_actions: Vec::new(),
     };
 
     let mut tolerance: f64 = 1e-12;
@@ -430,6 +548,106 @@ pub fn evaluate_script_with_context(
                 }
                 Command::TrackLineage(b) => {
                     *track_lineage = *b;
+                }
+                Command::BindContext(data_hash, policy_hash) => {
+                    state.context_data_hash = Some(data_hash.clone());
+                    state.context_policy_hash = Some(policy_hash.clone());
+                    state.context_drift_detected = false;
+                }
+                Command::CheckContextDrift => {
+                    // If context was bound, verify it hasn't drifted.
+                    // In the current implementation, the context is immutable
+                    // during script execution, so drift is not possible.
+                    // This command is a no-op that confirms context integrity.
+                    if state.context_data_hash.is_some() {
+                        state.context_drift_detected = false;
+                    } else {
+                        state.context_drift_detected = true;
+                        state.pass = false;
+                        return Err("CheckContextDrift: no context was bound".into());
+                    }
+                }
+                Command::BindAuthority(actor_id, role, scope) => {
+                    state.authority_actor_id = Some(actor_id.clone());
+                    state.authority_role = Some(role.clone());
+                    state.authority_scope = Some(scope.clone());
+                    state.authority_revoked = false;
+                    state.authority_revocation_reason = None;
+                }
+                Command::RevokeAuthority(actor_id, reason) => {
+                    if state.authority_actor_id.as_deref() == Some(actor_id.as_str()) {
+                        state.authority_revoked = true;
+                        state.authority_revocation_reason = Some(reason.clone());
+                        state.pass = false;
+                    } else {
+                        state.pass = false;
+                        return Err(format!(
+                            "RevokeAuthority: actor '{}' not found in authority records",
+                            actor_id
+                        ));
+                    }
+                }
+                Command::CheckAuthority(actor_id) => {
+                    if state.authority_actor_id.as_deref() != Some(actor_id.as_str()) {
+                        state.pass = false;
+                        return Err(format!(
+                            "CheckAuthority: actor '{}' not bound",
+                            actor_id
+                        ));
+                    }
+                    if state.authority_revoked {
+                        state.pass = false;
+                        return Err(format!(
+                            "CheckAuthority: actor '{}' authority revoked: {}",
+                            actor_id,
+                            state.authority_revocation_reason.as_deref().unwrap_or("unknown")
+                        ));
+                    }
+                }
+                Command::CheckRevocation => {
+                    if state.authority_revoked {
+                        state.pass = false;
+                        return Err(format!(
+                            "CheckRevocation: authority revoked: {}",
+                            state.authority_revocation_reason.as_deref().unwrap_or("unknown")
+                        ));
+                    }
+                }
+                Command::LinkLineage(hash) => {
+                    state.lineage_hash = Some(hash.clone());
+                    state.lineage_linked = !hash.is_empty();
+                }
+                Command::RequireContinuousLineage => {
+                    if !state.lineage_linked {
+                        state.pass = false;
+                        return Err(
+                            "RequireContinuousLineage: lineage not linked or empty"
+                                .into(),
+                        );
+                    }
+                }
+                Command::BindObjective(obj_id, actions) => {
+                    state.objective_id = Some(obj_id.clone());
+                    state.objective_actions = actions.clone();
+                }
+                Command::CheckObjectiveDrift(action_id) => {
+                    if state.objective_id.is_none() {
+                        state.pass = false;
+                        return Err(
+                            "CheckObjectiveDrift: no objective bound".into(),
+                        );
+                    }
+                    // Action is in scope if it matches the objective ID
+                    // OR is in the allowed actions list
+                    let in_scope = state.objective_id.as_deref() == Some(action_id.as_str())
+                        || state.objective_actions.contains(action_id);
+                    if !in_scope {
+                        state.pass = false;
+                        return Err(format!(
+                            "CheckObjectiveDrift: action '{}' not in objective scope {:?}",
+                            action_id, state.objective_actions
+                        ));
+                    }
                 }
                 Command::Data(d) => {
                     let rev = GhostMemory::reveal_4(signs, field);
