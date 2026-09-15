@@ -21,15 +21,15 @@ use axum::{
     http::{HeaderMap, StatusCode},
     middleware::{self, Next},
     response::IntoResponse,
-    routing::{get, post, put},
+    routing::{delete, get, post, put},
     Router,
 };
 use dgv_storage::{
-    ApprovalRecord, DecisionRecord, PolicyRecord, PostgresStorage, RevocationRecord, SqliteStorage,
-    Storage, StorageError, TokenRecord,
+    A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, PolicyRecord,
+    PostgresStorage, RevocationRecord, SqliteStorage, Storage, StorageError, TokenRecord,
 };
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
-use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+use jsonwebtoken::{decode, decode_header, DecodingKey, Validation, Algorithm};
 use only_core::{generate_signs, Sign};
 use only_lang::evidence_pack::{AuthTokenIssued, DecisionReturned, ProposalSubmitted};
 use only_memory::GhostMemory;
@@ -147,6 +147,63 @@ struct AppState {
     /// JWT verification config — when set, /govern and /execute require a valid JWT
     /// in the Authorization: Bearer header. The `sub` claim becomes the verified agent_id.
     jwt_config: Option<JwtConfig>,
+    /// Circuit breaker state per tool — tracks failures and auto-disables tools
+    /// that exceed the failure threshold.
+    tool_health: Arc<std::sync::Mutex<std::collections::HashMap<String, ToolHealth>>>,
+    /// Optional external semantic verifier webhook — the gate POSTs the
+    /// justification + action context and expects {allowed, reason, confidence}.
+    /// The gate itself performs no LLM analysis; this is a pluggable hook.
+    semantic_verifier_url: Option<String>,
+    /// If true, deny when the semantic verifier is unreachable (default false).
+    semantic_fail_closed: bool,
+}
+
+/// Circuit breaker state for a single tool.
+#[derive(Clone, Debug)]
+struct ToolHealth {
+    /// Consecutive failures
+    consecutive_failures: u32,
+    /// When the circuit was last opened (unix ms)
+    opened_at_ms: Option<i64>,
+    /// Whether the circuit is currently open (blocking requests)
+    circuit_open: bool,
+}
+
+impl ToolHealth {
+    fn new() -> Self {
+        Self {
+            consecutive_failures: 0,
+            opened_at_ms: None,
+            circuit_open: false,
+        }
+    }
+
+    /// Record a failure. Opens the circuit if threshold is exceeded.
+    fn record_failure(&mut self, threshold: u32) {
+        self.consecutive_failures += 1;
+        if self.consecutive_failures >= threshold {
+            self.circuit_open = true;
+            self.opened_at_ms = Some(now_unix_ms());
+        }
+    }
+
+    /// Record a success. Resets the failure counter and closes the circuit.
+    fn record_success(&mut self) {
+        self.consecutive_failures = 0;
+        self.circuit_open = false;
+        self.opened_at_ms = None;
+    }
+
+    /// Check if the circuit should half-open (allow a test request through).
+    fn should_half_open(&self, cooldown_ms: i64) -> bool {
+        if !self.circuit_open {
+            return false;
+        }
+        match self.opened_at_ms {
+            Some(t) => now_unix_ms() - t > cooldown_ms,
+            None => false,
+        }
+    }
 }
 
 /// JWT verification configuration
@@ -156,6 +213,8 @@ struct JwtConfig {
     secret: Option<String>,
     /// RS256 public key PEM (for production — verify with issuer's public key)
     public_key_pem: Option<String>,
+    /// JWKS URL for fetching public keys (for key rotation)
+    jwks_url: Option<String>,
     /// Expected issuer (iss claim)
     issuer: Option<String>,
     /// Expected audience (aud claim)
@@ -272,9 +331,47 @@ async fn admin_auth_middleware(
 
 // ── JWT verification ─────────────────────────────────────────────────────────
 
+/// JWKS response format (RFC 7517)
+#[derive(Debug, Deserialize)]
+struct JwksResponse {
+    keys: Vec<JwksKey>,
+}
+
+#[derive(Debug, Deserialize)]
+struct JwksKey {
+    kid: String,
+    kty: String, // "RSA"
+    n: String,   // base64url-encoded modulus
+    e: String,   // base64url-encoded exponent
+    #[serde(default)]
+    alg: Option<String>,
+}
+
+/// Fetch a JWKS and find the key matching the given kid.
+async fn fetch_jwks_key(jwks_url: &str, kid: &str) -> Result<DecodingKey, String> {
+    let client = reqwest::Client::new();
+    let resp = client.get(jwks_url).send().await
+        .map_err(|e| format!("JWKS fetch failed: {}", e))?;
+
+    let jwks: JwksResponse = resp.json().await
+        .map_err(|e| format!("JWKS parse failed: {}", e))?;
+
+    let key = jwks.keys.iter()
+        .find(|k| k.kid == kid)
+        .ok_or_else(|| format!("no key found for kid: {}", kid))?;
+
+    if key.kty != "RSA" {
+        return Err(format!("unsupported key type: {}", key.kty));
+    }
+
+    // Build DecodingKey from RSA components (n, e are base64url-encoded)
+    DecodingKey::from_rsa_components(&key.n, &key.e)
+        .map_err(|e| format!("RSA key construction failed: {}", e))
+}
+
 /// Verify a JWT from the Authorization header and extract the agent_id.
-/// Returns (verified_agent_id, claims) on success, or an error message.
-fn verify_jwt(
+/// Supports HS256 (shared secret), RS256 (public key PEM), and JWKS (key rotation).
+async fn verify_jwt(
     headers: &HeaderMap,
     config: &JwtConfig,
 ) -> Result<(String, JwtClaims), String> {
@@ -287,7 +384,26 @@ fn verify_jwt(
         .strip_prefix("Bearer ")
         .ok_or("Authorization header must be 'Bearer <token>'")?;
 
-    let mut validation = Validation::new(Algorithm::HS256);
+    // Determine algorithm from JWT header
+    let header = decode_header(token)
+        .map_err(|e| format!("JWT header decode failed: {}", e))?;
+
+    // Enforce the expected algorithm for the configured mode — never trust the
+    // token's alg header alone (prevents HS256-with-RSA-public-key confusion).
+    let expected_alg = if config.jwks_url.is_some() || config.public_key_pem.is_some() {
+        Algorithm::RS256
+    } else {
+        Algorithm::HS256
+    };
+    if header.alg != expected_alg {
+        return Err(format!(
+            "algorithm mismatch: expected {:?}, got {:?}",
+            expected_alg, header.alg
+        ));
+    }
+
+    let mut validation = Validation::new(expected_alg);
+
     if let Some(ref iss) = config.issuer {
         validation.set_issuer(&[iss]);
     }
@@ -296,7 +412,11 @@ fn verify_jwt(
     }
     validation.validate_exp = true;
 
-    let key = if let Some(ref secret) = config.secret {
+    let key = if let Some(ref jwks_url) = config.jwks_url {
+        // JWKS mode — fetch the key by kid
+        let kid = header.kid.ok_or("JWT missing kid header")?;
+        fetch_jwks_key(jwks_url, &kid).await?
+    } else if let Some(ref secret) = config.secret {
         DecodingKey::from_secret(secret.as_bytes())
     } else if let Some(ref pem) = config.public_key_pem {
         DecodingKey::from_rsa_pem(pem.as_bytes())
@@ -315,14 +435,14 @@ fn verify_jwt(
 /// Extract verified agent_id from JWT if JWT auth is configured.
 /// Returns Some(agent_id) if JWT is configured and valid, None if JWT not configured,
 /// Err(msg) if JWT is configured but invalid.
-fn extract_agent_id(
+async fn extract_agent_id(
     headers: &HeaderMap,
     jwt_config: &Option<JwtConfig>,
     request_agent_id: &str,
 ) -> Result<String, String> {
     match jwt_config {
         Some(config) => {
-            let (agent_id, _claims) = verify_jwt(headers, config)?;
+            let (agent_id, _claims) = verify_jwt(headers, config).await?;
             Ok(agent_id)
         }
         None => Ok(request_agent_id.to_string()),
@@ -371,7 +491,7 @@ async fn handle_govern(
 
     // 0. JWT verification — if configured, verify the JWT and use the verified agent_id
     if app.jwt_config.is_some() {
-        match extract_agent_id(&headers, &app.jwt_config, &p.agent_id) {
+        match extract_agent_id(&headers, &app.jwt_config, &p.agent_id).await {
             Ok(verified_id) => {
                 // Override the claimed agent_id with the verified one from JWT
                 p.agent_id = verified_id;
@@ -447,6 +567,59 @@ async fn handle_govern(
                 eprintln!("rate limit check failed: {}", e);
             }
             Ok(true) => {} // allowed
+        }
+    }
+
+    // 0b. Circuit breaker — deny if the tool's circuit is open
+    {
+        let cb_threshold: u32 = std::env::var("DGV_CIRCUIT_BREAKER_THRESHOLD")
+            .ok().and_then(|v| v.parse().ok()).unwrap_or(5);
+        let cb_cooldown_ms: i64 = std::env::var("DGV_CIRCUIT_BREAKER_COOLDOWN_MS")
+            .ok().and_then(|v| v.parse().ok()).unwrap_or(30_000);
+        let cb_enabled = std::env::var("DGV_CIRCUIT_BREAKER_DISABLED")
+            .map(|v| v != "1" && v != "true").unwrap_or(true);
+
+        if cb_enabled {
+            let mut health_map = app.tool_health.lock().unwrap();
+            let health = health_map.entry(p.tool.clone()).or_insert_with(ToolHealth::new);
+            if health.circuit_open {
+                if health.should_half_open(cb_cooldown_ms) {
+                    // Half-open: allow one probe request through
+                    health.circuit_open = false;
+                    eprintln!("circuit breaker half-open for tool: {}", p.tool);
+                } else {
+                    drop(health_map);
+                    let decision = DecisionReturned {
+                        request_id: request_id.clone(),
+                        gate_state: "DENY".to_string(),
+                        reason_codes: vec![format!(
+                            "circuit_breaker_open: tool {} disabled after {} consecutive failures",
+                            p.tool, cb_threshold
+                        )],
+                        approvals_required: 0,
+                        approvals_received: 0,
+                        auth_token: None,
+                        run_id: run_id.clone(),
+                        decision_hash: compute_decision_hash(&request_id, "DENY", &["circuit_breaker_open".to_string()], &p.tool, &p.action, &p.params),
+                        counterfactual: None,
+                    };
+                    let signature = app.keys.sign_decision(&decision.decision_hash);
+                    {
+                        let mut c = app.counters.lock().unwrap();
+                        c.decisions_made += 1;
+                        c.denials += 1;
+                    }
+                    return (
+                        StatusCode::OK,
+                        Json(GovernResponse {
+                            decision,
+                            evidence_pack_id: run_id,
+                            signature,
+                            verifying_key: hex::encode(app.keys.vk.to_bytes()),
+                        }),
+                    );
+                }
+            }
         }
     }
 
@@ -558,6 +731,88 @@ async fn handle_govern(
                     }),
                 );
             }
+        }
+
+        // Semantic justification verification — pluggable external verifier.
+        // The gate performs no LLM analysis itself; if DGV_SEMANTIC_VERIFIER_URL
+        // is configured, the justification + action context is POSTed to it and
+        // the verdict is enforced. Fail-open by default (recorded in reason
+        // codes); set DGV_SEMANTIC_FAIL_CLOSED=1 to deny on unavailability.
+        let mut semantic_denial: Option<Vec<String>> = None;
+        if let Some(ref url) = app.semantic_verifier_url {
+            let client = reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(5))
+                .build()
+                .unwrap_or_default();
+            let body = json!({
+                "agent_id": p.agent_id,
+                "tool": p.tool,
+                "action": p.action,
+                "justification": p.justification,
+                "params": p.params,
+            });
+            match client.post(url).json(&body).send().await {
+                Ok(resp) => {
+                    match resp.json::<serde_json::Value>().await {
+                        Ok(v) => {
+                            let allowed = v.get("allowed").and_then(|a| a.as_bool()).unwrap_or(false);
+                            if !allowed {
+                                let reason = v.get("reason").and_then(|r| r.as_str())
+                                    .unwrap_or("no reason provided");
+                                semantic_denial = Some(vec![format!(
+                                    "semantic_verification_failed: {}", reason
+                                )]);
+                            }
+                        }
+                        Err(e) => {
+                            if app.semantic_fail_closed {
+                                semantic_denial = Some(vec![format!(
+                                    "semantic_verifier_unparseable: {}", e
+                                )]);
+                            } else {
+                                eprintln!("semantic verifier response unparseable (fail-open): {}", e);
+                            }
+                        }
+                    }
+                }
+                Err(e) => {
+                    if app.semantic_fail_closed {
+                        semantic_denial = Some(vec![format!(
+                            "semantic_verifier_unreachable: {}", e
+                        )]);
+                    } else {
+                        eprintln!("semantic verifier unreachable (fail-open): {}", e);
+                    }
+                }
+            }
+        }
+        if let Some(reasons) = semantic_denial {
+            let decision = DecisionReturned {
+                request_id: request_id.clone(),
+                gate_state: "DENY".to_string(),
+                reason_codes: reasons.clone(),
+                approvals_required: policy_min_approvals as u32,
+                approvals_received: 0,
+                auth_token: None,
+                run_id: run_id.clone(),
+                decision_hash: compute_decision_hash(&request_id, "DENY", &reasons, &p.tool, &p.action, &p.params),
+                counterfactual: None,
+            };
+            let signature = app.keys.sign_decision(&decision.decision_hash);
+            {
+                let mut c = app.counters.lock().unwrap();
+                c.decisions_made += 1;
+                c.denials += 1;
+            }
+            return (
+                StatusCode::OK,
+                Json(GovernResponse {
+                    decision,
+                    evidence_pack_id: run_id,
+                    signature,
+                    verifying_key: hex::encode(app.keys.vk.to_bytes()),
+                }),
+            );
         }
 
         // Use context_hash if provided (full context hashing), otherwise hash tool+params
@@ -740,7 +995,7 @@ async fn handle_execute(
 
     // 0. JWT verification — if configured, verify the JWT
     if app.jwt_config.is_some() {
-        if let Err(e) = extract_agent_id(&headers, &app.jwt_config, &req.executor_id) {
+        if let Err(e) = extract_agent_id(&headers, &app.jwt_config, &req.executor_id).await {
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(ExecuteResponse {
@@ -1353,8 +1608,24 @@ struct ApproveResponse {
 async fn handle_approve(
     State(app): State<AppState>,
     Path(token_id): Path<String>,
+    headers: HeaderMap,
     Json(req): Json<ApproveRequest>,
 ) -> impl IntoResponse {
+    // JWT verification — if configured, verify the approver's identity
+    let verified_approver = if app.jwt_config.is_some() {
+        match extract_agent_id(&headers, &app.jwt_config, &req.approver_id).await {
+            Ok(id) => Some(id),
+            Err(e) => {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({"error": format!("approver_identity_verification_failed: {}", e)})),
+                );
+            }
+        }
+    } else {
+        None
+    };
+    let approver_id = verified_approver.unwrap_or_else(|| req.approver_id.clone());
     // Verify the token exists
     let token = match app.storage.get_token(&token_id).await {
         Ok(Some(t)) => t,
@@ -1381,11 +1652,11 @@ async fn handle_approve(
     }
 
     // Sign the approval with the gate's key (approvals are gate-signed)
-    let approval_sig = app.keys.sign_decision(&format!("approve:{}:{}", token_id, req.approver_id));
+    let approval_sig = app.keys.sign_decision(&format!("approve:{}:{}", token_id, approver_id));
 
     let rec = ApprovalRecord {
         token_id: token_id.clone(),
-        approver_id: req.approver_id.clone(),
+        approver_id: approver_id.clone(),
         approved_unix_ms: now_unix_ms(),
         signature: approval_sig,
     };
@@ -1406,6 +1677,409 @@ async fn handle_approve(
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({"error": format!("store_failed: {}", e)})),
+        ),
+    }
+}
+
+// ── Tool health / circuit breaker endpoints ─────────────────────────────────
+//
+// The gate authorizes tool calls but does not execute them — it cannot observe
+// downstream failures itself. Callers report execution outcomes via
+// POST /tool-health/report. After DGV_CIRCUIT_BREAKER_THRESHOLD consecutive
+// failures (default 5), the circuit opens and /govern denies new proposals for
+// that tool until DGV_CIRCUIT_BREAKER_COOLDOWN_MS (default 30s) elapses.
+
+#[derive(Deserialize)]
+struct ToolHealthReport {
+    tool: String,
+    success: bool,
+    /// Optional detail — e.g. downstream error message, recorded in evidence
+    detail: Option<String>,
+}
+
+async fn handle_tool_health_report(
+    State(app): State<AppState>,
+    Json(req): Json<ToolHealthReport>,
+) -> impl IntoResponse {
+    let cb_threshold: u32 = std::env::var("DGV_CIRCUIT_BREAKER_THRESHOLD")
+        .ok().and_then(|v| v.parse().ok()).unwrap_or(5);
+
+    let mut health_map = app.tool_health.lock().unwrap();
+    let health = health_map.entry(req.tool.clone()).or_insert_with(ToolHealth::new);
+    if req.success {
+        health.record_success();
+    } else {
+        health.record_failure(cb_threshold);
+    }
+    (
+        StatusCode::OK,
+        Json(json!({
+            "tool": req.tool,
+            "circuit_open": health.circuit_open,
+            "consecutive_failures": health.consecutive_failures,
+        })),
+    )
+}
+
+/// GET /tool-health — circuit breaker state for all tracked tools
+async fn handle_tool_health(State(app): State<AppState>) -> impl IntoResponse {
+    let health_map = app.tool_health.lock().unwrap();
+    let tools: serde_json::Map<String, serde_json::Value> = health_map
+        .iter()
+        .map(|(tool, h)| {
+            (tool.clone(), json!({
+                "circuit_open": h.circuit_open,
+                "consecutive_failures": h.consecutive_failures,
+                "opened_at_ms": h.opened_at_ms,
+            }))
+        })
+        .collect();
+    (StatusCode::OK, Json(json!({ "tools": tools })))
+}
+
+/// POST /tool-health/reset/:tool — manually reset a circuit (admin)
+async fn handle_tool_health_reset(
+    State(app): State<AppState>,
+    Path(tool): Path<String>,
+) -> impl IntoResponse {
+    let mut health_map = app.tool_health.lock().unwrap();
+    if let Some(h) = health_map.get_mut(&tool) {
+        h.record_success();
+    }
+    (StatusCode::OK, Json(json!({"tool": tool, "circuit_open": false})))
+}
+
+// ── Agent-to-Agent (A2A) signed envelopes ────────────────────────────────────
+//
+// DGV-native A2A design: agents register Ed25519 public keys (admin-provisioned),
+// then exchange signed envelopes routed through the gate. The gate verifies the
+// sender's signature, enforces expiry/replay/revocation, stores the envelope for
+// the recipient, and returns a gate-signed delivery receipt. Payloads never
+// transit the gate — only payload hashes — so the gate sees metadata, not content.
+//
+// Canonical signing string:
+//   envelope_id|sender_id|recipient_id|payload_hash|nonce|sent_unix_ms|expires_unix_ms
+
+#[derive(Deserialize)]
+struct RegisterAgentKeyRequest {
+    agent_id: String,
+    /// hex-encoded Ed25519 public key (64 hex chars = 32 bytes)
+    public_key_hex: String,
+}
+
+async fn handle_register_agent_key(
+    State(app): State<AppState>,
+    Json(req): Json<RegisterAgentKeyRequest>,
+) -> impl IntoResponse {
+    // Validate the public key parses as Ed25519
+    let key_bytes = match hex::decode(&req.public_key_hex) {
+        Ok(b) if b.len() == 32 => b,
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "invalid_public_key: expected 64 hex chars (32 bytes)"})),
+            );
+        }
+    };
+    if ed25519_dalek::VerifyingKey::from_bytes(&key_bytes.try_into().unwrap()).is_err() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "invalid_public_key: not a valid Ed25519 key"})),
+        );
+    }
+
+    let rec = AgentKeyRecord {
+        agent_id: req.agent_id.clone(),
+        public_key_hex: req.public_key_hex.clone(),
+        registered_unix_ms: now_unix_ms(),
+        active: true,
+    };
+    match app.storage.register_agent_key(rec).await {
+        Ok(()) => (
+            StatusCode::OK,
+            Json(json!({"registered": true, "agent_id": req.agent_id})),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("store_failed: {}", e)})),
+        ),
+    }
+}
+
+async fn handle_deactivate_agent_key(
+    State(app): State<AppState>,
+    Path(agent_id): Path<String>,
+) -> impl IntoResponse {
+    match app.storage.deactivate_agent_key(&agent_id).await {
+        Ok(()) => (StatusCode::OK, Json(json!({"deactivated": true, "agent_id": agent_id}))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("store_failed: {}", e)})),
+        ),
+    }
+}
+
+/// Canonical string that the sender signs — binds all envelope fields together.
+fn a2a_canonical_string(
+    envelope_id: &str,
+    sender_id: &str,
+    recipient_id: &str,
+    payload_hash: &str,
+    nonce: &str,
+    sent_unix_ms: i64,
+    expires_unix_ms: i64,
+) -> String {
+    format!(
+        "{}|{}|{}|{}|{}|{}|{}",
+        envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms, expires_unix_ms
+    )
+}
+
+#[derive(Deserialize)]
+struct A2aSendRequest {
+    envelope_id: String,
+    sender_id: String,
+    recipient_id: String,
+    /// SHA-256 hex of the payload (payload itself does not transit the gate)
+    payload_hash: String,
+    nonce: String,
+    sent_unix_ms: i64,
+    expires_unix_ms: i64,
+    /// Sender's Ed25519 signature (hex) over the canonical envelope string
+    signature: String,
+}
+
+async fn handle_a2a_send(
+    State(app): State<AppState>,
+    Json(req): Json<A2aSendRequest>,
+) -> impl IntoResponse {
+    let now = now_unix_ms();
+
+    // 1. Sender must have a registered, active key
+    let sender_key = match app.storage.get_agent_key(&req.sender_id).await {
+        Ok(Some(k)) if k.active => k,
+        Ok(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "unregistered_sender", "sender_id": req.sender_id})),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            );
+        }
+    };
+
+    // 2. Verify sender's Ed25519 signature over the canonical envelope
+    let canonical = a2a_canonical_string(
+        &req.envelope_id, &req.sender_id, &req.recipient_id,
+        &req.payload_hash, &req.nonce, req.sent_unix_ms, req.expires_unix_ms,
+    );
+    let key_bytes: [u8; 32] = match hex::decode(&sender_key.public_key_hex)
+        .ok().and_then(|b| b.try_into().ok()) {
+        Some(b) => b,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "stored_key_corrupt"})),
+            );
+        }
+    };
+    let vk = match ed25519_dalek::VerifyingKey::from_bytes(&key_bytes) {
+        Ok(v) => v,
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "stored_key_invalid"})),
+            );
+        }
+    };
+    let sig_bytes: [u8; 64] = match hex::decode(&req.signature)
+        .ok().and_then(|b| b.try_into().ok()) {
+        Some(b) => b,
+        None => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "invalid_signature: malformed hex"})),
+            );
+        }
+    };
+    let sig = ed25519_dalek::Signature::from_bytes(&sig_bytes);
+    if vk.verify(canonical.as_bytes(), &sig).is_err() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "invalid_signature: envelope signature verification failed"})),
+        );
+    }
+
+    // 3. Expiry and clock-skew checks
+    if req.expires_unix_ms <= now {
+        return (
+            StatusCode::GONE,
+            Json(json!({"error": "envelope_expired"})),
+        );
+    }
+    const MAX_CLOCK_SKEW_MS: i64 = 60_000;
+    if req.sent_unix_ms > now + MAX_CLOCK_SKEW_MS {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "sent_timestamp_in_future"})),
+        );
+    }
+
+    // 4. Sender and recipient must not be revoked
+    if app.storage.check_revocation(&req.sender_id).await.ok().flatten().is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "sender_revoked", "sender_id": req.sender_id})),
+        );
+    }
+    if app.storage.check_revocation(&req.recipient_id).await.ok().flatten().is_some() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "recipient_revoked", "recipient_id": req.recipient_id})),
+        );
+    }
+
+    // 5. Recipient must have a registered key (otherwise the envelope can't be
+    //    meaningfully verified by the recipient's side of the protocol)
+    match app.storage.get_agent_key(&req.recipient_id).await {
+        Ok(Some(k)) if k.active => {}
+        Ok(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "unregistered_recipient", "recipient_id": req.recipient_id})),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            );
+        }
+    }
+
+    // 6. Gate-signed delivery receipt — evidence that the envelope passed checks
+    let receipt_sig = app.keys.sign_decision(&format!(
+        "a2a-deliver:{}:{}:{}",
+        req.envelope_id, req.sender_id, req.recipient_id
+    ));
+
+    let rec = A2aEnvelopeRecord {
+        envelope_id: req.envelope_id.clone(),
+        sender_id: req.sender_id.clone(),
+        recipient_id: req.recipient_id.clone(),
+        payload_hash: req.payload_hash.clone(),
+        nonce: req.nonce.clone(),
+        sent_unix_ms: req.sent_unix_ms,
+        expires_unix_ms: req.expires_unix_ms,
+        sender_signature: req.signature.clone(),
+        gate_receipt_signature: receipt_sig.clone(),
+        delivered: false,
+        delivered_unix_ms: None,
+    };
+
+    match app.storage.store_a2a_envelope(rec).await {
+        Ok(()) => (
+            StatusCode::OK,
+            Json(json!({
+                "accepted": true,
+                "envelope_id": req.envelope_id,
+                "gate_receipt": receipt_sig,
+                "verifying_key": hex::encode(app.keys.vk.to_bytes()),
+            })),
+        ),
+        // envelope_id PK or (sender_id, nonce) UNIQUE violation → replay
+        Err(StorageError::Conflict) => (
+            StatusCode::CONFLICT,
+            Json(json!({"error": "replay_detected", "envelope_id": req.envelope_id})),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("store_failed: {}", e)})),
+        ),
+    }
+}
+
+/// GET /a2a/inbox/:agent_id — fetch undelivered envelopes.
+/// When JWT is configured, the verified sub must equal agent_id.
+async fn handle_a2a_inbox(
+    State(app): State<AppState>,
+    Path(agent_id): Path<String>,
+    headers: HeaderMap,
+) -> impl IntoResponse {
+    if app.jwt_config.is_some() {
+        match extract_agent_id(&headers, &app.jwt_config, &agent_id).await {
+            Ok(verified) if verified == agent_id => {}
+            Ok(_) => {
+                return (
+                    StatusCode::FORBIDDEN,
+                    Json(json!({"error": "inbox_access_denied: JWT sub does not match recipient"})),
+                );
+            }
+            Err(e) => {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({"error": format!("identity_verification_failed: {}", e)})),
+                );
+            }
+        }
+    }
+
+    match app.storage.get_a2a_inbox(&agent_id).await {
+        Ok(envelopes) => (
+            StatusCode::OK,
+            Json(json!({
+                "agent_id": agent_id,
+                "envelopes": envelopes,
+            })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        ),
+    }
+}
+
+/// POST /a2a/ack/:envelope_id — recipient acknowledges delivery.
+/// Body: {"agent_id": "..."} — must match envelope recipient (JWT-enforced if configured).
+async fn handle_a2a_ack(
+    State(app): State<AppState>,
+    Path(envelope_id): Path<String>,
+    headers: HeaderMap,
+    Json(req): Json<serde_json::Value>,
+) -> impl IntoResponse {
+    let agent_id = req.get("agent_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+
+    if app.jwt_config.is_some() {
+        match extract_agent_id(&headers, &app.jwt_config, &agent_id).await {
+            Ok(verified) if verified == agent_id => {}
+            Ok(_) => {
+                return (
+                    StatusCode::FORBIDDEN,
+                    Json(json!({"error": "ack_denied: JWT sub does not match agent_id"})),
+                );
+            }
+            Err(e) => {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({"error": format!("identity_verification_failed: {}", e)})),
+                );
+            }
+        }
+    }
+
+    match app.storage.mark_a2a_delivered(&envelope_id, now_unix_ms()).await {
+        Ok(()) => (StatusCode::OK, Json(json!({"delivered": true, "envelope_id": envelope_id}))),
+        Err(StorageError::Conflict) => (
+            StatusCode::CONFLICT,
+            Json(json!({"error": "already_delivered_or_not_found"})),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
         ),
     }
 }
@@ -1510,27 +2184,39 @@ async fn main() {
         println!("Admin auth: disabled (DGV_ADMIN_KEY not set — dev mode only)");
     }
 
-    // JWT verification — if DGV_JWT_SECRET or DGV_JWT_PUBLIC_KEY is set, /govern and /execute
-    // require a valid JWT in the Authorization: Bearer header. The sub claim becomes the agent_id.
+    // JWT verification — if DGV_JWT_SECRET, DGV_JWT_PUBLIC_KEY, or DGV_JWT_JWKS_URL is set,
+    // /govern and /execute require a valid JWT. The sub claim becomes the agent_id.
     let jwt_config = {
         let secret = std::env::var("DGV_JWT_SECRET").ok();
         let public_key_pem = std::env::var("DGV_JWT_PUBLIC_KEY").ok();
+        let jwks_url = std::env::var("DGV_JWT_JWKS_URL").ok();
         let issuer = std::env::var("DGV_JWT_ISSUER").ok();
         let audience = std::env::var("DGV_JWT_AUDIENCE").ok();
 
-        if secret.is_some() || public_key_pem.is_some() {
-            println!("JWT auth: enabled (agents must present valid JWT)");
+        if secret.is_some() || public_key_pem.is_some() || jwks_url.is_some() {
+            let mode = if jwks_url.is_some() { "JWKS" } else if public_key_pem.is_some() { "RS256" } else { "HS256" };
+            println!("JWT auth: enabled ({} mode — agents must present valid JWT)", mode);
             Some(JwtConfig {
                 secret,
                 public_key_pem,
+                jwks_url,
                 issuer,
                 audience,
             })
         } else {
-            println!("JWT auth: disabled (no DGV_JWT_SECRET or DGV_JWT_PUBLIC_KEY)");
+            println!("JWT auth: disabled (no DGV_JWT_SECRET, DGV_JWT_PUBLIC_KEY, or DGV_JWT_JWKS_URL)");
             None
         }
     };
+
+    // Semantic verifier webhook — optional external service for justification analysis.
+    // The gate performs no LLM analysis itself; this delegates to a pluggable verifier.
+    let semantic_verifier_url = std::env::var("DGV_SEMANTIC_VERIFIER_URL").ok();
+    let semantic_fail_closed = std::env::var("DGV_SEMANTIC_FAIL_CLOSED")
+        .map(|v| v == "1" || v == "true").unwrap_or(false);
+    if semantic_verifier_url.is_some() {
+        println!("Semantic verifier: enabled (fail_closed={})", semantic_fail_closed);
+    }
 
     let app_state = AppState {
         storage,
@@ -1539,6 +2225,9 @@ async fn main() {
         rate_limit: Arc::new(std::sync::RwLock::new(rate_limit)),
         admin_key: admin_key.clone(),
         jwt_config,
+        tool_health: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
+        semantic_verifier_url,
+        semantic_fail_closed,
     };
 
     // Public routes (no auth required)
@@ -1551,6 +2240,11 @@ async fn main() {
         .route("/policies/:tool/:action", get(handle_get_policy))
         .route("/revocations", get(list_revocations))
         .route("/approve/:token_id", post(handle_approve))
+        .route("/tool-health/report", post(handle_tool_health_report))
+        .route("/tool-health", get(handle_tool_health))
+        .route("/a2a/send", post(handle_a2a_send))
+        .route("/a2a/inbox/:agent_id", get(handle_a2a_inbox))
+        .route("/a2a/ack/:envelope_id", post(handle_a2a_ack))
         .route("/config/rate-limit", get(handle_get_rate_limit));
 
     // Admin routes (require X-Admin-Key when DGV_ADMIN_KEY is set)
@@ -1560,6 +2254,9 @@ async fn main() {
         .route("/revocations", post(handle_revoke))
         .route("/tenant/:tenant_id/policies", post(handle_store_tenant_policy))
         .route("/config/rate-limit", put(handle_update_rate_limit))
+        .route("/tool-health/reset/:tool", post(handle_tool_health_reset))
+        .route("/agents/keys", post(handle_register_agent_key))
+        .route("/agents/keys/:agent_id", delete(handle_deactivate_agent_key))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             admin_auth_middleware,

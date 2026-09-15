@@ -9,8 +9,8 @@ use sqlx::Row;
 use std::str::FromStr;
 
 use crate::{
-    ApprovalRecord, DecisionRecord, PolicyRecord, RateLimitRecord, RevocationRecord, Storage,
-    StorageError, TokenRecord,
+    A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, PolicyRecord,
+    RevocationRecord, Storage, StorageError, TokenRecord,
 };
 
 pub struct SqliteStorage {
@@ -109,6 +109,27 @@ impl SqliteStorage {
                 signature TEXT NOT NULL,
                 PRIMARY KEY (token_id, approver_id)
             )"#,
+            r#"CREATE TABLE IF NOT EXISTS agent_keys (
+                agent_id TEXT PRIMARY KEY,
+                public_key_hex TEXT NOT NULL,
+                registered_unix_ms INTEGER NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1
+            )"#,
+            r#"CREATE TABLE IF NOT EXISTS a2a_envelopes (
+                envelope_id TEXT PRIMARY KEY,
+                sender_id TEXT NOT NULL,
+                recipient_id TEXT NOT NULL,
+                payload_hash TEXT NOT NULL,
+                nonce TEXT NOT NULL,
+                sent_unix_ms INTEGER NOT NULL,
+                expires_unix_ms INTEGER NOT NULL,
+                sender_signature TEXT NOT NULL,
+                gate_receipt_signature TEXT NOT NULL,
+                delivered INTEGER NOT NULL DEFAULT 0,
+                delivered_unix_ms INTEGER
+            )"#,
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_a2a_nonce ON a2a_envelopes(sender_id, nonce)",
+            "CREATE INDEX IF NOT EXISTS idx_a2a_inbox ON a2a_envelopes(recipient_id, delivered)",
         ];
         for stmt in statements {
             sqlx::query(stmt).execute(pool).await?;
@@ -453,6 +474,107 @@ impl Storage for SqliteStorage {
             .fetch_one(&self.pool)
             .await?;
         Ok(row.get::<i64, _>("cnt"))
+    }
+
+    async fn register_agent_key(&self, k: AgentKeyRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"INSERT OR REPLACE INTO agent_keys
+               (agent_id, public_key_hex, registered_unix_ms, active)
+               VALUES (?, ?, ?, ?)"#,
+        )
+        .bind(&k.agent_id)
+        .bind(&k.public_key_hex)
+        .bind(k.registered_unix_ms)
+        .bind(k.active)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_agent_key(&self, agent_id: &str) -> Result<Option<AgentKeyRecord>, StorageError> {
+        let row = sqlx::query("SELECT * FROM agent_keys WHERE agent_id = ?")
+            .bind(agent_id)
+            .fetch_optional(&self.pool)
+            .await?;
+        match row {
+            Some(r) => Ok(Some(AgentKeyRecord {
+                agent_id: r.get("agent_id"),
+                public_key_hex: r.get("public_key_hex"),
+                registered_unix_ms: r.get("registered_unix_ms"),
+                active: r.get::<i64, _>("active") != 0,
+            })),
+            None => Ok(None),
+        }
+    }
+
+    async fn deactivate_agent_key(&self, agent_id: &str) -> Result<(), StorageError> {
+        sqlx::query("UPDATE agent_keys SET active = 0 WHERE agent_id = ?")
+            .bind(agent_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn store_a2a_envelope(&self, e: A2aEnvelopeRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"INSERT INTO a2a_envelopes
+               (envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms,
+                expires_unix_ms, sender_signature, gate_receipt_signature, delivered, delivered_unix_ms)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+        )
+        .bind(&e.envelope_id)
+        .bind(&e.sender_id)
+        .bind(&e.recipient_id)
+        .bind(&e.payload_hash)
+        .bind(&e.nonce)
+        .bind(e.sent_unix_ms)
+        .bind(e.expires_unix_ms)
+        .bind(&e.sender_signature)
+        .bind(&e.gate_receipt_signature)
+        .bind(e.delivered)
+        .bind(e.delivered_unix_ms)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_a2a_inbox(&self, recipient_id: &str) -> Result<Vec<A2aEnvelopeRecord>, StorageError> {
+        let rows = sqlx::query(
+            "SELECT * FROM a2a_envelopes WHERE recipient_id = ? AND delivered = 0 ORDER BY sent_unix_ms ASC",
+        )
+        .bind(recipient_id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|r| A2aEnvelopeRecord {
+                envelope_id: r.get("envelope_id"),
+                sender_id: r.get("sender_id"),
+                recipient_id: r.get("recipient_id"),
+                payload_hash: r.get("payload_hash"),
+                nonce: r.get("nonce"),
+                sent_unix_ms: r.get("sent_unix_ms"),
+                expires_unix_ms: r.get("expires_unix_ms"),
+                sender_signature: r.get("sender_signature"),
+                gate_receipt_signature: r.get("gate_receipt_signature"),
+                delivered: r.get::<i64, _>("delivered") != 0,
+                delivered_unix_ms: r.get("delivered_unix_ms"),
+            })
+            .collect())
+    }
+
+    async fn mark_a2a_delivered(&self, envelope_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError> {
+        let result = sqlx::query(
+            "UPDATE a2a_envelopes SET delivered = 1, delivered_unix_ms = ? WHERE envelope_id = ? AND delivered = 0",
+        )
+        .bind(delivered_unix_ms)
+        .bind(envelope_id)
+        .execute(&self.pool)
+        .await?;
+        if result.rows_affected() == 0 {
+            return Err(StorageError::Conflict); // already delivered or not found
+        }
+        Ok(())
     }
 
     async fn ping(&self) -> Result<(), StorageError> {

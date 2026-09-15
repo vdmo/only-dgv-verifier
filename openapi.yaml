@@ -6,9 +6,18 @@ info:
     computed decisions with signed receipts. Supports persistent storage (SQLite/Postgres),
     multi-tenant policies, distributed revocation, and rate limiting.
 
-    **Authentication**: Admin endpoints require `X-Admin-Key` header when `DGV_ADMIN_KEY` is set.
-    Public endpoints are open.
-  version: "0.2.0"
+    **Authentication**: Admin endpoints require `X-Admin-Key` header when `DGV_ADMIN_KEY`
+    is set. When `DGV_JWT_SECRET`, `DGV_JWT_PUBLIC_KEY`, or `DGV_JWT_JWKS_URL` is set,
+    `/govern`, `/execute`, `/approve`, and A2A inbox/ack require a valid
+    `Authorization: Bearer` JWT — HS256, RS256 (static PEM), or RS256 via JWKS with
+    `kid`-based key rotation. The `sub` claim becomes the verified agent identity.
+
+    **A2A**: agents exchange signed Ed25519 envelopes via `/a2a/*`. Keys are
+    admin-provisioned; payloads never transit the gate (hash-only).
+
+    **Circuit breakers**: `/tool-health/*` endpoints track per-tool failure
+    cascades and auto-deny new proposals while a circuit is open.
+  version: "0.4.0"
   contact:
     name: DGV Verifier
     url: https://github.com/vdmo/only-dgv-verifier
@@ -30,6 +39,10 @@ tags:
     description: Multi-tenant isolation (admin)
   - name: Config
     description: Runtime configuration (admin)
+  - name: CircuitBreaker
+    description: Per-tool circuit breakers — cascading-failure protection
+  - name: A2A
+    description: Agent-to-agent signed envelopes — authenticated, replay-protected messaging
 
 paths:
   /govern:
@@ -381,6 +394,211 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /tool-health/report:
+    post:
+      tags: [CircuitBreaker]
+      summary: Report a tool execution outcome
+      description: |
+        Callers report downstream tool outcomes. Consecutive failures feed the
+        per-tool circuit breaker — after DGV_CIRCUIT_BREAKER_THRESHOLD failures
+        (default 5) the circuit opens and /govern denies new proposals for the
+        tool until DGV_CIRCUIT_BREAKER_COOLDOWN_MS (default 30s) elapses.
+      operationId: reportToolHealth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tool, success]
+              properties:
+                tool: {type: string}
+                success: {type: boolean}
+                detail: {type: string}
+      responses:
+        '200':
+          description: Updated circuit state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool: {type: string}
+                  circuit_open: {type: boolean}
+                  consecutive_failures: {type: integer}
+
+  /tool-health:
+    get:
+      tags: [CircuitBreaker]
+      summary: Circuit breaker state for all tools
+      operationId: getToolHealth
+      responses:
+        '200':
+          description: Map of tool → breaker state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tools:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        circuit_open: {type: boolean}
+                        consecutive_failures: {type: integer}
+                        opened_at_ms: {type: integer, nullable: true}
+
+  /tool-health/reset/{tool}:
+    post:
+      tags: [CircuitBreaker]
+      summary: Manually reset a tool's circuit breaker
+      operationId: resetToolHealth
+      security:
+        - adminKey: []
+      parameters:
+        - name: tool
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Circuit reset
+        '401':
+          description: Admin auth required
+
+  /agents/keys:
+    post:
+      tags: [A2A]
+      summary: Register an agent's Ed25519 public key
+      description: |
+        Agents cannot self-register — keys are admin-provisioned. The key
+        verifies the agent's signatures on A2A envelopes. Requires admin key.
+      operationId: registerAgentKey
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agent_id, public_key_hex]
+              properties:
+                agent_id: {type: string}
+                public_key_hex:
+                  type: string
+                  description: hex-encoded Ed25519 public key (32 bytes)
+      responses:
+        '200': {description: Key registered}
+        '400': {description: Invalid public key}
+        '401': {description: Admin auth required}
+
+  /agents/keys/{agent_id}:
+    delete:
+      tags: [A2A]
+      summary: Deactivate an agent's key
+      description: Agent can no longer send or receive A2A envelopes. Admin.
+      operationId: deactivateAgentKey
+      security:
+        - adminKey: []
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Key deactivated}
+        '401': {description: Admin auth required}
+
+  /a2a/send:
+    post:
+      tags: [A2A]
+      summary: Submit a signed agent-to-agent envelope
+      description: |
+        Delivers a signed envelope from one registered agent to another.
+        The gate verifies the sender's Ed25519 signature over the canonical
+        string `envelope_id|sender_id|recipient_id|payload_hash|nonce|sent_unix_ms|expires_unix_ms`,
+        checks expiry, clock skew, sender/recipient revocation and key status,
+        and rejects replays via envelope_id and (sender_id, nonce) uniqueness.
+        Payloads never transit the gate — only payload hashes. Returns a
+        gate-signed delivery receipt.
+      operationId: a2aSend
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/A2aEnvelope'
+      responses:
+        '200':
+          description: Envelope accepted, gate receipt returned
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted: {type: boolean}
+                  envelope_id: {type: string}
+                  gate_receipt: {type: string}
+                  verifying_key: {type: string}
+        '403':
+          description: Invalid signature, unregistered/revoked sender or recipient
+        '409':
+          description: Replay detected (duplicate envelope_id or nonce)
+        '410':
+          description: Envelope expired
+
+  /a2a/inbox/{agent_id}:
+    get:
+      tags: [A2A]
+      summary: Fetch undelivered envelopes
+      description: When JWT is configured, the verified sub must equal agent_id.
+      operationId: a2aInbox
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Undelivered envelopes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent_id: {type: string}
+                  envelopes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/A2aEnvelopeRecord'
+        '401': {description: JWT required}
+        '403': {description: JWT sub mismatch}
+
+  /a2a/ack/{envelope_id}:
+    post:
+      tags: [A2A]
+      summary: Acknowledge envelope delivery
+      operationId: a2aAck
+      parameters:
+        - name: envelope_id
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agent_id]
+              properties:
+                agent_id: {type: string}
+      responses:
+        '200': {description: Marked delivered}
+        '409': {description: Already delivered or not found}
+
   /config/rate-limit:
     get:
       tags: [Config]
@@ -724,3 +942,43 @@ components:
           type: string
         hint:
           type: string
+
+    A2aEnvelope:
+      type: object
+      required: [envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms, expires_unix_ms, signature]
+      properties:
+        envelope_id:
+          type: string
+          description: Unique envelope ID — replay protection
+        sender_id:
+          type: string
+        recipient_id:
+          type: string
+        payload_hash:
+          type: string
+          description: SHA-256 of the payload (payload does not transit the gate)
+        nonce:
+          type: string
+          description: Random nonce, unique per sender
+        sent_unix_ms:
+          type: integer
+        expires_unix_ms:
+          type: integer
+        signature:
+          type: string
+          description: Sender's Ed25519 signature (hex) over the canonical envelope string
+
+    A2aEnvelopeRecord:
+      allOf:
+        - $ref: '#/components/schemas/A2aEnvelope'
+        - type: object
+          properties:
+            sender_signature:
+              type: string
+            gate_receipt_signature:
+              type: string
+            delivered:
+              type: boolean
+            delivered_unix_ms:
+              type: integer
+              nullable: true

@@ -101,6 +101,9 @@ impersonates an agent to gain unauthorized access.
 | Multi-instance revocation | Revocation visible to all instances sharing DB | **Implemented** — distributed revocation tests |
 | Admin auth | `X-Admin-Key` required for admin endpoints | **Implemented** |
 | **JWT identity** | `DGV_JWT_SECRET` verifies HS256 JWTs; `sub` claim = verified agent_id | **Implemented** — `/govern` and `/execute` require valid JWT when configured |
+|| Algorithm pinning | Expected algorithm fixed per configured mode — token `alg` header cannot downgrade | **Implemented** — rejects HS256-in-JWKS-mode confusion |
+|| RS256/JWKS | `DGV_JWT_PUBLIC_KEY` (static PEM) or `DGV_JWT_JWKS_URL` with `kid` rotation | **Implemented** — keys selected by `kid`, unknown kid denied |
+|| A2A agent keys | Per-agent Ed25519 keys, admin-provisioned, deactivatable | **Implemented** — `POST/DELETE /agents/keys` |
 | Test cards | TC-013, TC-014, TC-015, TC-016, TC-017 | **89/89 pass** |
 
 **How DGV mitigates:**
@@ -115,8 +118,8 @@ impersonates an agent to gain unauthorized access.
   or modify policies.
 
 **Remaining gaps:**
-- **No RS256/JWKS** — only HS256 shared secret is supported. Production deployments
-  should use RS256 with a JWKS endpoint for key rotation.
+- **JWKS fetched per-request** — no key caching yet; each verification hits the
+  JWKS endpoint. Production deployments should add TTL-based caching.
 - **No per-user RBAC** — admin auth is a single shared key, not per-user permissions.
 - **No delegation tokens** — the `link_lineage` command exists but delegation chains
   are not cryptographically enforced end-to-end.
@@ -259,14 +262,18 @@ spoof legitimate inter-agent messages.
 
 **Gaps:**
 - **No mTLS** — gate-to-gate communication is not mutually authenticated.
-- **No agent-to-agent protocol** — DGV governs agent→tool calls, not agent→agent
-  communication. There's no mechanism for one agent to verify another agent's
-  decisions.
-- **No message signing between agents** — inter-agent messages are not signed.
+- ~~**No agent-to-agent protocol**~~ **Resolved:** `/a2a/*` endpoints implement
+  signed Ed25519 envelopes with admin-provisioned agent keys, expiry,
+  replay protection (envelope_id + per-sender nonce uniqueness), revocation
+  checks on both parties, and gate-signed delivery receipts.
+- **Payloads are hash-only** — the gate sees envelope metadata, not contents.
+  End-to-end payload encryption between agents is out of scope (agents encrypt
+  payloads themselves; the gate binds the hash).
 
-**Coverage: Partial.** The communication channel is secured (TLS) and decisions are
-signed, but inter-agent communication security is not addressed. DGV is a single-agent
-gate, not a multi-agent communication protocol.
+**Coverage: Moderate-Strong.** The communication channel is secured (TLS), decisions
+are signed, and agent-to-agent messaging now has authenticated identities, signed
+envelopes, replay protection, expiry, and revocation enforcement. Remaining gap:
+no mTLS between gate instances.
 
 ---
 
@@ -281,6 +288,7 @@ amplifying the impact.
 |---|---|---|
 | Rate limiting | Prevents runaway execution | **Implemented** — per agent+tool |
 | `budget_limit` | Caps resource expenditure per action | **Implemented** — L8 command |
+| Circuit breakers | Per-tool failure tracking, auto-disable | **Implemented** — `/tool-health/*` endpoints |
 | SILENCE on error | Governance failures return SILENCE, not crash | **Implemented** — no unhandled exceptions |
 | Replay protection | Prevents cascading replay attacks | **Implemented** — one-use tokens |
 | Test cards | TC-031, TC-032 | **89/89 pass** |
@@ -289,19 +297,26 @@ amplifying the impact.
 - Rate limiting prevents a single agent from overwhelming the system — once the limit
   is hit, further requests are denied with 429.
 - `budget_limit` caps the total resources an agent can consume per action.
+- **Circuit breakers:** callers report tool outcomes via `POST /tool-health/report`.
+  After `DGV_CIRCUIT_BREAKER_THRESHOLD` consecutive failures (default 5) the circuit
+  opens and `/govern` denies new proposals for that tool. After
+  `DGV_CIRCUIT_BREAKER_COOLDOWN_MS` (default 30s) the circuit half-opens — one probe
+  request is allowed through; success closes the circuit, failure re-opens it.
+  Admin reset via `POST /tool-health/reset/:tool`.
 - The SILENCE response ensures that a governance failure doesn't propagate as an
   unhandled error.
 
 **Gaps:**
-- **No circuit breakers** — no mechanism to automatically disable a tool that is
-  producing bad results.
-- **No dependency health checks** — the gate doesn't check if downstream tools are
-  healthy before allowing a call.
+- **Caller-reported failures** — the gate cannot observe downstream tool failures
+  itself; the circuit breaker depends on callers honestly reporting outcomes.
+- **Breaker state is per-instance** — in-memory `tool_health` map is not shared
+  across gate instances (unlike revocations, which live in shared storage).
 - **No bulkhead isolation** — all tools share the same gate; a gate failure affects
   all agents.
 
-**Coverage: Moderate.** Rate limiting and budget caps prevent resource-exhaustion
-cascades, but there's no failure-detection or circuit-breaking mechanism.
+**Coverage: Moderate.** Rate limiting, budget caps, and per-tool circuit breakers
+prevent both resource-exhaustion and failure cascades. Remaining gap: breaker
+state is not shared across multi-instance deployments.
 
 ---
 
@@ -333,18 +348,23 @@ actions — through persuasive language, false urgency, or misleading informatio
   approved, what was executed.
 
 **Remaining gaps:**
-- **No justification semantic verification** — the gate checks justification
-  *length* but not *accuracy*. An agent could write a long but misleading
-  justification.
-- **No approval identity verification** — approver IDs are strings, not verified
-  credentials. A compromised approver ID could approve malicious actions.
+- ~~**No justification semantic verification**~~ **Partially resolved:**
+  `DGV_SEMANTIC_VERIFIER_URL` configures a pluggable external verifier webhook.
+  The gate POSTs `{agent_id, tool, action, justification, params}` and enforces
+  the returned `{allowed, reason}` verdict. The gate itself performs **no LLM
+  analysis** — this is an explicit extension point. `DGV_SEMANTIC_FAIL_CLOSED=1`
+  denies when the verifier is unreachable (default: fail-open with warning).
+- ~~**No approval identity verification**~~ **Resolved:** when JWT is configured,
+  `/approve/:token_id` requires a valid JWT and the verified `sub` claim becomes
+  the approver identity — approval records can no longer be forged with
+  arbitrary `approver_id` strings.
 - **No approval expiry** — approvals don't expire; an approval for a stale
-  token is still valid.
+  token is still valid (mitigated by token expiry at execute time).
 
-**Coverage: Moderate.** Approval workflow is now enforced — the gate blocks
-execution until `min_approvals` are received. Combined with justification
-requirements and evidence packs, this provides real human-in-the-loop governance.
-The remaining gap is semantic verification of justification content.
+**Coverage: Moderate-Strong.** Approval workflow is enforced with verified approver
+identities, justification length requirements, and an optional pluggable semantic
+verifier. Remaining gap: semantic verification quality depends entirely on the
+external verifier implementation.
 
 ---
 
@@ -400,13 +420,13 @@ mathematical governance — it catches mechanical divergence, not semantic malic
 |---|---|---|---|---|
 | ASI01 | Agent Goal Hijack | **Partial** | `bind_objective` + drift check | No semantic intent analysis |
 | ASI02 | Tool Misuse | **Strong** | Token binding to tool+action+params | No input sanitization |
-| ASI03 | Identity & Privilege | **Strong** | JWT identity + revocation + tenant isolation | No RS256/JWKS, no delegation |
+| ASI03 | Identity & Privilege | **Strong** | JWT (HS256 + RS256/JWKS) + revocation + tenant isolation + A2A key registry | No JWKS caching, no delegation |
 | ASI04 | Supply Chain | **Moderate** | Policy signing + evidence packs | No dep scanning, no MCP security |
 | ASI05 | Unexpected Code Exec | **Partial** | Token binding prevents unauthorized exec | No input sanitization/sandboxing |
 | ASI06 | Memory Poisoning | **Moderate** | `bind_context` + drift check + context_hash | Full context hashing is opt-in |
-| ASI07 | Inter-Agent Comms | **Partial** | TLS + signed decisions | No mTLS, no agent-to-agent protocol |
-| ASI08 | Cascading Failures | **Moderate** | Rate limiting + budget caps | No circuit breakers |
-| ASI09 | Human Trust Exploit | **Moderate** | Approval workflow + justification enforcement | No semantic justification verification |
+| ASI07 | Inter-Agent Comms | **Moderate-Strong** | Signed A2A envelopes + replay protection + revocation | No mTLS, payload E2E encryption out of scope |
+| ASI08 | Cascading Failures | **Moderate** | Rate limiting + budget caps + per-tool circuit breakers | Breaker state is per-instance |
+| ASI09 | Human Trust Exploit | **Moderate-Strong** | Verified approver identity + justification enforcement + semantic verifier hook | Verifier quality is external |
 | ASI10 | Rogue Agents | **Moderate** | Drift + residual + evidence | Mathematical bounds only |
 
 ## What This Means
@@ -430,11 +450,17 @@ and securing the external supply chain.
 
 ## Recommended Next Steps (from gap analysis)
 
-1. ~~OIDC/JWT identity providers~~ — **Done** (HS256 JWT verification, `sub` claim = verified agent_id)
+1. ~~OIDC/JWT identity providers~~ — **Done** (HS256 + RS256/JWKS, `sub` claim = verified agent_id)
 2. ~~Approval workflow~~ — **Done** (`min_approvals` in policies, `POST /approve/:token_id`, enforced at execute)
 3. ~~Policy signing~~ — **Done** (Ed25519-signed policies, verified on load)
-4. **RS256/JWKS support** — upgrade from HS256 shared secret to RS256 with JWKS endpoint
-5. **Semantic justification verification** — LLM-based check that the stated justification matches the proposed action
-6. **Full context hashing by default** — make `context_hash` required, not opt-in
-7. **Circuit breakers** — auto-disable tools that produce bad results
-8. **Agent-to-agent protocol** — secure inter-agent communication with signed messages
+4. ~~RS256/JWKS support~~ — **Done** (`DGV_JWT_JWKS_URL`, `kid` selection, algorithm pinning)
+5. ~~Semantic justification verification~~ — **Done** (pluggable webhook `DGV_SEMANTIC_VERIFIER_URL`; gate performs no LLM analysis itself)
+6. ~~Circuit breakers~~ — **Done** (per-tool `/tool-health/*`, threshold + cooldown + half-open + admin reset)
+7. ~~Agent-to-agent protocol~~ — **Done** (signed Ed25519 envelopes, admin-provisioned keys, replay/expiry/revocation)
+8. ~~Approver identity verification~~ — **Done** (JWT `sub` is the approver identity on `/approve`)
+9. **JWKS key caching** — keys are fetched per-request; add TTL-based cache
+10. **Shared circuit-breaker state** — breaker state is per-instance; move to shared storage for multi-instance consistency
+11. **Full context hashing by default** — make `context_hash` required, not opt-in
+12. **A2A payload encryption** — payloads are hash-only at the gate; end-to-end encryption is the agents' responsibility (documented pattern needed)
+13. **Consensus-grade revocation** — shared-DB revocation is not partition-tolerant
+14. **Independent third-party audit** — external validation of crypto + governance logic

@@ -1039,6 +1039,7 @@ dependencies = [
  "only-lang",
  "only-memory",
  "rand 0.8.6",
+ "reqwest",
  "serde",
  "serde_json",
  "serde_yaml",

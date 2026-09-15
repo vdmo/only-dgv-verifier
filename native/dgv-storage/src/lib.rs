@@ -89,6 +89,39 @@ pub struct ApprovalRecord {
     pub signature: String,
 }
 
+/// Registered agent public key for A2A envelope signature verification.
+/// Agents cannot self-register — keys are provisioned by an admin.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentKeyRecord {
+    pub agent_id: String,
+    /// hex-encoded Ed25519 public key (32 bytes)
+    pub public_key_hex: String,
+    pub registered_unix_ms: i64,
+    pub active: bool,
+}
+
+/// Signed agent-to-agent message envelope. The payload itself is NOT stored —
+/// only its hash — so the gate sees metadata, not message contents.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct A2aEnvelopeRecord {
+    /// Unique envelope ID — doubles as replay protection
+    pub envelope_id: String,
+    pub sender_id: String,
+    pub recipient_id: String,
+    /// SHA-256 of the message payload (payload never transits the gate)
+    pub payload_hash: String,
+    /// Sender-supplied random nonce — unique per sender
+    pub nonce: String,
+    pub sent_unix_ms: i64,
+    pub expires_unix_ms: i64,
+    /// Sender's Ed25519 signature over the canonical envelope string
+    pub sender_signature: String,
+    /// Gate's signature over the delivery receipt
+    pub gate_receipt_signature: String,
+    pub delivered: bool,
+    pub delivered_unix_ms: Option<i64>,
+}
+
 // ── Storage trait ────────────────────────────────────────────────────────────
 
 #[async_trait]
@@ -122,6 +155,16 @@ pub trait Storage: Send + Sync {
     // Approvals
     async fn store_approval(&self, a: ApprovalRecord) -> Result<(), StorageError>;
     async fn count_approvals(&self, token_id: &str) -> Result<i64, StorageError>;
+
+    // Agent key registry (A2A)
+    async fn register_agent_key(&self, k: AgentKeyRecord) -> Result<(), StorageError>;
+    async fn get_agent_key(&self, agent_id: &str) -> Result<Option<AgentKeyRecord>, StorageError>;
+    async fn deactivate_agent_key(&self, agent_id: &str) -> Result<(), StorageError>;
+
+    // A2A envelopes
+    async fn store_a2a_envelope(&self, e: A2aEnvelopeRecord) -> Result<(), StorageError>;
+    async fn get_a2a_inbox(&self, recipient_id: &str) -> Result<Vec<A2aEnvelopeRecord>, StorageError>;
+    async fn mark_a2a_delivered(&self, envelope_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError>;
 
     // Health
     async fn ping(&self) -> Result<(), StorageError>;

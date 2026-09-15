@@ -376,5 +376,127 @@ class GateClient:
         return RateLimitConfig(**resp)
 
     def approve(self, token_id: str, approver_id: str) -> Dict[str, Any]:
-        """Approve a token (for multi-approval policies). Requires admin key."""
+        """Approve a token (for multi-approval policies). Requires JWT when configured."""
         return self._request("POST", f"/approve/{token_id}", {"approver_id": approver_id})
+
+    # ── Circuit breaker / tool health ──────────────────────────────────────────
+
+    def report_tool_health(self, tool: str, success: bool, detail: Optional[str] = None) -> Dict[str, Any]:
+        """Report a tool execution outcome. Failures feed the circuit breaker —
+        after DGV_CIRCUIT_BREAKER_THRESHOLD consecutive failures the tool is
+        auto-disabled at /govern until the cooldown elapses."""
+        body: Dict[str, Any] = {"tool": tool, "success": success}
+        if detail:
+            body["detail"] = detail
+        return self._request("POST", "/tool-health/report", body)
+
+    def tool_health(self) -> Dict[str, Any]:
+        """Get circuit breaker state for all tracked tools."""
+        return self._request("GET", "/tool-health")
+
+    def reset_tool_health(self, tool: str) -> Dict[str, Any]:
+        """Manually reset a tool's circuit breaker. Requires admin key."""
+        return self._request("POST", f"/tool-health/reset/{tool}")
+
+    # ── Agent-to-Agent (A2A) signed envelopes ──────────────────────────────────
+
+    def register_agent_key(self, agent_id: str, public_key_hex: str) -> Dict[str, Any]:
+        """Register an agent's Ed25519 public key for A2A signing. Requires admin key."""
+        return self._request("POST", "/agents/keys", {
+            "agent_id": agent_id,
+            "public_key_hex": public_key_hex,
+        })
+
+    def deactivate_agent_key(self, agent_id: str) -> Dict[str, Any]:
+        """Deactivate an agent's key — agent can no longer send A2A envelopes. Admin."""
+        return self._request("DELETE", f"/agents/keys/{agent_id}")
+
+    def a2a_send(
+        self,
+        envelope_id: str,
+        sender_id: str,
+        recipient_id: str,
+        payload_hash: str,
+        nonce: str,
+        sent_unix_ms: int,
+        expires_unix_ms: int,
+        signature: str,
+    ) -> Dict[str, Any]:
+        """Submit a signed A2A envelope. The signature must be the sender's
+        Ed25519 signature over the canonical string:
+        envelope_id|sender_id|recipient_id|payload_hash|nonce|sent_unix_ms|expires_unix_ms
+        Use A2aEnvelope.sign() to build this."""
+        return self._request("POST", "/a2a/send", {
+            "envelope_id": envelope_id,
+            "sender_id": sender_id,
+            "recipient_id": recipient_id,
+            "payload_hash": payload_hash,
+            "nonce": nonce,
+            "sent_unix_ms": sent_unix_ms,
+            "expires_unix_ms": expires_unix_ms,
+            "signature": signature,
+        })
+
+    def a2a_inbox(self, agent_id: str) -> List[Dict[str, Any]]:
+        """Fetch undelivered envelopes for an agent. JWT sub must match when configured."""
+        resp = self._request("GET", f"/a2a/inbox/{agent_id}")
+        return resp.get("envelopes", [])
+
+    def a2a_ack(self, envelope_id: str, agent_id: str) -> Dict[str, Any]:
+        """Acknowledge delivery of an envelope."""
+        return self._request("POST", f"/a2a/ack/{envelope_id}", {"agent_id": agent_id})
+
+
+def a2a_canonical_string(
+    envelope_id: str,
+    sender_id: str,
+    recipient_id: str,
+    payload_hash: str,
+    nonce: str,
+    sent_unix_ms: int,
+    expires_unix_ms: int,
+) -> str:
+    """Canonical string that senders sign — binds all envelope fields together."""
+    return f"{envelope_id}|{sender_id}|{recipient_id}|{payload_hash}|{nonce}|{sent_unix_ms}|{expires_unix_ms}"
+
+
+def sign_a2a_envelope(
+    signing_key_hex: str,
+    envelope_id: str,
+    sender_id: str,
+    recipient_id: str,
+    payload: bytes,
+    nonce: str,
+    expires_unix_ms: int,
+    sent_unix_ms: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Build and sign an A2A envelope. Requires PyNaCl (`pip install pynacl`).
+
+    Returns a dict ready to pass to GateClient.a2a_send(**result), minus
+    payload_hash which is computed from `payload` (the payload itself never
+    transits the gate).
+    """
+    import hashlib
+    import time
+    try:
+        import nacl.signing
+    except ImportError:
+        raise ImportError("sign_a2a_envelope requires PyNaCl: pip install pynacl")
+
+    sk = nacl.signing.SigningKey(bytes.fromhex(signing_key_hex))
+    sent = sent_unix_ms if sent_unix_ms is not None else int(time.time() * 1000)
+    payload_hash = hashlib.sha256(payload).hexdigest()
+    canonical = a2a_canonical_string(
+        envelope_id, sender_id, recipient_id, payload_hash, nonce, sent, expires_unix_ms
+    )
+    signature = sk.sign(canonical.encode()).signature.hex()
+    return {
+        "envelope_id": envelope_id,
+        "sender_id": sender_id,
+        "recipient_id": recipient_id,
+        "payload_hash": payload_hash,
+        "nonce": nonce,
+        "sent_unix_ms": sent,
+        "expires_unix_ms": expires_unix_ms,
+        "signature": signature,
+    }

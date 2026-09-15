@@ -180,11 +180,15 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - YAML policy file loading — bulk-load policies from a file
 - Distributed revocation — revocation on one instance is visible to all instances sharing the same database
 - Admin authentication — `X-Admin-Key` header required for admin endpoints when `DGV_ADMIN_KEY` is set
-- **JWT identity verification** — `DGV_JWT_SECRET` enables HS256 JWT verification on `/govern` and `/execute`; `sub` claim becomes the verified `agent_id`
+- **JWT identity verification** — HS256 (`DGV_JWT_SECRET`), RS256 static PEM (`DGV_JWT_PUBLIC_KEY`), or RS256 via JWKS (`DGV_JWT_JWKS_URL`) with `kid`-based key rotation; `sub` claim becomes the verified `agent_id`; algorithm pinned per mode (HS256 tokens rejected in RS256/JWKS mode)
 - **Approval workflow** — `min_approvals` in policies enforces multi-approval before execution; `POST /approve/:token_id` stores approvals
+- **Approver identity verification** — when JWT is configured, `/approve` requires a valid JWT and the verified `sub` is stored as the approver identity (body-supplied `approver_id` cannot be forged)
 - **Policy signing** — policies are Ed25519-signed when stored; verified on load; tampered policies rejected
 - **Full context hashing** — `context_hash` field in proposal binds the agent's full context (not just tool+params)
 - **Justification enforcement** — `min_justification_length` in policies requires minimum justification length
+- **Semantic justification verification (pluggable)** — `DGV_SEMANTIC_VERIFIER_URL` delegates justification↔action semantic checks to an external verifier webhook; the gate performs no LLM analysis itself. `DGV_SEMANTIC_FAIL_CLOSED=1` denies when the verifier is unreachable (default fail-open with logged warning)
+- **Circuit breakers** — callers report tool outcomes via `POST /tool-health/report`; after `DGV_CIRCUIT_BREAKER_THRESHOLD` consecutive failures (default 5) the circuit opens and `/govern` denies new proposals for that tool; half-open probe after `DGV_CIRCUIT_BREAKER_COOLDOWN_MS` (default 30s); admin reset via `POST /tool-health/reset/:tool`
+- **A2A signed envelopes** — `POST /a2a/send` accepts Ed25519-signed envelopes between admin-registered agents (`POST/DELETE /agents/keys`); verifies sender signature over the canonical envelope string, expiry, clock skew, revocation of both parties; replay-protected via envelope_id PK and (sender_id, nonce) UNIQUE; gate-signed delivery receipt; `GET /a2a/inbox/:agent_id` + `POST /a2a/ack/:envelope_id` for delivery (JWT-verified when configured). Payloads never transit the gate — hash-only.
 - CORS — configurable via `DGV_CORS_ORIGINS` (permissive `*` in dev, restrictive list in production)
 - Formal soundness proof — `FORMAL_SOUNDNESS_PROOF.md` proves receipt integrity, path compliance, null effect on deny, replayability, continuing authority, and distributed revocation
 
@@ -196,8 +200,11 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 
 **What the gate does NOT yet do:**
 - Rate limit config is per-instance in memory (each instance has its own config; counters are shared via the database for distributed rate limiting)
-- JWT is HS256 shared secret only (no RS256/JWKS for key rotation; production deployments should use RS256)
-- Approval identities are strings, not verified credentials (a compromised approver ID could approve malicious actions)
+- JWKS keys are fetched per-request — no TTL-based key caching yet (each verification hits the JWKS endpoint)
+- Circuit-breaker state is per-instance in memory — not shared across multi-instance deployments (unlike revocations, which live in shared storage)
+- Circuit breakers depend on callers honestly reporting tool outcomes — the gate cannot observe downstream failures itself
+- A2A payloads are hash-only at the gate — end-to-end payload encryption is the agents' responsibility
+- Semantic verification quality depends entirely on the external verifier — the gate performs no semantic analysis itself
 - TLS termination is handled by reverse proxy (nginx profile in docker-compose; the gate itself is plain HTTP)
 - Policy signing verifies integrity but not provenance (no SLSA/dependency chain verification)
 
@@ -224,11 +231,13 @@ Results from the current run:
 | PyO3 bindings | `native/dgv-python/` | In-process governance evaluation without HTTP server |
 
 **Python SDK (`dgv_sdk.py`):**
-- `GateClient` class with methods for all endpoints: `govern()`, `execute()`, `verify()`, `health()`, `stats()`, `store_policy()`, `get_policy()`, `load_policy_file()`, `revoke()`, `list_revocations()`, `store_tenant_policy()`, `get_rate_limit()`, `update_rate_limit()`
+- `GateClient` class with methods for all endpoints: `govern()`, `execute()`, `verify()`, `health()`, `stats()`, `store_policy()`, `get_policy()`, `load_policy_file()`, `revoke()`, `list_revocations()`, `store_tenant_policy()`, `get_rate_limit()`, `update_rate_limit()`, `approve()`, `report_tool_health()`, `tool_health()`, `reset_tool_health()`, `register_agent_key()`, `deactivate_agent_key()`, `a2a_send()`, `a2a_inbox()`, `a2a_ack()`
+- `sign_a2a_envelope()` + `a2a_canonical_string()` helpers for building signed envelopes (PyNaCl)
 - Dataclass responses: `Decision`, `ExecutionResult`, `VerifyResult`, `HealthResult`, `StatsResult`, `PolicyRecord`, `RateLimitConfig`, `RevocationRecord`
 - `GateError` exception with HTTP status, error, and hint fields
 - `admin_key` parameter sets `X-Admin-Key` header for admin endpoints
-- Zero dependencies beyond stdlib (no requests/httpx required)
+- `jwt_token` parameter sets `Authorization: Bearer` for identity-verified endpoints
+- Zero dependencies beyond stdlib (no requests/httpx required; `sign_a2a_envelope` needs PyNaCl)
 
 **LangChain adapter (`dgv_langchain.py`):**
 - `GovernedTool` — wraps any existing LangChain `BaseTool` with governance: calls `/govern` then `/execute` then invokes the inner tool
@@ -336,6 +345,11 @@ result = gate.govern({"request_id": "r1", "agent_id": "agent", "tool": "t", ...}
 | "Python SDK for gate" | `dgv_sdk.py` + `test_sdk_langchain.py` | **True** — 11/11 SDK tests pass; zero-dependency stdlib client covering all 12 endpoints |
 | "LangChain adapter" | `dgv_langchain.py` + `test_sdk_langchain.py` | **True** — 4/4 LangChain tests pass; GovernedTool, GateTool, GovernanceCallbackHandler |
 | "In-process governance (no HTTP)" | `native/dgv-python/` + `test_dgv_python.py` | **True** — 9/9 PyO3 tests pass; govern, execute, verify, revoke, policies without HTTP server |
+| "RS256/JWKS identity" | `test_gate_v4.py` | **True** — 6/6 tests pass; kid-selected keys, rotation, unknown kid denied, algorithm confusion rejected |
+| "Approver identity verification" | `test_gate_v4.py` | **True** — 3/3 tests pass; approve without JWT = 401, verified sub persisted as approver |
+| "Semantic verifier hook" | `test_gate_v4.py` | **True** — 3/3 tests pass; webhook allow/deny enforced, fail-closed on unreachable |
+| "Circuit breakers" | `test_gate_v4.py` | **True** — 5/5 tests pass; open after threshold, per-tool isolation, half-open recovery, admin reset |
+| "A2A signed envelopes" | `test_gate_v4.py` | **True** — 12/12 tests pass; signature verification, replay/nonce protection, expiry, revocation, unregistered parties denied, inbox/ack flow |
 
 ## 4c. Concurrent multi-instance test results
 
@@ -362,6 +376,30 @@ Architecture verified:
 - Rate limit counters are shared via the database (distributed rate limiting works correctly)
 - Non-revoked agents are unaffected
 
+## 4d. Phase 4 test results — remaining OWASP gaps closed
+
+Run `test_gate_v4.py` to verify RS256/JWKS, approver identity, the semantic
+verifier hook, circuit breakers, and A2A signed envelopes:
+
+```bash
+python3 test_gate_v4.py    # 29 tests across 5 suites
+```
+
+Results from the current run:
+- **29 PASS** — all v4 tests pass
+- **0 FAIL**
+
+Coverage:
+
+| Suite | Tests | What it verifies |
+|---|---|---|
+| Circuit breakers | 5 | closed→open at threshold, per-tool isolation, half-open probe after cooldown, success closes circuit, admin reset |
+| A2A envelopes | 12 | admin key registration, valid envelope accepted, envelope_id replay → 409, nonce replay → 409, tampered payload → 403, wrong-key signature → 403, expired → 410, unregistered sender → 403, inbox+ack flow, revoked sender → 403, deactivated recipient key → 403 |
+| Semantic verifier | 3 | webhook allow → ALLOW, webhook deny → DENY with reason code, unreachable + fail-closed → DENY |
+| RS256/JWKS | 6 | valid RS256 via JWKS, key rotation (two kids), unknown kid → 401, wrong key for kid → 401, expired → 401, HS256 rejected in JWKS mode (algorithm confusion) |
+| Approver identity | 3 | approve without JWT → 401, JWT sub persisted as approver, body approver_id cannot be forged |
+
+
 | "Concurrent multi-instance" | `test_concurrent_multi_instance.py` | **True** — 11/11 tests pass with Postgres; revocation propagates without restart, decisions verifiable across instances |
 | "Objective Contract evaluates quotes" | `objective_contract.py` | **True** — 28/28 synthetic cases matched |
 | "Revocation is enforced at write boundary" | `revocation_store.py` | **True** — 36/36 local cases matched |
@@ -383,6 +421,10 @@ Architecture verified:
 - It does not claim the PyO3 bindings cover all gate functionality (they provide core govern/execute/verify/revoke; admin endpoints like rate limit config require the HTTP API)
 - It does not claim Python package distribution is set up (the .whl builds locally via maturin; PyPI publication is not configured)
 - It does not claim the gate's default governance script is suitable for production use (it is a demonstration script; custom policies can be stored via API or loaded from YAML files)
+- It does not claim the semantic verifier performs analysis inside the gate (the gate delegates to a configured webhook; verifier quality is external)
+- It does not claim circuit-breaker state is distributed (it is per-instance in memory; shared-state breakers are future work)
+- It does not claim A2A payloads are confidential (the gate stores hashes only; payload encryption is the agents' responsibility)
+- It does not claim JWKS responses are cached (each verification fetches the JWKS endpoint; caching is future work)
 
 ## 8. Recommended audit scope
 

@@ -288,6 +288,7 @@ async fn handle_proxy_request(Json(proposal): Json<AgentProposal>) -> impl IntoR
         }
         GateDecision::DENY(reason) => emit_response(GateDecision::DENY(reason.clone()), format!("Hard block: {}", reason), None, None, StatusCode::FORBIDDEN),
         GateDecision::ESCALATE(reason) => emit_response(GateDecision::ESCALATE(reason.clone()), format!("HITL Approval Required: {}", reason), None, None, StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS),
+        GateDecision::HOLD(reason) => emit_response(GateDecision::HOLD(reason.clone()), format!("Held pending: {}", reason), None, None, StatusCode::ACCEPTED),
         GateDecision::SILENCE => emit_response(GateDecision::SILENCE, "Internal error".to_string(), None, None, StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
@@ -297,6 +298,7 @@ fn emit_response(decision: GateDecision, message: String, forwarded_to: Option<S
         GateDecision::PERMIT => "OPEN",
         GateDecision::DENY(_) => "CLOSED",
         GateDecision::ESCALATE(_) => "ESCALATE",
+        GateDecision::HOLD(_) => "HOLD",
         GateDecision::SILENCE => "SILENCE",
     }.to_string();
 
