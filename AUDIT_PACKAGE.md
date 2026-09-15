@@ -350,6 +350,14 @@ result = gate.govern({"request_id": "r1", "agent_id": "agent", "tool": "t", ...}
 | "Semantic verifier hook" | `test_gate_v4.py` | **True** — 3/3 tests pass; webhook allow/deny enforced, fail-closed on unreachable |
 | "Circuit breakers" | `test_gate_v4.py` | **True** — 5/5 tests pass; open after threshold, per-tool isolation, half-open recovery, admin reset |
 | "A2A signed envelopes" | `test_gate_v4.py` | **True** — 12/12 tests pass; signature verification, replay/nonce protection, expiry, revocation, unregistered parties denied, inbox/ack flow |
+| "OIDC discovery" | `test_gate_v5.py` | **True** — `DGV_OIDC_ISSUER` fetches `.well-known/openid-configuration`, resolves jwks_uri, RS256 verification works |
+| "Policy versioning + rollback" | `test_gate_v5.py` | **True** — version history endpoint, rollback reactivates previous version, admin-only |
+| "Prometheus metrics" | `test_gate_v5.py` | **True** — `/metrics` exposes decisions/denials/tokens/uptime/circuit state in text format |
+| "Structured JSON logging" | `test_gate_v5.py` | **True** — `DGV_LOG_FORMAT=json` emits one JSON object per log line |
+| "Graceful shutdown" | `test_gate_v5.py` | **True** — SIGTERM drains in-flight requests and exits 0 |
+| "CrewAI adapter" | `dgv_crewai.py` + `test_gate_v5.py` | **True** — CrewAIGovernedTool wraps CrewAI/duck-typed tools; allow and deny paths verified |
+| "Agent executor middleware" | `dgv_langchain.py` `govern_all_tools` + `test_gate_v5.py` | **True** — wraps an entire tool list; every call governed |
+| "PyPI packaging" | `pyproject.toml` + `native/dgv-python/pyproject.toml` | **Configured** — `dgv-sdk` (pure Python) + `dgv-python` (maturin wheel) build configs; publication not yet performed |
 
 ## 4c. Concurrent multi-instance test results
 
@@ -417,9 +425,12 @@ Coverage:
 - It does not claim post-quantum security merely because ML-DSA and ML-KEM dependencies exist (the auditor must verify correct usage)
 - It does not claim the L8/L9 commands implement full production authority management (they implement the test-card semantics, not a production authority store)
 - It does not claim the enforcement gate is production-ready (rate limit config is per-instance in memory; admin auth is a single shared key, not OIDC/JWT)
-- It does not claim the LangChain adapter is a complete production integration (GovernedTool wraps individual tools; a full agent executor integration requires additional middleware)
+- It does not claim the LangChain adapter is a complete production integration (GovernedTool wraps individual tools; `govern_all_tools` covers a full tool list, but agent-loop governance — intercepting the model's reasoning itself — is not addressed)
 - It does not claim the PyO3 bindings cover all gate functionality (they provide core govern/execute/verify/revoke; admin endpoints like rate limit config require the HTTP API)
-- It does not claim Python package distribution is set up (the .whl builds locally via maturin; PyPI publication is not configured)
+- It does not claim Python package distribution is live (build configs exist for `dgv-sdk` and `dgv-python`; PyPI publication has not been performed)
+- It does not claim the CrewAI adapter was tested against the real `crewai` package (it is duck-typed and tested with mock tools)
+- It does not claim OIDC discovery refreshes (the discovery document is fetched once at startup; JWKS keys themselves are fetched per-request)
+- It does not claim structured logging covers all code paths (key events are structured; some startup banner lines remain plain text)
 - It does not claim the gate's default governance script is suitable for production use (it is a demonstration script; custom policies can be stored via API or loaded from YAML files)
 - It does not claim the semantic verifier performs analysis inside the gate (the gate delegates to a configured webhook; verifier quality is external)
 - It does not claim circuit-breaker state is distributed (it is per-instance in memory; shared-state breakers are future work)

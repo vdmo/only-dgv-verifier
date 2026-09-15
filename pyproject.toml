@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dgv-sdk"
+version = "0.4.0"
+description = "Python SDK and framework adapters for the DGV Enforcement Gate"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Only Institute" },
+]
+keywords = ["agent-governance", "ai-safety", "llm-agents", "policy-enforcement"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries",
+]
+# Zero required dependencies — the SDK uses only stdlib (urllib).
+dependencies = []
+
+[project.optional-dependencies]
+langchain = ["langchain-core>=0.2"]
+crewai = ["crewai>=0.60"]
+a2a = ["pynacl>=1.5"]
+
+[project.urls]
+Repository = "https://github.com/vdmo/only-dgv-verifier"
+Documentation = "https://github.com/vdmo/only-dgv-verifier/blob/main/openapi.yaml"
+
+[tool.setuptools]
+# Single-file modules shipped in this package
+py-modules = ["dgv_sdk", "dgv_langchain", "dgv_crewai"]

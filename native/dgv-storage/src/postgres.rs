@@ -289,6 +289,50 @@ impl Storage for PostgresStorage {
         Ok(())
     }
 
+    async fn list_policy_versions(&self, tool: &str, action: &str) -> Result<Vec<PolicyRecord>, StorageError> {
+        let rows = sqlx::query("SELECT * FROM policies WHERE tool = $1 AND action = $2 ORDER BY created_unix_ms DESC")
+            .bind(tool)
+            .bind(action)
+            .fetch_all(&self.pool)
+            .await?;
+        Ok(rows
+            .into_iter()
+            .map(|r| PolicyRecord {
+                policy_id: r.get("policy_id"),
+                tool: r.get("tool"),
+                action: r.get("action"),
+                script: r.get("script"),
+                policy_version: r.get("policy_version"),
+                created_unix_ms: r.get("created_unix_ms"),
+                active: r.get("active"),
+                signature: r.get("signature"),
+                min_approvals: r.get("min_approvals"),
+                min_justification_length: r.get("min_justification_length"),
+            })
+            .collect())
+    }
+
+    async fn reactivate_policy(&self, policy_id: &str) -> Result<(), StorageError> {
+        let row = sqlx::query("SELECT tool, action FROM policies WHERE policy_id = $1")
+            .bind(policy_id)
+            .fetch_optional(&self.pool)
+            .await?
+            .ok_or(StorageError::NotFound)?;
+        let tool: String = row.get("tool");
+        let action: String = row.get("action");
+
+        sqlx::query("UPDATE policies SET active = FALSE WHERE tool = $1 AND action = $2")
+            .bind(&tool)
+            .bind(&action)
+            .execute(&self.pool)
+            .await?;
+        sqlx::query("UPDATE policies SET active = TRUE WHERE policy_id = $1")
+            .bind(policy_id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
     async fn store_revocation(&self, r: RevocationRecord) -> Result<(), StorageError> {
         sqlx::query(
             r#"INSERT INTO revocations (actor_id, reason, revoked_unix_ms, revoked_by)

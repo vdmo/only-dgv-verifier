@@ -55,6 +55,46 @@ fn sha256_hex(s: &str) -> String {
     hex::encode(h.finalize())
 }
 
+// ── Structured logging ───────────────────────────────────────────────────────
+// DGV_LOG_FORMAT=json emits one JSON object per line for log aggregation;
+// anything else (default) emits human-readable text.
+
+fn log_format_json() -> bool {
+    static JSON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *JSON.get_or_init(|| {
+        std::env::var("DGV_LOG_FORMAT")
+            .map(|v| v.eq_ignore_ascii_case("json"))
+            .unwrap_or(false)
+    })
+}
+
+fn log_event(level: &str, event: &str, fields: serde_json::Value) {
+    if log_format_json() {
+        let mut obj = serde_json::Map::new();
+        obj.insert("ts_unix_ms".into(), json!(now_unix_ms()));
+        obj.insert("level".into(), json!(level));
+        obj.insert("event".into(), json!(event));
+        if let serde_json::Value::Object(extra) = fields {
+            obj.extend(extra);
+        }
+        println!("{}", serde_json::Value::Object(obj));
+    } else {
+        let rendered = match &fields {
+            serde_json::Value::Object(m) if !m.is_empty() => {
+                let pairs: Vec<String> = m.iter()
+                    .map(|(k, v)| format!("{}={}", k, v))
+                    .collect();
+                format!(" [{}]", pairs.join(" "))
+            }
+            _ => String::new(),
+        };
+        println!("[{}] {}{}", level.to_uppercase(), event, rendered);
+    }
+}
+
+/// Gate startup instant for uptime reporting.
+static START_UNIX_MS: std::sync::OnceLock<i64> = std::sync::OnceLock::new();
+
 fn compute_decision_hash(
     request_id: &str,
     gate_state: &str,
@@ -564,7 +604,7 @@ async fn handle_govern(
             }
             Err(e) => {
                 // Storage error — fail open for rate limiting (log but continue)
-                eprintln!("rate limit check failed: {}", e);
+                log_event("warn", "rate_limit_check_failed", json!({"error": e.to_string()}));
             }
             Ok(true) => {} // allowed
         }
@@ -586,7 +626,7 @@ async fn handle_govern(
                 if health.should_half_open(cb_cooldown_ms) {
                     // Half-open: allow one probe request through
                     health.circuit_open = false;
-                    eprintln!("circuit breaker half-open for tool: {}", p.tool);
+                    log_event("warn", "circuit_breaker_half_open", json!({"tool": p.tool}));
                 } else {
                     drop(health_map);
                     let decision = DecisionReturned {
@@ -659,7 +699,7 @@ async fn handle_govern(
         if let Some(ref pol) = policy {
             if let Some(ref sig) = pol.signature {
                 if !verify_policy_signature(&app.keys, &pol.script, sig) {
-                    eprintln!("WARNING: policy signature invalid for {} {}", pol.tool, pol.action);
+                    log_event("warn", "policy_signature_invalid", json!({"tool": pol.tool, "action": pol.action}));
                     let decision = DecisionReturned {
                         request_id: request_id.clone(),
                         gate_state: "DENY".to_string(),
@@ -690,7 +730,7 @@ async fn handle_govern(
             }
             // If signature is None, policy was stored before signing was implemented — allow but warn
             else {
-                eprintln!("WARNING: unsigned policy for {} {}", pol.tool, pol.action);
+                log_event("warn", "unsigned_policy", json!({"tool": pol.tool, "action": pol.action}));
             }
         }
         let policy_min_approvals = policy.as_ref().map(|p| p.min_approvals).unwrap_or(0);
@@ -770,7 +810,7 @@ async fn handle_govern(
                                     "semantic_verifier_unparseable: {}", e
                                 )]);
                             } else {
-                                eprintln!("semantic verifier response unparseable (fail-open): {}", e);
+                                log_event("warn", "semantic_verifier_unparseable", json!({"error": e.to_string(), "mode": "fail_open"}));
                             }
                         }
                     }
@@ -781,7 +821,7 @@ async fn handle_govern(
                             "semantic_verifier_unreachable: {}", e
                         )]);
                     } else {
-                        eprintln!("semantic verifier unreachable (fail-open): {}", e);
+                        log_event("warn", "semantic_verifier_unreachable", json!({"error": e.to_string(), "mode": "fail_open"}));
                     }
                 }
             }
@@ -1027,7 +1067,7 @@ async fn handle_execute(
                 );
             }
             Err(e) => {
-                eprintln!("rate limit check failed: {}", e);
+                log_event("warn", "rate_limit_check_failed", json!({"error": e.to_string()}));
             }
             Ok(true) => {}
         }
@@ -2084,18 +2124,125 @@ async fn handle_a2a_ack(
     }
 }
 
+// ── GET /policies/:tool/:action/versions — policy version history ────────────
+
+async fn handle_policy_versions(
+    State(app): State<AppState>,
+    Path((tool, action)): Path<(String, String)>,
+) -> impl IntoResponse {
+    match app.storage.list_policy_versions(&tool, &action).await {
+        Ok(versions) => (
+            StatusCode::OK,
+            Json(json!({
+                "tool": tool,
+                "action": action,
+                "versions": versions,
+            })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        ),
+    }
+}
+
+// ── POST /policies/:policy_id/rollback — reactivate a previous version ───────
+
+async fn handle_policy_rollback(
+    State(app): State<AppState>,
+    Path(policy_id): Path<String>,
+) -> impl IntoResponse {
+    match app.storage.reactivate_policy(&policy_id).await {
+        Ok(()) => {
+            log_event("info", "policy_rollback", json!({"policy_id": policy_id}));
+            (
+                StatusCode::OK,
+                Json(json!({"rolled_back": true, "policy_id": policy_id})),
+            )
+        }
+        Err(StorageError::NotFound) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "policy_not_found", "policy_id": policy_id})),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        ),
+    }
+}
+
 // ── GET /health ─────────────────────────────────────────────────────────────
 
 async fn handle_health(State(app): State<AppState>) -> impl IntoResponse {
     let storage_ok = app.storage.ping().await.is_ok();
+    let uptime_ms = START_UNIX_MS.get().map(|t| now_unix_ms() - t).unwrap_or(0);
+    let jwt_mode = match &app.jwt_config {
+        Some(c) if c.jwks_url.is_some() => "jwks",
+        Some(c) if c.public_key_pem.is_some() => "rs256",
+        Some(_) => "hs256",
+        None => "disabled",
+    };
     (
-        StatusCode::OK,
+        if storage_ok { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE },
         Json(json!({
             "status": if storage_ok { "ok" } else { "degraded" },
-            "version": "0.2.0",
+            "version": "0.4.0",
             "storage": if storage_ok { "connected" } else { "disconnected" },
+            "uptime_ms": uptime_ms,
+            "signing_key_loaded": true,
+            "jwt_mode": jwt_mode,
+            "admin_auth": app.admin_key.is_some(),
             "verifying_key": hex::encode(app.keys.vk.to_bytes()),
         })),
+    )
+}
+
+// ── GET /metrics — Prometheus text exposition format ─────────────────────────
+
+async fn handle_metrics(State(app): State<AppState>) -> impl IntoResponse {
+    let c = app.counters.lock().unwrap();
+    let health_map = app.tool_health.lock().unwrap();
+    let uptime_ms = START_UNIX_MS.get().map(|t| now_unix_ms() - t).unwrap_or(0);
+
+    let mut out = String::new();
+    out.push_str("# HELP dgv_decisions_total Total governance decisions evaluated\n");
+    out.push_str("# TYPE dgv_decisions_total counter\n");
+    out.push_str(&format!("dgv_decisions_total {}\n", c.decisions_made));
+    out.push_str("# HELP dgv_denials_total Total denied decisions\n");
+    out.push_str("# TYPE dgv_denials_total counter\n");
+    out.push_str(&format!("dgv_denials_total {}\n", c.denials));
+    out.push_str("# HELP dgv_tokens_issued_total Total auth tokens issued\n");
+    out.push_str("# TYPE dgv_tokens_issued_total counter\n");
+    out.push_str(&format!("dgv_tokens_issued_total {}\n", c.tokens_issued));
+    out.push_str("# HELP dgv_tokens_consumed_total Total auth tokens consumed\n");
+    out.push_str("# TYPE dgv_tokens_consumed_total counter\n");
+    out.push_str(&format!("dgv_tokens_consumed_total {}\n", c.tokens_consumed));
+    out.push_str("# HELP dgv_uptime_ms Gate uptime in milliseconds\n");
+    out.push_str("# TYPE dgv_uptime_ms gauge\n");
+    out.push_str(&format!("dgv_uptime_ms {}\n", uptime_ms));
+    out.push_str("# HELP dgv_circuit_open Per-tool circuit breaker state (1=open, 0=closed)\n");
+    out.push_str("# TYPE dgv_circuit_open gauge\n");
+    for (tool, h) in health_map.iter() {
+        out.push_str(&format!(
+            "dgv_circuit_open{{tool=\"{}\"}} {}\n",
+            tool.replace('\\', "\\\\").replace('"', "\\\""),
+            if h.circuit_open { 1 } else { 0 }
+        ));
+    }
+    out.push_str("# HELP dgv_tool_consecutive_failures Consecutive reported failures per tool\n");
+    out.push_str("# TYPE dgv_tool_consecutive_failures gauge\n");
+    for (tool, h) in health_map.iter() {
+        out.push_str(&format!(
+            "dgv_tool_consecutive_failures{{tool=\"{}\"}} {}\n",
+            tool.replace('\\', "\\\\").replace('"', "\\\""),
+            h.consecutive_failures
+        ));
+    }
+
+    (
+        StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, "text/plain; version=0.0.4")],
+        out,
     )
 }
 
@@ -2126,7 +2273,8 @@ async fn handle_stats(State(app): State<AppState>) -> impl IntoResponse {
 
 #[tokio::main]
 async fn main() {
-    println!("--- DGV ENFORCEMENT GATE v0.2.0 ---");
+    START_UNIX_MS.set(now_unix_ms()).ok();
+    println!("--- DGV ENFORCEMENT GATE v0.4.0 ---");
     println!("Phase 2: Persistent storage + policy loading + revocation + multi-tenant");
 
     // Parse storage backend from env: DGV_STORAGE=sqlite|postgres, DGV_DATABASE_URL=...
@@ -2139,8 +2287,7 @@ async fn main() {
         }
     });
 
-    println!("Storage backend: {}", storage_backend);
-    println!("Database URL: {}", database_url);
+    log_event("info", "storage_config", json!({"backend": storage_backend, "url": database_url}));
 
     let storage: Arc<dyn Storage> = match storage_backend.as_str() {
         "postgres" => Arc::new(
@@ -2184,18 +2331,59 @@ async fn main() {
         println!("Admin auth: disabled (DGV_ADMIN_KEY not set — dev mode only)");
     }
 
-    // JWT verification — if DGV_JWT_SECRET, DGV_JWT_PUBLIC_KEY, or DGV_JWT_JWKS_URL is set,
-    // /govern and /execute require a valid JWT. The sub claim becomes the agent_id.
+    // JWT verification — if DGV_JWT_SECRET, DGV_JWT_PUBLIC_KEY, DGV_JWT_JWKS_URL,
+    // or DGV_OIDC_ISSUER is set, /govern and /execute require a valid JWT.
+    // The sub claim becomes the agent_id.
+    // DGV_OIDC_ISSUER triggers OIDC discovery: fetches
+    //   {issuer}/.well-known/openid-configuration
+    // and uses its jwks_uri + issuer for RS256 validation.
     let jwt_config = {
         let secret = std::env::var("DGV_JWT_SECRET").ok();
         let public_key_pem = std::env::var("DGV_JWT_PUBLIC_KEY").ok();
-        let jwks_url = std::env::var("DGV_JWT_JWKS_URL").ok();
-        let issuer = std::env::var("DGV_JWT_ISSUER").ok();
+        let mut jwks_url = std::env::var("DGV_JWT_JWKS_URL").ok();
+        let mut issuer = std::env::var("DGV_JWT_ISSUER").ok();
         let audience = std::env::var("DGV_JWT_AUDIENCE").ok();
+
+        // OIDC discovery — resolve jwks_uri from the issuer's metadata document
+        if let Ok(oidc_issuer) = std::env::var("DGV_OIDC_ISSUER") {
+            let discovery_url = format!(
+                "{}/.well-known/openid-configuration",
+                oidc_issuer.trim_end_matches('/')
+            );
+            match reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .unwrap_or_default()
+                .get(&discovery_url)
+                .send()
+                .await
+            {
+                Ok(resp) => match resp.json::<serde_json::Value>().await {
+                    Ok(doc) => {
+                        match doc.get("jwks_uri").and_then(|v| v.as_str()) {
+                            Some(uri) => {
+                                jwks_url = Some(uri.to_string());
+                                // Prefer the discovered issuer for validation
+                                if issuer.is_none() {
+                                    issuer = doc.get("issuer")
+                                        .and_then(|v| v.as_str())
+                                        .map(|s| s.to_string())
+                                        .or(Some(oidc_issuer.clone()));
+                                }
+                                log_event("info", "oidc_discovery", json!({"jwks_uri": uri}));
+                            }
+                            None => log_event("warn", "oidc_discovery_no_jwks_uri", json!({})),
+                        }
+                    }
+                    Err(e) => log_event("warn", "oidc_discovery_parse_failed", json!({"error": e.to_string()})),
+                },
+                Err(e) => log_event("warn", "oidc_discovery_fetch_failed", json!({"error": e.to_string()})),
+            }
+        }
 
         if secret.is_some() || public_key_pem.is_some() || jwks_url.is_some() {
             let mode = if jwks_url.is_some() { "JWKS" } else if public_key_pem.is_some() { "RS256" } else { "HS256" };
-            println!("JWT auth: enabled ({} mode — agents must present valid JWT)", mode);
+            log_event("info", "jwt_auth_enabled", json!({"mode": mode}));
             Some(JwtConfig {
                 secret,
                 public_key_pem,
@@ -2204,7 +2392,7 @@ async fn main() {
                 audience,
             })
         } else {
-            println!("JWT auth: disabled (no DGV_JWT_SECRET, DGV_JWT_PUBLIC_KEY, or DGV_JWT_JWKS_URL)");
+            log_event("info", "jwt_auth_disabled", json!({}));
             None
         }
     };
@@ -2215,7 +2403,7 @@ async fn main() {
     let semantic_fail_closed = std::env::var("DGV_SEMANTIC_FAIL_CLOSED")
         .map(|v| v == "1" || v == "true").unwrap_or(false);
     if semantic_verifier_url.is_some() {
-        println!("Semantic verifier: enabled (fail_closed={})", semantic_fail_closed);
+        log_event("info", "semantic_verifier_enabled", json!({"fail_closed": semantic_fail_closed}));
     }
 
     let app_state = AppState {
@@ -2236,6 +2424,7 @@ async fn main() {
         .route("/execute", post(handle_execute))
         .route("/verify/:run_id", get(handle_verify))
         .route("/health", get(handle_health))
+        .route("/metrics", get(handle_metrics))
         .route("/stats", get(handle_stats))
         .route("/policies/:tool/:action", get(handle_get_policy))
         .route("/revocations", get(list_revocations))
@@ -2245,6 +2434,7 @@ async fn main() {
         .route("/a2a/send", post(handle_a2a_send))
         .route("/a2a/inbox/:agent_id", get(handle_a2a_inbox))
         .route("/a2a/ack/:envelope_id", post(handle_a2a_ack))
+        .route("/policies/:tool/:action/versions", get(handle_policy_versions))
         .route("/config/rate-limit", get(handle_get_rate_limit));
 
     // Admin routes (require X-Admin-Key when DGV_ADMIN_KEY is set)
@@ -2257,6 +2447,7 @@ async fn main() {
         .route("/tool-health/reset/:tool", post(handle_tool_health_reset))
         .route("/agents/keys", post(handle_register_agent_key))
         .route("/agents/keys/:agent_id", delete(handle_deactivate_agent_key))
+        .route("/policies/:policy_id/rollback", post(handle_policy_rollback))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             admin_auth_middleware,
@@ -2277,7 +2468,7 @@ async fn main() {
             .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::PUT])
             .allow_headers(Any)
     };
-    println!("CORS: {}", if cors_origins == "*" { "permissive (*)" } else { "restricted" });
+    log_event("info", "cors_config", json!({"mode": if cors_origins == "*" { "permissive" } else { "restricted" }}));
 
     let app = public_routes
         .merge(admin_routes)
@@ -2305,6 +2496,34 @@ async fn main() {
     println!("  POST /tenant/:tenant_id/policies    - store tenant-specific policy (signed)");
     println!("  PUT  /config/rate-limit             - update rate limit config");
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    log_event("info", "listening", json!({"addr": addr}));
+    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
+    log_event("info", "shutdown_complete", json!({}));
+}
+
+/// Drain in-flight requests on SIGTERM/SIGINT (or Ctrl+C on any platform).
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c().await.expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => { log_event("info", "shutdown_initiated", json!({"signal": "SIGINT"})); },
+        _ = terminate => { log_event("info", "shutdown_initiated", json!({"signal": "SIGTERM"})); },
+    }
 }

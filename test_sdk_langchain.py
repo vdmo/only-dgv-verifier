@@ -71,7 +71,7 @@ def main():
         def t_health():
             h = client.health()
             assert h.status == "ok"
-            assert h.version == "0.2.0"
+            assert h.version == "0.4.0"
         test("health", t_health)
 
         def t_govern_allow():

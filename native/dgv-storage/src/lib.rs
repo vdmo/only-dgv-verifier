@@ -139,6 +139,11 @@ pub trait Storage: Send + Sync {
     async fn store_policy(&self, p: PolicyRecord) -> Result<(), StorageError>;
     async fn get_active_policy(&self, tool: &str, action: &str) -> Result<Option<PolicyRecord>, StorageError>;
     async fn deactivate_policy(&self, policy_id: &str) -> Result<(), StorageError>;
+    /// All versions for a tool+action, newest first (includes inactive).
+    async fn list_policy_versions(&self, tool: &str, action: &str) -> Result<Vec<PolicyRecord>, StorageError>;
+    /// Reactivate a specific policy version: sets it active and deactivates all
+    /// other versions for the same tool+action.
+    async fn reactivate_policy(&self, policy_id: &str) -> Result<(), StorageError>;
 
     // Revocations
     async fn store_revocation(&self, r: RevocationRecord) -> Result<(), StorageError>;

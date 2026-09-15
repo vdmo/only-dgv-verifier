@@ -330,6 +330,22 @@ class GateClient:
                 return None
             raise
 
+    def policy_versions(self, tool: str, action: str) -> List[PolicyRecord]:
+        """List all versions of a policy (active and inactive), newest first."""
+        resp = self._request("GET", f"/policies/{tool}/{action}/versions")
+        return [PolicyRecord(**v) for v in resp.get("versions", [])]
+
+    def rollback_policy(self, policy_id: str) -> Dict[str, Any]:
+        """Reactivate a previous policy version. Requires admin key."""
+        return self._request("POST", f"/policies/{policy_id}/rollback")
+
+    def metrics(self) -> str:
+        """Fetch Prometheus metrics (text exposition format)."""
+        import urllib.request
+        req = urllib.request.Request(f"{self.base_url}/metrics")
+        with urllib.request.urlopen(req) as resp:
+            return resp.read().decode()
+
     def load_policy_file(self, file_path: str) -> Dict[str, Any]:
         """Load policies from a YAML/JSON file. Requires admin key."""
         return self._request("POST", "/policies/load-file", {"file_path": file_path})

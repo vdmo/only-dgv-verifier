@@ -7,7 +7,8 @@ info:
     multi-tenant policies, distributed revocation, and rate limiting.
 
     **Authentication**: Admin endpoints require `X-Admin-Key` header when `DGV_ADMIN_KEY`
-    is set. When `DGV_JWT_SECRET`, `DGV_JWT_PUBLIC_KEY`, or `DGV_JWT_JWKS_URL` is set,
+    is set. When `DGV_JWT_SECRET`, `DGV_JWT_PUBLIC_KEY`, `DGV_JWT_JWKS_URL`, or
+    `DGV_OIDC_ISSUER` (OIDC discovery via `.well-known/openid-configuration`) is set,
     `/govern`, `/execute`, `/approve`, and A2A inbox/ack require a valid
     `Authorization: Bearer` JWT — HS256, RS256 (static PEM), or RS256 via JWKS with
     `kid`-based key rotation. The `sub` claim becomes the verified agent identity.
@@ -17,6 +18,10 @@ info:
 
     **Circuit breakers**: `/tool-health/*` endpoints track per-tool failure
     cascades and auto-deny new proposals while a circuit is open.
+
+    **Operations**: `GET /metrics` (Prometheus), structured JSON logging via
+    `DGV_LOG_FORMAT=json`, policy version history + rollback, graceful shutdown
+    on SIGTERM/SIGINT (drains in-flight requests).
   version: "0.4.0"
   contact:
     name: DGV Verifier
@@ -599,6 +604,81 @@ paths:
         '200': {description: Marked delivered}
         '409': {description: Already delivered or not found}
 
+  /policies/{tool}/{action}/versions:
+    get:
+      tags: [Policies]
+      summary: List all versions of a policy
+      description: Returns all stored versions (active and inactive), newest first.
+      operationId: policyVersions
+      parameters:
+        - name: tool
+          in: path
+          required: true
+          schema: {type: string}
+        - name: action
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Policy version history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tool: {type: string}
+                  action: {type: string}
+                  versions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PolicyRecord'
+
+  /policies/{policy_id}/rollback:
+    post:
+      tags: [Policies]
+      summary: Roll back to a previous policy version
+      description: |
+        Reactivates the specified policy version and deactivates all other
+        versions for the same tool+action. Requires admin key.
+      operationId: rollbackPolicy
+      security:
+        - adminKey: []
+      parameters:
+        - name: policy_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Rolled back
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  rolled_back: {type: boolean}
+                  policy_id: {type: string}
+        '404': {description: Policy not found}
+        '401': {description: Admin auth required}
+
+  /metrics:
+    get:
+      tags: [Core]
+      summary: Prometheus metrics
+      description: |
+        Exposes gate counters and circuit-breaker state in Prometheus text
+        exposition format: dgv_decisions_total, dgv_denials_total,
+        dgv_tokens_issued_total, dgv_tokens_consumed_total, dgv_uptime_ms,
+        dgv_circuit_open{tool}, dgv_tool_consecutive_failures{tool}.
+      operationId: metrics
+      responses:
+        '200':
+          description: Prometheus text format
+          content:
+            text/plain:
+              schema: {type: string}
+
   /config/rate-limit:
     get:
       tags: [Config]
@@ -807,6 +887,16 @@ components:
         storage:
           type: string
           enum: [connected, disconnected]
+        uptime_ms:
+          type: integer
+        signing_key_loaded:
+          type: boolean
+        jwt_mode:
+          type: string
+          enum: [disabled, hs256, rs256, jwks]
+        admin_auth:
+          type: boolean
+          description: Whether DGV_ADMIN_KEY is configured
         verifying_key:
           type: string
 

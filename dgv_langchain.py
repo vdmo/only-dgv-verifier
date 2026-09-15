@@ -269,6 +269,37 @@ if HAS_LANGCHAIN:
             """Clear the decision history."""
             self.decisions = []
 
+    def govern_all_tools(
+        tools: List[BaseTool],
+        gate_url: str = "http://localhost:7878",
+        agent_id: str = "langchain-agent",
+        workflow: str = "default",
+        admin_key: Optional[str] = None,
+    ) -> List[BaseTool]:
+        """Wrap every tool in a list with GovernedTool — agent-level middleware.
+
+        This is the full executor integration pattern: instead of wrapping one
+        tool at a time, wrap the agent's entire tool list before constructing
+        the AgentExecutor. Every tool call in the agent run then goes through
+        /govern + /execute automatically.
+
+        Usage:
+            tools = [send_email, query_db, write_file]
+            governed = govern_all_tools(tools, gate_url=..., agent_id=...)
+            agent = create_tool_calling_agent(llm, governed, prompt)
+            executor = AgentExecutor(agent=agent, tools=governed)
+        """
+        return [
+            GovernedTool(
+                tool=t,
+                gate_url=gate_url,
+                agent_id=agent_id,
+                workflow=workflow,
+                admin_key=admin_key,
+            )
+            for t in tools
+        ]
+
 
 else:
     # Fallback when LangChain is not installed
@@ -286,3 +317,6 @@ else:
         """Placeholder — install langchain-core to use."""
         def __init__(self, *args, **kwargs):
             raise ImportError("Install langchain-core: pip install langchain-core")
+
+    def govern_all_tools(*args, **kwargs):
+        raise ImportError("Install langchain-core: pip install langchain-core")

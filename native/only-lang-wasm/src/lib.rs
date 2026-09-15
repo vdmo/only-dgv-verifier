@@ -58,6 +58,17 @@ fn validate_commands(cmds: &[Command], n: usize) -> Result<(), String> {
             Command::Escalate(_) => {}
             Command::Import(_) => return Err("import is not allowed in wasm".to_string()),
             Command::GenerateZkProof(_) => {}
+            // L8/L9 governance commands — pure evaluation, safe in wasm
+            Command::BindContext(_, _) => {}
+            Command::CheckContextDrift => {}
+            Command::BindAuthority(_, _, _) => {}
+            Command::RevokeAuthority(_, _) => {}
+            Command::CheckAuthority(_) => {}
+            Command::CheckRevocation => {}
+            Command::LinkLineage(_) => {}
+            Command::RequireContinuousLineage => {}
+            Command::BindObjective(_, _) => {}
+            Command::CheckObjectiveDrift(_) => {}
         }
     }
     Ok(())

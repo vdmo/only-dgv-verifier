@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "dgv-python"
+version = "0.4.0"
+description = "In-process DGV governance engine — govern/execute/verify without an HTTP server"
+requires-python = ">=3.9"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Only Institute" },
+]
+keywords = ["agent-governance", "ai-safety", "policy-enforcement"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+]
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/vdmo/only-dgv-verifier"
+
+[tool.maturin]
+# Rust crate builds a cdylib named `dgv_python`
+module-name = "dgv_python"
