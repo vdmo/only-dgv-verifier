@@ -142,7 +142,7 @@ Run `test_gate.py` to verify the HTTP enforcement gate end-to-end:
 ```
 
 Results from the current run:
-- **28 PASS** — all gate tests pass
+- **30 PASS** — all gate tests pass
 - **0 FAIL**
 
 The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed receipts and persistent storage:
@@ -152,14 +152,14 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 | `POST /govern` | Evaluate a proposal, return a signed decision + auth token if ALLOW | Real ONLY Lang L8/L9 commands, policy loaded from storage, revocation checked from storage |
 | `POST /execute` | Verify a token, mark it consumed, return an execution receipt | Real Ed25519 signature verification, one-use token, params/action binding, T₁ revocation check |
 | `GET /verify/:run_id` | Re-derive the decision hash and compare to stored | Real SHA-256 hash re-derivation from persistent storage |
-| `POST /policies` | Store a policy (tool+action -> script) | Persisted to SQLite/Postgres |
-| `POST /policies/load-file` | Load policies from a YAML/JSON file | Bulk-load global and tenant policies |
+| `POST /policies` | Store a policy (tool+action -> script) | Persisted to SQLite/Postgres, requires admin key |
+| `POST /policies/load-file` | Load policies from a YAML/JSON file | Bulk-load global and tenant policies, requires admin key |
 | `GET /policies/:tool/:action` | Get active policy | Loaded from persistent storage |
-| `POST /revocations` | Revoke an actor | Persisted to storage, checked at govern and execute time |
+| `POST /revocations` | Revoke an actor | Persisted to storage, checked at govern and execute time, requires admin key |
 | `GET /revocations` | List all revocations | From persistent storage |
-| `POST /tenant/:tenant_id/policies` | Store tenant-specific policy | Multi-tenant isolation |
+| `POST /tenant/:tenant_id/policies` | Store tenant-specific policy | Multi-tenant isolation, requires admin key |
 | `GET /config/rate-limit` | Get rate limit configuration | — |
-| `PUT /config/rate-limit` | Update rate limit configuration at runtime | — |
+| `PUT /config/rate-limit` | Update rate limit configuration at runtime | Requires admin key |
 | `GET /health` | Liveness probe (includes storage status) | — |
 | `GET /stats` | Decision/token counters | — |
 
@@ -176,9 +176,12 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - Policies are loaded from storage (not hardcoded) — different tools/actions get different governance scripts
 - Multi-tenant isolation — tenant-specific policies override global policies
 - State persists across restarts — decisions, tokens, policies, revocations all survive restart
-- Rate limiting — per agent+tool, configurable via env vars and API
+- Rate limiting — per agent+tool, configurable at runtime via PUT /config/rate-limit, returns 429 when exceeded
 - YAML policy file loading — bulk-load policies from a file
 - Distributed revocation — revocation on one instance is visible to all instances sharing the same database
+- Admin authentication — `X-Admin-Key` header required for admin endpoints when `DGV_ADMIN_KEY` is set
+- CORS — configurable via `DGV_CORS_ORIGINS` (permissive `*` in dev, restrictive list in production)
+- Formal soundness proof — `FORMAL_SOUNDNESS_PROOF.md` proves receipt integrity, path compliance, null effect on deny, replayability, continuing authority, and distributed revocation
 
 **Storage backends:**
 - **SQLite** (default, `DGV_STORAGE=sqlite`): single-file, zero-config, good for dev and single-node
@@ -188,6 +191,8 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 
 **What the gate does NOT yet do:**
 - Rate limit config is per-instance in memory (each instance has its own config; counters are shared via the database for distributed rate limiting)
+- Admin auth is a single shared key (no per-user RBAC; production deployments should use OIDC/JWT)
+- TLS termination is handled by reverse proxy (nginx profile in docker-compose; the gate itself is plain HTTP)
 
 ## 5. What the auditor should review
 
@@ -236,7 +241,7 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 | "89 test cards pass" | `differential_test.py` | **True** — 89/89 cards pass with 0 failures and 0 skipped |
 | "25 test cases use real cryptographic verification" | `test_real_verification.py` | **True** — Ed25519, SHA-256, spectral drift, delegation lineage, basis freshness |
 | "The verifier checks governance" | Test card definitions | **Implemented** — all 89 cards use real checks (math, crypto, or governance logic) |
-| "The gate enforces at execution time" | `test_gate.py` | **True** — 28/28 end-to-end tests pass (govern, execute, verify, replay, params mismatch, action mismatch, expired token, revocation, tenant policy, persistence across restart, runtime rate limit config, YAML policy loading) |
+| "The gate enforces at execution time" | `test_gate.py` | **True** — 30/30 end-to-end tests pass (govern, execute, verify, replay, params mismatch, action mismatch, expired token, revocation, tenant policy, persistence across restart, runtime rate limit config, YAML policy loading, admin auth) |
 | "Receipts are tamper-evident" | `verify_receipt.py` | **True** — hash covers fields, tampering is detected |
 | "Decisions are signed with Ed25519" | `dgv-gate` binary | **True** — real Ed25519 signing key persisted to file, decision hash signed |
 | "State persists across restarts" | `test_gate.py` | **True** — decisions, tokens, policies, revocations all survive restart (SQLite/Postgres) |
@@ -246,6 +251,9 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 | "YAML policy file loading" | `test_gate.py` | **True** — bulk-load global and tenant policies from YAML/JSON file |
 | "Distributed revocation" | `test_distributed_revocation.py` | **True** — 11/11 tests pass; revocation on one instance is visible to all instances sharing the same database |
 | "Concurrent multi-instance" | `test_concurrent_multi_instance.py` | **True** — 11/11 tests pass with Postgres; revocation propagates without restart, decisions verifiable across instances, rate limit config per-instance |
+| "Admin auth on admin endpoints" | `test_gate.py` | **True** — 401 without key, 401 with wrong key, 200 with correct key |
+| "Formal soundness proof" | `FORMAL_SOUNDNESS_PROOF.md` | **True** — receipt integrity, path compliance, null effect on deny, replayability, continuing authority, distributed revocation all proven |
+| "Production deployment" | `Dockerfile.gate` + `docker-compose.gate.yml` | **True** — multi-stage Dockerfile, docker-compose with Postgres + replica + nginx TLS profile |
 
 ## 4b. Concurrent multi-instance test results
 

@@ -1,0 +1,652 @@
+openapi: 3.0.3
+info:
+  title: DGV Enforcement Gate API
+  description: |
+    HTTP enforcement gate for autonomous agents. Intercepts tool calls and returns
+    computed decisions with signed receipts. Supports persistent storage (SQLite/Postgres),
+    multi-tenant policies, distributed revocation, and rate limiting.
+
+    **Authentication**: Admin endpoints require `X-Admin-Key` header when `DGV_ADMIN_KEY` is set.
+    Public endpoints are open.
+  version: "0.2.0"
+  contact:
+    name: DGV Verifier
+    url: https://github.com/vdmo/only-dgv-verifier
+
+servers:
+  - url: http://localhost:7878
+    description: Local development
+  - url: https://gate.example.com
+    description: Production (TLS terminated by reverse proxy)
+
+tags:
+  - name: Core
+    description: Core governance and execution endpoints
+  - name: Policies
+    description: Policy management (admin)
+  - name: Revocations
+    description: Revocation management (admin)
+  - name: Tenants
+    description: Multi-tenant isolation (admin)
+  - name: Config
+    description: Runtime configuration (admin)
+
+paths:
+  /govern:
+    post:
+      tags: [Core]
+      summary: Evaluate a proposal
+      description: |
+        Evaluates a tool call proposal against the active governance policy.
+        Returns a signed decision. If ALLOW, includes an auth token for execution.
+      operationId: govern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Proposal'
+      responses:
+        '200':
+          description: Decision returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GovernResponse'
+
+  /execute:
+    post:
+      tags: [Core]
+      summary: Execute with a token
+      description: |
+        Verifies an auth token and marks it consumed. The token must match the
+        tool, action, and params hash. One-use only — replay is blocked.
+      operationId: execute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteRequest'
+      responses:
+        '200':
+          description: Execution receipt
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteResponse'
+        '403':
+          description: Token invalid, expired, consumed, or revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecuteResponse'
+
+  /verify/{run_id}:
+    get:
+      tags: [Core]
+      summary: Verify a decision
+      description: |
+        Re-derives the decision hash from stored replay inputs and compares to
+        the stored hash. Detects tampering.
+      operationId: verify
+      parameters:
+        - name: run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+        '404':
+          description: Run ID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+
+  /health:
+    get:
+      tags: [Core]
+      summary: Health check
+      operationId: health
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /stats:
+    get:
+      tags: [Core]
+      summary: Get statistics
+      operationId: stats
+      responses:
+        '200':
+          description: Decision and token counters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatsResponse'
+
+  /policies:
+    post:
+      tags: [Policies]
+      summary: Store a policy
+      description: Store a governance policy for a tool+action pair. Requires admin key.
+      operationId: storePolicy
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorePolicyRequest'
+      responses:
+        '200':
+          description: Policy stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorePolicyResponse'
+        '401':
+          description: Admin auth required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /policies/load-file:
+    post:
+      tags: [Policies]
+      summary: Load policies from a file
+      description: Bulk-load policies from a YAML or JSON file. Requires admin key.
+      operationId: loadPolicyFile
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoadPolicyFileRequest'
+      responses:
+        '200':
+          description: Policies loaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoadPolicyFileResponse'
+        '400':
+          description: File not found or parse error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Admin auth required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /policies/{tool}/{action}:
+    get:
+      tags: [Policies]
+      summary: Get active policy
+      description: Get the active governance policy for a tool+action pair.
+      operationId: getPolicy
+      parameters:
+        - name: tool
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: action
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Active policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PolicyRecord'
+        '404':
+          description: No active policy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /revocations:
+    post:
+      tags: [Revocations]
+      summary: Revoke an actor
+      description: Revoke an agent's authority. Takes effect immediately. Requires admin key.
+      operationId: revoke
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+      responses:
+        '200':
+          description: Actor revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revoked:
+                    type: boolean
+        '401':
+          description: Admin auth required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags: [Revocations]
+      summary: List revocations
+      description: List all revoked actors. Public endpoint.
+      operationId: listRevocations
+      responses:
+        '200':
+          description: List of revocations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RevocationRecord'
+
+  /tenant/{tenant_id}/policies:
+    post:
+      tags: [Tenants]
+      summary: Store tenant-specific policy
+      description: Store a governance policy scoped to a specific tenant. Requires admin key.
+      operationId: storeTenantPolicy
+      security:
+        - adminKey: []
+      parameters:
+        - name: tenant_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StorePolicyRequest'
+      responses:
+        '200':
+          description: Tenant policy stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorePolicyResponse'
+        '401':
+          description: Admin auth required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /config/rate-limit:
+    get:
+      tags: [Config]
+      summary: Get rate limit config
+      description: Get current rate limit configuration. Public endpoint.
+      operationId: getRateLimit
+      responses:
+        '200':
+          description: Current rate limit config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitConfig'
+
+    put:
+      tags: [Config]
+      summary: Update rate limit config
+      description: Update rate limit config at runtime. Requires admin key.
+      operationId: updateRateLimit
+      security:
+        - adminKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRateLimitRequest'
+      responses:
+        '200':
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitConfig'
+        '401':
+          description: Admin auth required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    adminKey:
+      type: apiKey
+      in: header
+      name: X-Admin-Key
+      description: Admin API key (set via DGV_ADMIN_KEY env var)
+
+  schemas:
+    Proposal:
+      type: object
+      required: [request_id, agent_id, workflow, tool, action, params, justification, risk_level, identity]
+      properties:
+        request_id:
+          type: string
+        agent_id:
+          type: string
+        workflow:
+          type: string
+        tool:
+          type: string
+        action:
+          type: string
+        params:
+          type: object
+        justification:
+          type: string
+        risk_level:
+          type: string
+        identity:
+          type: object
+        tenant_id:
+          type: string
+          description: Optional tenant ID for multi-tenant isolation
+
+    GovernResponse:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/DecisionReturned'
+        evidence_pack_id:
+          type: string
+        signature:
+          type: string
+        verifying_key:
+          type: string
+
+    DecisionReturned:
+      type: object
+      properties:
+        request_id:
+          type: string
+        gate_state:
+          type: string
+          enum: [ALLOW, DENY, SILENCE, ESCALATE]
+        reason_codes:
+          type: array
+          items:
+            type: string
+        approvals_required:
+          type: integer
+        approvals_received:
+          type: integer
+        auth_token:
+          $ref: '#/components/schemas/AuthTokenIssued'
+          nullable: true
+        run_id:
+          type: string
+        decision_hash:
+          type: string
+        counterfactual:
+          type: object
+          nullable: true
+
+    AuthTokenIssued:
+      type: object
+      properties:
+        token_id:
+          type: string
+        request_id:
+          type: string
+        policy_version:
+          type: string
+        tool:
+          type: string
+        action:
+          type: string
+        vendor:
+          type: string
+        amount_cap:
+          type: integer
+        expires_unix_ms:
+          type: integer
+        approver_ids:
+          type: array
+          items:
+            type: string
+        signature:
+          type: string
+
+    ExecuteRequest:
+      type: object
+      required: [token_id, executor_id, tool, action, params]
+      properties:
+        token_id:
+          type: string
+        executor_id:
+          type: string
+        tool:
+          type: string
+        action:
+          type: string
+        params:
+          type: object
+
+    ExecuteResponse:
+      type: object
+      properties:
+        allowed:
+          type: boolean
+        deny_reason:
+          type: string
+          nullable: true
+        receipt:
+          type: object
+        run_id:
+          type: string
+
+    VerifyResponse:
+      type: object
+      properties:
+        run_id:
+          type: string
+        verified:
+          type: boolean
+        stored_decision_hash:
+          type: string
+          nullable: true
+        rederived_decision_hash:
+          type: string
+          nullable: true
+        gate_state:
+          type: string
+          nullable: true
+        reason_codes:
+          type: array
+          items:
+            type: string
+          nullable: true
+        created_unix_ms:
+          type: integer
+          nullable: true
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        version:
+          type: string
+        storage:
+          type: string
+          enum: [connected, disconnected]
+        verifying_key:
+          type: string
+
+    StatsResponse:
+      type: object
+      properties:
+        decisions_made:
+          type: integer
+        tokens_issued:
+          type: integer
+        tokens_consumed:
+          type: integer
+        denials:
+          type: integer
+
+    StorePolicyRequest:
+      type: object
+      required: [tool, action, script]
+      properties:
+        tool:
+          type: string
+        action:
+          type: string
+        script:
+          type: string
+          description: ONLY Lang governance script
+        policy_version:
+          type: string
+          default: v1
+
+    StorePolicyResponse:
+      type: object
+      properties:
+        policy_id:
+          type: string
+        active:
+          type: boolean
+
+    LoadPolicyFileRequest:
+      type: object
+      required: [file_path]
+      properties:
+        file_path:
+          type: string
+          description: Path to YAML or JSON policy file
+
+    LoadPolicyFileResponse:
+      type: object
+      properties:
+        loaded:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: string
+
+    PolicyRecord:
+      type: object
+      properties:
+        policy_id:
+          type: string
+        tool:
+          type: string
+        action:
+          type: string
+        script:
+          type: string
+        policy_version:
+          type: string
+        created_unix_ms:
+          type: integer
+        active:
+          type: boolean
+
+    RevokeRequest:
+      type: object
+      required: [actor_id, reason, revoked_by]
+      properties:
+        actor_id:
+          type: string
+        reason:
+          type: string
+        revoked_by:
+          type: string
+
+    RevocationRecord:
+      type: object
+      properties:
+        actor_id:
+          type: string
+        reason:
+          type: string
+        revoked_unix_ms:
+          type: integer
+        revoked_by:
+          type: string
+
+    RateLimitConfig:
+      type: object
+      properties:
+        max_requests:
+          type: integer
+        window_ms:
+          type: integer
+        enabled:
+          type: boolean
+
+    UpdateRateLimitRequest:
+      type: object
+      properties:
+        max_requests:
+          type: integer
+        window_ms:
+          type: integer
+        enabled:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        hint:
+          type: string

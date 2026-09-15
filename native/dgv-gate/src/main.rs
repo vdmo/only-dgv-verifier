@@ -18,9 +18,10 @@
 
 use axum::{
     extract::{Json, Path, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
+    middleware::{self, Next},
     response::IntoResponse,
-    routing::{get, post},
+    routing::{get, post, put},
     Router,
 };
 use dgv_storage::{
@@ -36,6 +37,7 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tower_http::cors::{CorsLayer, Any};
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -138,6 +140,9 @@ struct AppState {
     /// Rate limit configuration (requests per window per agent+tool)
     /// Wrapped in RwLock so it can be updated at runtime via PUT /config/rate-limit
     rate_limit: Arc<std::sync::RwLock<RateLimitConfig>>,
+    /// Admin API key for privileged endpoints (POST /policies, POST /revocations, etc.)
+    /// If None, admin endpoints are open (dev mode only — not for production).
+    admin_key: Option<String>,
 }
 
 #[derive(Clone)]
@@ -194,6 +199,38 @@ fn default_governance_script(agent_id: &str, tool: &str, action: &str, params: &
         action,
         risk,
     )
+}
+
+// ── Admin auth middleware ────────────────────────────────────────────────────
+
+async fn admin_auth_middleware(
+    State(app): State<AppState>,
+    headers: HeaderMap,
+    request: axum::extract::Request,
+    next: Next,
+) -> impl IntoResponse {
+    // If no admin key is configured, allow all (dev mode)
+    let Some(ref admin_key) = app.admin_key else {
+        return next.run(request).await;
+    };
+
+    // Check X-Admin-Key header
+    let provided = headers
+        .get("X-Admin-Key")
+        .and_then(|v| v.to_str().ok());
+
+    if provided == Some(admin_key.as_str()) {
+        next.run(request).await
+    } else {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(json!({
+                "error": "admin_auth_required",
+                "hint": "provide X-Admin-Key header",
+            })),
+        )
+            .into_response()
+    }
 }
 
 // ── POST /govern ────────────────────────────────────────────────────────────
@@ -1091,26 +1128,66 @@ async fn main() {
         rate_limit.max_requests, rate_limit.window_ms, rate_limit.enabled
     );
 
+    // Admin API key — if DGV_ADMIN_KEY is set, admin endpoints require X-Admin-Key header
+    let admin_key = std::env::var("DGV_ADMIN_KEY").ok();
+    if admin_key.is_some() {
+        println!("Admin auth: enabled (X-Admin-Key required for admin endpoints)");
+    } else {
+        println!("Admin auth: disabled (DGV_ADMIN_KEY not set — dev mode only)");
+    }
+
     let app_state = AppState {
         storage,
         keys,
         counters: Arc::new(std::sync::Mutex::new(Counters::default())),
         rate_limit: Arc::new(std::sync::RwLock::new(rate_limit)),
+        admin_key: admin_key.clone(),
     };
 
-    let app = Router::new()
+    // Public routes (no auth required)
+    let public_routes = Router::new()
         .route("/govern", post(handle_govern))
         .route("/execute", post(handle_execute))
         .route("/verify/:run_id", get(handle_verify))
         .route("/health", get(handle_health))
         .route("/stats", get(handle_stats))
+        .route("/policies/:tool/:action", get(handle_get_policy))
+        .route("/revocations", get(list_revocations))
+        .route("/config/rate-limit", get(handle_get_rate_limit));
+
+    // Admin routes (require X-Admin-Key when DGV_ADMIN_KEY is set)
+    let admin_routes = Router::new()
         .route("/policies", post(handle_store_policy))
         .route("/policies/load-file", post(handle_load_policy_file))
-        .route("/policies/:tool/:action", get(handle_get_policy))
-        .route("/revocations", post(handle_revoke).get(list_revocations))
+        .route("/revocations", post(handle_revoke))
         .route("/tenant/:tenant_id/policies", post(handle_store_tenant_policy))
-        .route("/config/rate-limit", get(handle_get_rate_limit).put(handle_update_rate_limit))
-        .with_state(app_state);
+        .route("/config/rate-limit", put(handle_update_rate_limit))
+        .route_layer(middleware::from_fn_with_state(
+            app_state.clone(),
+            admin_auth_middleware,
+        ));
+
+    // CORS — permissive in dev, restrictive in production via DGV_CORS_ORIGINS
+    let cors_origins = std::env::var("DGV_CORS_ORIGINS")
+        .unwrap_or_else(|_| "*".to_string());
+    let cors = if cors_origins == "*" {
+        CorsLayer::permissive()
+    } else {
+        let origins: Vec<axum::http::HeaderValue> = cors_origins
+            .split(',')
+            .filter_map(|s| s.trim().parse().ok())
+            .collect();
+        CorsLayer::new()
+            .allow_origin(tower_http::cors::AllowOrigin::list(origins))
+            .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::PUT])
+            .allow_headers(Any)
+    };
+    println!("CORS: {}", if cors_origins == "*" { "permissive (*)" } else { "restricted" });
+
+    let app = public_routes
+        .merge(admin_routes)
+        .with_state(app_state)
+        .layer(cors);
 
     let addr = std::env::var("DGV_LISTEN_ADDR")
         .unwrap_or_else(|_| "127.0.0.1:7878".to_string());
@@ -1122,13 +1199,14 @@ async fn main() {
     println!("  GET  /verify/:run_id               - re-derive decision hash, compare to stored");
     println!("  GET  /health                        - liveness probe");
     println!("  GET  /stats                         - decision/token counters");
-    println!("  POST /policies                      - store a policy (tool+action -> script)");
-    println!("  POST /policies/load-file            - load policies from a YAML/JSON file");
     println!("  GET  /policies/:tool/:action        - get active policy");
-    println!("  POST /revocations                   - revoke an actor");
     println!("  GET  /revocations                   - list revocations");
-    println!("  POST /tenant/:tenant_id/policies    - store tenant-specific policy");
     println!("  GET  /config/rate-limit             - get rate limit config");
+    println!("  ── Admin endpoints (require X-Admin-Key when DGV_ADMIN_KEY is set) ──");
+    println!("  POST /policies                      - store a policy");
+    println!("  POST /policies/load-file            - load policies from YAML/JSON file");
+    println!("  POST /revocations                   - revoke an actor");
+    println!("  POST /tenant/:tenant_id/policies    - store tenant-specific policy");
     println!("  PUT  /config/rate-limit             - update rate limit config");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

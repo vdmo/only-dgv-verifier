@@ -1,0 +1,71 @@
+# DGV Gate — Production Dockerfile
+#
+# Multi-stage build for the dgv-gate enforcement gate.
+# Produces a minimal runtime image with SQLite or Postgres support.
+#
+# Build:
+#   docker build -t dgv-gate .
+#
+# Run (SQLite):
+#   docker run -p 7878:7878 -v dgv-data:/data dgv-gate
+#
+# Run (Postgres):
+#   docker run -p 7878:7878 \
+#     -e DGV_STORAGE=postgres \
+#     -e DGV_DATABASE_URL=postgres://user:pass@host:5432/dgv_gate \
+#     -e DGV_ADMIN_KEY=your-secret-key \
+#     dgv-gate
+#
+# Run with docker-compose:
+#   docker-compose -f docker-compose.gate.yml up
+
+# ── Build stage ──────────────────────────────────────────────────────────────
+FROM rust:1.83-slim-bookworm AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy the entire workspace (needed for path dependencies)
+COPY native/ ./native/
+
+# Build only the gate
+WORKDIR /app/native
+RUN cargo build --release -p dgv-gate
+
+# ── Runtime stage ────────────────────────────────────────────────────────────
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy the binary
+COPY --from=builder /app/native/target/release/dgv-gate /app/dgv-gate
+
+# Create data directory for SQLite
+RUN mkdir -p /data
+
+# Environment defaults
+ENV DGV_STORAGE=sqlite
+ENV DGV_DATABASE_URL=sqlite:///data/dgv_gate.db
+ENV DGV_SIGNING_KEY=/data/dgv_signing_key.hex
+ENV DGV_LISTEN_ADDR=0.0.0.0:7878
+ENV DGV_RATE_LIMIT_MAX=100
+ENV DGV_RATE_LIMIT_WINDOW_MS=60000
+
+# Expose the gate port
+EXPOSE 7878
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:7878/health || exit 1
+
+ENTRYPOINT ["/app/dgv-gate"]

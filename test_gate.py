@@ -12,11 +12,15 @@ import urllib.error
 GATE_URL = "http://127.0.0.1:7878"
 DB_FILE = "/home/vdmo/pir/only-dgv-verifier/native/dgv_gate_test.db"
 KEY_FILE = "/home/vdmo/pir/only-dgv-verifier/native/dgv_test_key.hex"
+ADMIN_KEY = "test-admin-key-12345"
 
-def post(path, body):
+def post(path, body, admin_key=None):
     data = json.dumps(body).encode()
+    headers = {"Content-Type": "application/json"}
+    if admin_key:
+        headers["X-Admin-Key"] = admin_key
     req = urllib.request.Request(
-        f"{GATE_URL}{path}", data=data, headers={"Content-Type": "application/json"}
+        f"{GATE_URL}{path}", data=data, headers=headers
     )
     try:
         with urllib.request.urlopen(req) as resp:
@@ -24,10 +28,13 @@ def post(path, body):
     except urllib.error.HTTPError as e:
         return e.code, json.loads(e.read())
 
-def put(path, body):
+def put(path, body, admin_key=None):
     data = json.dumps(body).encode()
+    headers = {"Content-Type": "application/json"}
+    if admin_key:
+        headers["X-Admin-Key"] = admin_key
     req = urllib.request.Request(
-        f"{GATE_URL}{path}", data=data, headers={"Content-Type": "application/json"}, method="PUT"
+        f"{GATE_URL}{path}", data=data, headers=headers, method="PUT"
     )
     try:
         with urllib.request.urlopen(req) as resp:
@@ -57,6 +64,7 @@ def main():
     env["DGV_STORAGE"] = "sqlite"
     env["DGV_DATABASE_URL"] = f"sqlite://{DB_FILE}"
     env["DGV_SIGNING_KEY"] = KEY_FILE
+    env["DGV_ADMIN_KEY"] = ADMIN_KEY
     proc = subprocess.Popen(
         ["./target/release/dgv-gate"],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -129,15 +137,35 @@ def main():
         print(f"PASS verify (hash matches)")
         passed += 1
 
-        # 6. Store a custom policy
+        # 6. Store a custom policy (requires admin key)
         status, pol1 = post("/policies", {
             "tool": "delete_file",
             "action": "delete",
             "script": "harmony(1e-12)\nbind_authority(\"{agent}\", \"admin\", \"delete_file\")\nbind_objective(\"delete\", [\"delete\"])\nevolve(2)\ndata(100)\ncheck_authority(\"{agent}\")\ncheck_objective_drift(\"delete\")\nresidual()",
-        })
+        }, admin_key=ADMIN_KEY)
         assert status == 200, f"store policy: {status}"
         assert pol1["active"] == True
         print(f"PASS store policy (delete_file/delete)")
+        passed += 1
+
+        # 6b. Admin endpoint without key should return 401
+        status, _ = post("/policies", {
+            "tool": "test_tool",
+            "action": "test",
+            "script": "residual()",
+        })
+        assert status == 401, f"no admin key: expected 401, got {status}"
+        print(f"PASS admin auth required (401 without key)")
+        passed += 1
+
+        # 6c. Admin endpoint with wrong key should return 401
+        status, _ = post("/policies", {
+            "tool": "test_tool",
+            "action": "test",
+            "script": "residual()",
+        }, admin_key="wrong-key")
+        assert status == 401, f"wrong admin key: expected 401, got {status}"
+        print(f"PASS admin auth rejected (401 with wrong key)")
         passed += 1
 
         # 7. Get the stored policy
@@ -153,7 +181,7 @@ def main():
             "actor_id": "agent-bad",
             "reason": "terminated",
             "revoked_by": "admin",
-        })
+        }, admin_key=ADMIN_KEY)
         assert status == 200, f"revoke: {status}"
         assert rev1["revoked"] == True
         print(f"PASS revoke actor")
@@ -190,7 +218,7 @@ def main():
             "tool": "send_email",
             "action": "send",
             "script": "harmony(1e-12)\nbind_authority(\"{agent}\", \"tenant_user\", \"send_email\")\nevolve(2)\ndata(500)\nresidual()",
-        })
+        }, admin_key=ADMIN_KEY)
         assert status == 200
         assert tp1["active"] == True
         print(f"PASS store tenant policy (acme-corp)")
@@ -284,7 +312,7 @@ def main():
         # 20. Load policies from YAML file
         status, load_result = post("/policies/load-file", {
             "file_path": "/home/vdmo/pir/only-dgv-verifier/test_policies.yaml"
-        })
+        }, admin_key=ADMIN_KEY)
         assert status == 200, f"load policy file: {status}"
         assert load_result["loaded"] >= 4, f"load policy file: expected >=4, got {load_result['loaded']}"
         assert len(load_result["errors"]) == 0, f"load policy file errors: {load_result['errors']}"
@@ -349,7 +377,7 @@ def main():
             "max_requests": 3,
             "window_ms": 60000,
             "enabled": True,
-        })
+        }, admin_key=ADMIN_KEY)
         assert status == 200, f"update rate limit: {status}"
         assert rl_updated["max_requests"] == 3, f"updated config: {rl_updated}"
         print(f"PASS update rate limit at runtime (max={rl_updated['max_requests']})")
@@ -411,7 +439,7 @@ def main():
         # 28. Disable rate limiting at runtime
         status, rl_disabled = put("/config/rate-limit", {
             "enabled": False,
-        })
+        }, admin_key=ADMIN_KEY)
         assert status == 200
         assert rl_disabled["enabled"] == False
         print(f"PASS disable rate limiting at runtime")
