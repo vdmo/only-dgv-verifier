@@ -1,0 +1,8 @@
+[package]
+name = "only-evolution"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+only-core = { path = "../only-core" }
+libm = "0.2"

@@ -1,0 +1,65 @@
+{
+  "run_id": "GOLDEN_REQ-MED-001_gate",
+  "created_unix_ms": 1700000001000,
+  "request": {
+    "payload": {
+      "identity": {
+        "requester_id": "user:nurse"
+      },
+      "patient_id": "PAT-001",
+      "vitals": {
+        "blood_pressure": {
+          "diastolic": 98,
+          "systolic": 162
+        },
+        "glucose": 220,
+        "heart_rate": 132
+      }
+    },
+    "request_id": "REQ-MED-001"
+  },
+  "policy_version": "only_control_golden_v0",
+  "decision": {
+    "approved": false,
+    "execute_allowed": false,
+    "extra": {
+      "anomaly_score": 0.91,
+      "reason_codes": [
+        "vitals_anomaly"
+      ]
+    },
+    "gate_state": "ESCALATE",
+    "needs_approval": true,
+    "next_step": "Clinician review"
+  },
+  "decision_hash": "hash_GOLDEN_REQ-MED-001_gate",
+  "replay_inputs": {
+    "llm": {
+      "model": "gemini-2.0-flash",
+      "observed": false,
+      "prompt": "Decide if this request can proceed.",
+      "provider": "gemini",
+      "response": "GATE=ESCALATE if approvals required; otherwise ALLOW."
+    },
+    "script": "harmony(1e-12) residual() evolve(2) residual() report()"
+  },
+  "tool_proposals": [
+    {
+      "tool": "medical.vitals",
+      "action": "gate",
+      "params": {
+        "request_id": "REQ-MED-001"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "medical.vitals",
+      "allowed": false,
+      "deny_reason": null,
+      "result": {
+        "gate_state": "ESCALATE"
+      }
+    }
+  ]
+}

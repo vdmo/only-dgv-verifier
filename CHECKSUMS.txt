@@ -1,2 +1,2 @@
-f7b107b8491500644091648e53a22d9a19af615ac59cc3f4bbfdb3c327dfd7ac  bin/dgv-verifier
-2b06443755be4f0241eeb69a41e387b10127c3129f1cdb59be17588829a83f21  bin/only-gate
+434d37534eb739cdcd82a05e7443c7516af1bfd629ee9ee06aaec691c48a3318  native/target/release/dgv-verifier
+b89ba986b1851e20673ab27c94cff2020d6a55586e346217eeff9fde9a77a1dc  native/target/release/only-gate

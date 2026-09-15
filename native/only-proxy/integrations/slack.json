@@ -1,0 +1,14 @@
+{
+  "app_name": "Slack (Enterprise Comm)",
+  "target_domains": [
+    "https://slack.com/api"
+  ],
+  "vault_ghost": [
+    607.6133639083328,
+    1.0,
+    -1.0,
+    -607.6133639083328
+  ],
+  "vault_ciphertext": "786f786289db6a00434b5f56e5dd6a1545445f42ebdc79154f4b454efbb81673",
+  "base_script": "harmony(0.1)"
+}

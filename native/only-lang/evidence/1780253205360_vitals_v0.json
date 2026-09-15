@@ -1,0 +1,32 @@
+{
+  "run_id": "1780253205360_vitals_v0",
+  "created_unix_ms": 1780253205361,
+  "request": {
+    "dt_minutes": 5.0,
+    "missing_count": 4,
+    "sensor_quality": 1.0,
+    "vitals": {
+      "bp_dia": 0.0,
+      "bp_sys": 0.0,
+      "glucose": 0.0,
+      "hr": 0.0
+    }
+  },
+  "policy_version": "vitals_v0",
+  "decision": {
+    "anomaly_score": 1.2,
+    "risk_score": 0.0
+  },
+  "decision_hash": "7ef75d8b142576ff",
+  "replay_inputs": {
+    "reports": {
+      "bp_dia_html": "/home/vdmo/pir/only-engine/only-lang/report_cards/vitals_v0_bp_dia.html",
+      "bp_sys_html": "/home/vdmo/pir/only-engine/only-lang/report_cards/vitals_v0_bp_sys.html",
+      "glucose_html": "/home/vdmo/pir/only-engine/only-lang/report_cards/vitals_v0_glucose.html",
+      "hr_html": "/home/vdmo/pir/only-engine/only-lang/report_cards/vitals_v0_hr.html",
+      "risk_html": "/home/vdmo/pir/only-engine/only-lang/report_cards/vitals_v0_risk.html"
+    }
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

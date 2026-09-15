@@ -1,0 +1,3144 @@
+{
+  "case_count": 36,
+  "cases": [
+    {
+      "expected": "DENY despite cached active authority; execution check ordered after committed revocation",
+      "name": "stale-cache-after-committed-revocation",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-stale-cache",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 405,
+          "gate_id": "gate-B",
+          "operation": "observe",
+          "pid": 572055,
+          "result": {
+            "actor_id": "actor-stale-cache",
+            "revoked": false,
+            "version": 1
+          }
+        },
+        {
+          "cached_authority": null,
+          "duration_us": 3671,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-stale-cache",
+            "event_seq": 3,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-stale-cache",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 5134,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 4,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "DENY old authority generation even when the actor is active again",
+      "name": "old-token-after-regrant",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-stale-cache",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 3851,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 3,
+            "decision": "DENY",
+            "event_seq": 6,
+            "execution_confirmed": false,
+            "reason": "TOKEN_VERSION_STALE"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW fresh version-bound token",
+      "name": "fresh-token-after-regrant",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-stale-cache",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 4490,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 3,
+            "decision": "ALLOW",
+            "event_seq": 8,
+            "execution_confirmed": true,
+            "reason": "AUTHORIZED_AT_WRITE"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "DENY replay; destination write remains one-use across gates",
+      "name": "token-replay-on-other-gate",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3889,
+          "gate_id": "gate-A",
+          "operation": "execute",
+          "pid": 572054,
+          "result": {
+            "authority_version": 3,
+            "decision": "DENY",
+            "event_seq": 9,
+            "execution_confirmed": false,
+            "reason": "TOKEN_USED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "DENY duplicate action ID even with another unused token",
+      "name": "duplicate-action-with-new-token",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3993,
+          "gate_id": "gate-A",
+          "operation": "execute",
+          "pid": 572054,
+          "result": {
+            "authority_version": 3,
+            "decision": "DENY",
+            "event_seq": 11,
+            "execution_confirmed": false,
+            "reason": "ACTION_ALREADY_COMMITTED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "Earlier committed write remains in history; revocation is not retroactive",
+      "name": "write-committed-before-revocation",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-stale-cache",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 5206,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 1,
+            "decision": "ALLOW",
+            "event_seq": 14,
+            "execution_confirmed": true,
+            "reason": "AUTHORIZED_AT_WRITE"
+          }
+        },
+        {
+          "cached_authority": null,
+          "duration_us": 3731,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-write-first",
+            "event_seq": 15,
+            "revoked": true,
+            "version": 2
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "DENY on database lock timeout; cached permission cannot authorize; no destination row",
+      "name": "store-timeout-no-cache-fallback",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 396,
+          "gate_id": "gate-B",
+          "operation": "observe",
+          "pid": 572055,
+          "result": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 101278,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "commit_status": "UNCONFIRMED",
+            "decision": "DENY",
+            "event_seq": null,
+            "execution_confirmed": false,
+            "reason": "STORE_UNAVAILABLE"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW after authoritative store recovers; failed attempt did not consume token",
+      "name": "store-recovery-fresh-check",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 4962,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 1,
+            "decision": "ALLOW",
+            "event_seq": 18,
+            "execution_confirmed": true,
+            "reason": "AUTHORIZED_AT_WRITE"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "DENY token used for different payload",
+      "name": "payload-substitution",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 4250,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 1,
+            "decision": "DENY",
+            "event_seq": 21,
+            "execution_confirmed": false,
+            "reason": "TOKEN_BINDING_MISMATCH"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "DENY token used at different destination",
+      "name": "destination-substitution",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 4681,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 1,
+            "decision": "DENY",
+            "event_seq": 22,
+            "execution_confirmed": false,
+            "reason": "TOKEN_BINDING_MISMATCH"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "DENY unregistered token",
+      "name": "unknown-token",
+      "observations": [
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 4922,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": null,
+            "decision": "DENY",
+            "event_seq": 23,
+            "execution_confirmed": false,
+            "reason": "UNKNOWN_TOKEN"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "Exactly one ALLOW and one TOKEN_USED denial",
+      "name": "concurrent-token-use",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4647,
+          "gate_id": "gate-A",
+          "operation": "execute",
+          "pid": 572054,
+          "result": {
+            "authority_version": 1,
+            "decision": "ALLOW",
+            "event_seq": 26,
+            "execution_confirmed": true,
+            "reason": "AUTHORIZED_AT_WRITE"
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 14323,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 1,
+            "decision": "DENY",
+            "event_seq": 27,
+            "execution_confirmed": false,
+            "reason": "TOKEN_USED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-0",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4519,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-0",
+            "event_seq": 30,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12338,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 31,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-1",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4079,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-1",
+            "event_seq": 34,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12359,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 35,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-2",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3791,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-2",
+            "event_seq": 38,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 15297,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 39,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-3",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3950,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-3",
+            "event_seq": 42,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 13786,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 43,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-4",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 6722,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-4",
+            "event_seq": 46,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 13056,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 47,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-5",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 7732,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-5",
+            "event_seq": 50,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 13223,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 51,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-6",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3925,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-6",
+            "event_seq": 54,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12379,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 55,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-7",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4001,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-7",
+            "event_seq": 58,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 26782,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 59,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-8",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4230,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-8",
+            "event_seq": 62,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12415,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 63,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-9",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3748,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-9",
+            "event_seq": 66,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 13331,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 67,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-10",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 9871,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-10",
+            "event_seq": 70,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 18534,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 71,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-11",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 6581,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-11",
+            "event_seq": 74,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 14217,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 75,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-12",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3675,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-12",
+            "event_seq": 78,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 7680,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 79,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-13",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 19133,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-13",
+            "event_seq": 82,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 37620,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 83,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-14",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4361,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-14",
+            "event_seq": 86,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12505,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 87,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-15",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3858,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-15",
+            "event_seq": 90,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 14301,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 91,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-16",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3826,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-16",
+            "event_seq": 94,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12903,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 95,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-17",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3924,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-17",
+            "event_seq": 98,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12208,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 99,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-18",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4839,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-18",
+            "event_seq": 102,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 13217,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 103,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-19",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3812,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-19",
+            "event_seq": 106,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 16316,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 107,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-20",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 5067,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-20",
+            "event_seq": 110,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12307,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 111,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-21",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4132,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-21",
+            "event_seq": 114,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12388,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 115,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-22",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 3817,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-22",
+            "event_seq": 118,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 12780,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 119,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    },
+    {
+      "expected": "ALLOW only if the synthetic write commits before revocation; otherwise DENY",
+      "name": "revocation-write-race-23",
+      "observations": [
+        {
+          "cached_authority": null,
+          "duration_us": 4341,
+          "gate_id": "gate-A",
+          "operation": "revoke",
+          "pid": 572054,
+          "result": {
+            "actor_id": "actor-race-23",
+            "event_seq": 122,
+            "revoked": true,
+            "version": 2
+          }
+        },
+        {
+          "cached_authority": {
+            "actor_id": "actor-store-outage",
+            "revoked": false,
+            "version": 1
+          },
+          "duration_us": 13980,
+          "gate_id": "gate-B",
+          "operation": "execute",
+          "pid": 572055,
+          "result": {
+            "authority_version": 2,
+            "decision": "DENY",
+            "event_seq": 123,
+            "execution_confirmed": false,
+            "reason": "AUTHORITY_REVOKED"
+          }
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "execution_mode": "two_local_processes_single_sqlite_authority",
+  "gate_pids": {
+    "gate-A": 572054,
+    "gate-B": 572055
+  },
+  "history_audit": {
+    "events_checked": 123,
+    "valid": true,
+    "violations": [],
+    "writes_checked": 4
+  },
+  "implementation_sha256": {
+    "objective_contract.py": "1c240effcd369ef025ea3259ad5f8985bb8a273eeb5eb416eaabaf1eb9f81f31",
+    "revocation_experiment.py": "191a186c1d97e3d007af3ee27af02183758adf5ef523e91121191313b13ccb49",
+    "revocation_store.py": "fbdb1679821b86d97a3651429b69a444ba6020d2e167ff07defcf6dffee02c98"
+  },
+  "limitations": [
+    "Two local processes share one SQLite database; no network transport, replication or consensus experiment",
+    "Unavailable-store fault is a SQLite lock timeout, not a real network partition",
+    "Trusted processes have local database access; production requires authenticated service roles and protected destination writes",
+    "Only synthetic rows are executed; no CRM action, ONLY Lang integration or external tool side effect",
+    "Ordering guarantees apply only when authority checks, token consumption and destination writes share this transaction",
+    "Wall-clock TTL uses a persisted rollback check but is not a trusted time service",
+    "Commit errors are unconfirmed: reconcile by action ID before retries; no external exactly-once guarantee",
+    "Latency samples describe this run and do not establish a production SLA or propagation bound",
+    "The history hash is not a signature; an independent trusted checkpoint is needed to detect wholesale replacement or restored old databases"
+  ],
+  "measurements": {
+    "elapsed_us": 1024670,
+    "python_version": "3.10.12",
+    "race_orderings": {
+      "revoke_before_check": 24
+    },
+    "revoke_ack_to_denial_roundtrip_us": 5456,
+    "sqlite_version": "3.37.2",
+    "store_busy_timeout_ms": 100
+  },
+  "passed": true,
+  "passed_count": 36,
+  "profile": "DGV-REVOCATION-EXPERIMENT-1",
+  "race_trials": 24,
+  "report_hash": "c4f68e8dac429b8a07a313e4d3f44b6f7c8f5920c6e5c3aca9ac3406beadd4ab",
+  "snapshot": {
+    "actions": [
+      {
+        "action_id": "double-use-race",
+        "actor_id": "actor-double-use-race",
+        "audience": "synthetic-destination",
+        "event_seq": 26,
+        "payload": {
+          "action": "synthetic_write",
+          "amount_minor": 100,
+          "customer_id": "synthetic-double-use-race"
+        },
+        "payload_hash": "bd51919a86550cccdc63e843e3a22c88bd75a626f3ea9bb01749fb6094e513dc",
+        "token_hash": "b550f5e58f38ed6e02599be6aaefefc0f59bc22ad14fd95223471d02a513125d",
+        "version": 1
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "event_seq": 8,
+        "payload": {
+          "action": "synthetic_write",
+          "amount_minor": 100,
+          "customer_id": "synthetic-stale-cache"
+        },
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "token_hash": "5cc9fd1ee25dafd07cd2c2cf90ec2c50a7ac5c9419edad07b2e331865d7230da",
+        "version": 3
+      },
+      {
+        "action_id": "store-outage",
+        "actor_id": "actor-store-outage",
+        "audience": "synthetic-destination",
+        "event_seq": 18,
+        "payload": {
+          "action": "synthetic_write",
+          "amount_minor": 100,
+          "customer_id": "synthetic-store-outage"
+        },
+        "payload_hash": "ac6bb1f4f35f9b10198af21d5358f699636d5c7c135cf0c9a63cec6435c160e0",
+        "token_hash": "585922a2ecf74c8f9a2f0a8fefd106b75a5a89dd470403935fd05c8e237bd548",
+        "version": 1
+      },
+      {
+        "action_id": "write-first",
+        "actor_id": "actor-write-first",
+        "audience": "synthetic-destination",
+        "event_seq": 14,
+        "payload": {
+          "action": "synthetic_write",
+          "amount_minor": 100,
+          "customer_id": "synthetic-write-first"
+        },
+        "payload_hash": "890a086b6245170f8aa7e976eeff86118c3a7de66ae0dd4bd05a3ab3b8b7e438",
+        "token_hash": "57bf41292876e8fcd1b25b38d773ff6d2fb030c7c9a9e8139e88ac9dcaa3aa6b",
+        "version": 1
+      }
+    ],
+    "authorities": [
+      {
+        "actor_id": "actor-binding",
+        "revoked": false,
+        "version": 1
+      },
+      {
+        "actor_id": "actor-double-use-race",
+        "revoked": false,
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-0",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-1",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-10",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-11",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-12",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-13",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-14",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-15",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-16",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-17",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-18",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-19",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-2",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-20",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-21",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-22",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-23",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-3",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-4",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-5",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-6",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-7",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-8",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-9",
+        "revoked": true,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-stale-cache",
+        "revoked": false,
+        "version": 3
+      },
+      {
+        "actor_id": "actor-store-outage",
+        "revoked": false,
+        "version": 1
+      },
+      {
+        "actor_id": "actor-write-first",
+        "revoked": true,
+        "version": 2
+      }
+    ],
+    "events": [
+      {
+        "actor_id": "actor-stale-cache",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416286,
+        "seq": 1,
+        "version": 1
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476291,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416291,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "seq": 2,
+        "token_hash": "6bec01d5aa000431f9e369f4df73231fb9e1d4430acd0c346c1c1d93512f1107",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-stale-cache",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416295,
+        "seq": 3,
+        "version": 2
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416299,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 4,
+        "token_hash": "6bec01d5aa000431f9e369f4df73231fb9e1d4430acd0c346c1c1d93512f1107",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-stale-cache",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416305,
+        "seq": 5,
+        "version": 3
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416308,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "reason": "TOKEN_VERSION_STALE",
+        "seq": 6,
+        "token_hash": "6bec01d5aa000431f9e369f4df73231fb9e1d4430acd0c346c1c1d93512f1107",
+        "version": 3
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476312,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416312,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "seq": 7,
+        "token_hash": "5cc9fd1ee25dafd07cd2c2cf90ec2c50a7ac5c9419edad07b2e331865d7230da",
+        "version": 3
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "decision": "ALLOW",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416316,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "reason": "AUTHORIZED_AT_WRITE",
+        "seq": 8,
+        "token_hash": "5cc9fd1ee25dafd07cd2c2cf90ec2c50a7ac5c9419edad07b2e331865d7230da",
+        "version": 3
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-A",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416321,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "reason": "TOKEN_USED",
+        "seq": 9,
+        "token_hash": "5cc9fd1ee25dafd07cd2c2cf90ec2c50a7ac5c9419edad07b2e331865d7230da",
+        "version": 3
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476325,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416325,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "seq": 10,
+        "token_hash": "15e2225f6fe7e18cb767f3a5e743e2538b34cb2649300c895cff067a92b6636d",
+        "version": 3
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-A",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416329,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "reason": "ACTION_ALREADY_COMMITTED",
+        "seq": 11,
+        "token_hash": "15e2225f6fe7e18cb767f3a5e743e2538b34cb2649300c895cff067a92b6636d",
+        "version": 3
+      },
+      {
+        "actor_id": "actor-write-first",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416333,
+        "seq": 12,
+        "version": 1
+      },
+      {
+        "action_id": "write-first",
+        "actor_id": "actor-write-first",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476338,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416338,
+        "payload_hash": "890a086b6245170f8aa7e976eeff86118c3a7de66ae0dd4bd05a3ab3b8b7e438",
+        "seq": 13,
+        "token_hash": "57bf41292876e8fcd1b25b38d773ff6d2fb030c7c9a9e8139e88ac9dcaa3aa6b",
+        "version": 1
+      },
+      {
+        "action_id": "write-first",
+        "actor_id": "actor-write-first",
+        "audience": "synthetic-destination",
+        "decision": "ALLOW",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416341,
+        "payload_hash": "890a086b6245170f8aa7e976eeff86118c3a7de66ae0dd4bd05a3ab3b8b7e438",
+        "reason": "AUTHORIZED_AT_WRITE",
+        "seq": 14,
+        "token_hash": "57bf41292876e8fcd1b25b38d773ff6d2fb030c7c9a9e8139e88ac9dcaa3aa6b",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-write-first",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416347,
+        "seq": 15,
+        "version": 2
+      },
+      {
+        "actor_id": "actor-store-outage",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416351,
+        "seq": 16,
+        "version": 1
+      },
+      {
+        "action_id": "store-outage",
+        "actor_id": "actor-store-outage",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476356,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416356,
+        "payload_hash": "ac6bb1f4f35f9b10198af21d5358f699636d5c7c135cf0c9a63cec6435c160e0",
+        "seq": 17,
+        "token_hash": "585922a2ecf74c8f9a2f0a8fefd106b75a5a89dd470403935fd05c8e237bd548",
+        "version": 1
+      },
+      {
+        "action_id": "store-outage",
+        "actor_id": "actor-store-outage",
+        "audience": "synthetic-destination",
+        "decision": "ALLOW",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416463,
+        "payload_hash": "ac6bb1f4f35f9b10198af21d5358f699636d5c7c135cf0c9a63cec6435c160e0",
+        "reason": "AUTHORIZED_AT_WRITE",
+        "seq": 18,
+        "token_hash": "585922a2ecf74c8f9a2f0a8fefd106b75a5a89dd470403935fd05c8e237bd548",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-binding",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416469,
+        "seq": 19,
+        "version": 1
+      },
+      {
+        "action_id": "binding",
+        "actor_id": "actor-binding",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476473,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416473,
+        "payload_hash": "3fbb6eab16948732e11c6d25b6ecf58a304ddcf0f2a7242921a8d87ccd29f356",
+        "seq": 20,
+        "token_hash": "d9d00aba08e888629542aaedbbe3ecaccd10457549e6f95ef7b818f6c8956083",
+        "version": 1
+      },
+      {
+        "action_id": "binding",
+        "actor_id": "actor-binding",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416478,
+        "payload_hash": "9d3152fb657d68bdc78ccb0cab958f36d7190895880d7631d7bcb0fed7b8f91b",
+        "reason": "TOKEN_BINDING_MISMATCH",
+        "seq": 21,
+        "token_hash": "d9d00aba08e888629542aaedbbe3ecaccd10457549e6f95ef7b818f6c8956083",
+        "version": 1
+      },
+      {
+        "action_id": "binding",
+        "actor_id": "actor-binding",
+        "audience": "other-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416482,
+        "payload_hash": "3fbb6eab16948732e11c6d25b6ecf58a304ddcf0f2a7242921a8d87ccd29f356",
+        "reason": "TOKEN_BINDING_MISMATCH",
+        "seq": 22,
+        "token_hash": "d9d00aba08e888629542aaedbbe3ecaccd10457549e6f95ef7b818f6c8956083",
+        "version": 1
+      },
+      {
+        "action_id": "binding",
+        "actor_id": null,
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416487,
+        "payload_hash": "3fbb6eab16948732e11c6d25b6ecf58a304ddcf0f2a7242921a8d87ccd29f356",
+        "reason": "UNKNOWN_TOKEN",
+        "seq": 23,
+        "token_hash": "1aa8e8443881742e66fe8cd523a31bb4199c05a7bcfe27f89f3d48d20764ac49",
+        "version": null
+      },
+      {
+        "actor_id": "actor-double-use-race",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416492,
+        "seq": 24,
+        "version": 1
+      },
+      {
+        "action_id": "double-use-race",
+        "actor_id": "actor-double-use-race",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476496,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416496,
+        "payload_hash": "bd51919a86550cccdc63e843e3a22c88bd75a626f3ea9bb01749fb6094e513dc",
+        "seq": 25,
+        "token_hash": "b550f5e58f38ed6e02599be6aaefefc0f59bc22ad14fd95223471d02a513125d",
+        "version": 1
+      },
+      {
+        "action_id": "double-use-race",
+        "actor_id": "actor-double-use-race",
+        "audience": "synthetic-destination",
+        "decision": "ALLOW",
+        "gate_id": "gate-A",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416502,
+        "payload_hash": "bd51919a86550cccdc63e843e3a22c88bd75a626f3ea9bb01749fb6094e513dc",
+        "reason": "AUTHORIZED_AT_WRITE",
+        "seq": 26,
+        "token_hash": "b550f5e58f38ed6e02599be6aaefefc0f59bc22ad14fd95223471d02a513125d",
+        "version": 1
+      },
+      {
+        "action_id": "double-use-race",
+        "actor_id": "actor-double-use-race",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416511,
+        "payload_hash": "bd51919a86550cccdc63e843e3a22c88bd75a626f3ea9bb01749fb6094e513dc",
+        "reason": "TOKEN_USED",
+        "seq": 27,
+        "token_hash": "b550f5e58f38ed6e02599be6aaefefc0f59bc22ad14fd95223471d02a513125d",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-0",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416517,
+        "seq": 28,
+        "version": 1
+      },
+      {
+        "action_id": "race-0",
+        "actor_id": "actor-race-0",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476521,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416521,
+        "payload_hash": "b17e29168b66393e213a988dc0ca4ad99623caa40a5d3525adea45f572138891",
+        "seq": 29,
+        "token_hash": "27fcd08b6f030a0b8834527258016bdbec9257131f10581ed273b9129ebc9a4a",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-0",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416527,
+        "seq": 30,
+        "version": 2
+      },
+      {
+        "action_id": "race-0",
+        "actor_id": "actor-race-0",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416536,
+        "payload_hash": "b17e29168b66393e213a988dc0ca4ad99623caa40a5d3525adea45f572138891",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 31,
+        "token_hash": "27fcd08b6f030a0b8834527258016bdbec9257131f10581ed273b9129ebc9a4a",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-1",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416540,
+        "seq": 32,
+        "version": 1
+      },
+      {
+        "action_id": "race-1",
+        "actor_id": "actor-race-1",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476544,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416544,
+        "payload_hash": "96c7e514b3bf4466406f09c72614c61c35fad1395eac73842c9b47dcc24ce2fd",
+        "seq": 33,
+        "token_hash": "1333c2c3e18cb42c0c35a27e37b22c731237332d8b8306cb67f96ce0f487e31f",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-1",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416548,
+        "seq": 34,
+        "version": 2
+      },
+      {
+        "action_id": "race-1",
+        "actor_id": "actor-race-1",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416557,
+        "payload_hash": "96c7e514b3bf4466406f09c72614c61c35fad1395eac73842c9b47dcc24ce2fd",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 35,
+        "token_hash": "1333c2c3e18cb42c0c35a27e37b22c731237332d8b8306cb67f96ce0f487e31f",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-2",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416561,
+        "seq": 36,
+        "version": 1
+      },
+      {
+        "action_id": "race-2",
+        "actor_id": "actor-race-2",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476565,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416565,
+        "payload_hash": "64971885eb77be40ff9b597dc7b104c990ad8d3424c28ab632d2ae5e1cdc995b",
+        "seq": 37,
+        "token_hash": "823250532fbfeee7c90d57d1ff03073c019758cf8bb5ba5b3c6af79f3957269c",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-2",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416570,
+        "seq": 38,
+        "version": 2
+      },
+      {
+        "action_id": "race-2",
+        "actor_id": "actor-race-2",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416578,
+        "payload_hash": "64971885eb77be40ff9b597dc7b104c990ad8d3424c28ab632d2ae5e1cdc995b",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 39,
+        "token_hash": "823250532fbfeee7c90d57d1ff03073c019758cf8bb5ba5b3c6af79f3957269c",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-3",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416585,
+        "seq": 40,
+        "version": 1
+      },
+      {
+        "action_id": "race-3",
+        "actor_id": "actor-race-3",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476590,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416590,
+        "payload_hash": "b3966331ec39a8ef3d30b1ebf220f1ecf83590968f1533d83a72372c09d783ab",
+        "seq": 41,
+        "token_hash": "3b28732c7ecacd047246a99784170c3300b6a5e3cfa7e9a44fbca9cbda17b636",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-3",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416598,
+        "seq": 42,
+        "version": 2
+      },
+      {
+        "action_id": "race-3",
+        "actor_id": "actor-race-3",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416606,
+        "payload_hash": "b3966331ec39a8ef3d30b1ebf220f1ecf83590968f1533d83a72372c09d783ab",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 43,
+        "token_hash": "3b28732c7ecacd047246a99784170c3300b6a5e3cfa7e9a44fbca9cbda17b636",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-4",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416612,
+        "seq": 44,
+        "version": 1
+      },
+      {
+        "action_id": "race-4",
+        "actor_id": "actor-race-4",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476617,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416617,
+        "payload_hash": "7ddb865b4b7aa9485981b22640fce6d8f261f77d1a8b1fa3eb7e299baf2f0e72",
+        "seq": 45,
+        "token_hash": "33d2d1b3d1ae17d86ff5c687623e286a7eb6e0d3f479233ac9ac972371071dd5",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-4",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416630,
+        "seq": 46,
+        "version": 2
+      },
+      {
+        "action_id": "race-4",
+        "actor_id": "actor-race-4",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416638,
+        "payload_hash": "7ddb865b4b7aa9485981b22640fce6d8f261f77d1a8b1fa3eb7e299baf2f0e72",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 47,
+        "token_hash": "33d2d1b3d1ae17d86ff5c687623e286a7eb6e0d3f479233ac9ac972371071dd5",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-5",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416643,
+        "seq": 48,
+        "version": 1
+      },
+      {
+        "action_id": "race-5",
+        "actor_id": "actor-race-5",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476649,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416649,
+        "payload_hash": "eedbaf6b7d0d9f1242e2b97cbcbb4240de6fae5279123e402800525df9783c75",
+        "seq": 49,
+        "token_hash": "08ae1f98b30e16d7b9982eb124074d4330edf1608033770e95380b8521d998c1",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-5",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416654,
+        "seq": 50,
+        "version": 2
+      },
+      {
+        "action_id": "race-5",
+        "actor_id": "actor-race-5",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416662,
+        "payload_hash": "eedbaf6b7d0d9f1242e2b97cbcbb4240de6fae5279123e402800525df9783c75",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 51,
+        "token_hash": "08ae1f98b30e16d7b9982eb124074d4330edf1608033770e95380b8521d998c1",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-6",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416667,
+        "seq": 52,
+        "version": 1
+      },
+      {
+        "action_id": "race-6",
+        "actor_id": "actor-race-6",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476673,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416673,
+        "payload_hash": "445e0898e005e2a9661e7ab2863e68dade567a02b9d2dd4434dd16ebbe292b02",
+        "seq": 53,
+        "token_hash": "b996f2a63527d3f1411cd8d1d04b74ac9682e745d5c2c212b978750e0bbf2bf4",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-6",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416678,
+        "seq": 54,
+        "version": 2
+      },
+      {
+        "action_id": "race-6",
+        "actor_id": "actor-race-6",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416686,
+        "payload_hash": "445e0898e005e2a9661e7ab2863e68dade567a02b9d2dd4434dd16ebbe292b02",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 55,
+        "token_hash": "b996f2a63527d3f1411cd8d1d04b74ac9682e745d5c2c212b978750e0bbf2bf4",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-7",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416690,
+        "seq": 56,
+        "version": 1
+      },
+      {
+        "action_id": "race-7",
+        "actor_id": "actor-race-7",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476694,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416694,
+        "payload_hash": "3eacee80adcc9fb2efb2f25acdc81cc6a60a98ce8de91ec9c34bf10adfa69d94",
+        "seq": 57,
+        "token_hash": "9b84999e8683d27675d8674ec9fdffbd03bedafac8a28293d9096cd8fac7151f",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-7",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416698,
+        "seq": 58,
+        "version": 2
+      },
+      {
+        "action_id": "race-7",
+        "actor_id": "actor-race-7",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416707,
+        "payload_hash": "3eacee80adcc9fb2efb2f25acdc81cc6a60a98ce8de91ec9c34bf10adfa69d94",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 59,
+        "token_hash": "9b84999e8683d27675d8674ec9fdffbd03bedafac8a28293d9096cd8fac7151f",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-8",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416725,
+        "seq": 60,
+        "version": 1
+      },
+      {
+        "action_id": "race-8",
+        "actor_id": "actor-race-8",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476732,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416732,
+        "payload_hash": "6102e4974ba5c0906338dffa9a4e3d1770eb84b1077b5323273453be9f611205",
+        "seq": 61,
+        "token_hash": "0197f7092dee1ea5b1ebe5bc508e0311caf033e88be8b41dcfe958a41804305e",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-8",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416737,
+        "seq": 62,
+        "version": 2
+      },
+      {
+        "action_id": "race-8",
+        "actor_id": "actor-race-8",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416745,
+        "payload_hash": "6102e4974ba5c0906338dffa9a4e3d1770eb84b1077b5323273453be9f611205",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 63,
+        "token_hash": "0197f7092dee1ea5b1ebe5bc508e0311caf033e88be8b41dcfe958a41804305e",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-9",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416750,
+        "seq": 64,
+        "version": 1
+      },
+      {
+        "action_id": "race-9",
+        "actor_id": "actor-race-9",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476758,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416758,
+        "payload_hash": "5ae5a4632067b31ac2356e04f93620e11492de9d079f560ca233a95a7ca83f11",
+        "seq": 65,
+        "token_hash": "41bbcf562a439019f1c32ce235e622c96ddfed5cae17bb5675ff8bc571959d7a",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-9",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416762,
+        "seq": 66,
+        "version": 2
+      },
+      {
+        "action_id": "race-9",
+        "actor_id": "actor-race-9",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416766,
+        "payload_hash": "5ae5a4632067b31ac2356e04f93620e11492de9d079f560ca233a95a7ca83f11",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 67,
+        "token_hash": "41bbcf562a439019f1c32ce235e622c96ddfed5cae17bb5675ff8bc571959d7a",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-10",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416776,
+        "seq": 68,
+        "version": 1
+      },
+      {
+        "action_id": "race-10",
+        "actor_id": "actor-race-10",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476780,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416780,
+        "payload_hash": "f9514d1d75d731f592cca4c9bfbccf3326a8a46aba169910490316743b74523d",
+        "seq": 69,
+        "token_hash": "d2012c052140b20d64c62be11e42dda308fcdd5d671e7c7b20c49c97f4f07e3e",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-10",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416788,
+        "seq": 70,
+        "version": 2
+      },
+      {
+        "action_id": "race-10",
+        "actor_id": "actor-race-10",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416801,
+        "payload_hash": "f9514d1d75d731f592cca4c9bfbccf3326a8a46aba169910490316743b74523d",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 71,
+        "token_hash": "d2012c052140b20d64c62be11e42dda308fcdd5d671e7c7b20c49c97f4f07e3e",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-11",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416807,
+        "seq": 72,
+        "version": 1
+      },
+      {
+        "action_id": "race-11",
+        "actor_id": "actor-race-11",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476812,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416812,
+        "payload_hash": "b667603291f8b3e21e41b541b25c52b3881a3176f692081fa1909f587062b34c",
+        "seq": 73,
+        "token_hash": "2cf484f61a320da1e3af8f2c22ee7e8cb9ac0593763ea6476d4688cf0c9faa75",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-11",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416816,
+        "seq": 74,
+        "version": 2
+      },
+      {
+        "action_id": "race-11",
+        "actor_id": "actor-race-11",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416825,
+        "payload_hash": "b667603291f8b3e21e41b541b25c52b3881a3176f692081fa1909f587062b34c",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 75,
+        "token_hash": "2cf484f61a320da1e3af8f2c22ee7e8cb9ac0593763ea6476d4688cf0c9faa75",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-12",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416831,
+        "seq": 76,
+        "version": 1
+      },
+      {
+        "action_id": "race-12",
+        "actor_id": "actor-race-12",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476836,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416836,
+        "payload_hash": "37baa3b0e1b70168f06bc34c3d1937288cdf74c3cb8a396afd5d1067097f9e10",
+        "seq": 77,
+        "token_hash": "5583b055d831201629396bf66749a93796c1081aa01352aec32e3198ffdc7abc",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-12",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416840,
+        "seq": 78,
+        "version": 2
+      },
+      {
+        "action_id": "race-12",
+        "actor_id": "actor-race-12",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416843,
+        "payload_hash": "37baa3b0e1b70168f06bc34c3d1937288cdf74c3cb8a396afd5d1067097f9e10",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 79,
+        "token_hash": "5583b055d831201629396bf66749a93796c1081aa01352aec32e3198ffdc7abc",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-13",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416848,
+        "seq": 80,
+        "version": 1
+      },
+      {
+        "action_id": "race-13",
+        "actor_id": "actor-race-13",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476852,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416852,
+        "payload_hash": "750000c6d33327ec3c7f55862a93d22c0b62fb9d38f48f728b82e4ff5b455757",
+        "seq": 81,
+        "token_hash": "e9a0c41c5ef24e026675cfe17994423e2775c3cf7c969cf85019f343acf48a8f",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-13",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416863,
+        "seq": 82,
+        "version": 2
+      },
+      {
+        "action_id": "race-13",
+        "actor_id": "actor-race-13",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416896,
+        "payload_hash": "750000c6d33327ec3c7f55862a93d22c0b62fb9d38f48f728b82e4ff5b455757",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 83,
+        "token_hash": "e9a0c41c5ef24e026675cfe17994423e2775c3cf7c969cf85019f343acf48a8f",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-14",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416901,
+        "seq": 84,
+        "version": 1
+      },
+      {
+        "action_id": "race-14",
+        "actor_id": "actor-race-14",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476906,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416906,
+        "payload_hash": "8e543dfe8a6b6007dffa96b65a194aa2ef22c755562c91843fef4ad8018a38d8",
+        "seq": 85,
+        "token_hash": "44d346a0c7e89cca9672dda2b5496d8b4d1f7c7dcdc668a3086be36201bb59cf",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-14",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416911,
+        "seq": 86,
+        "version": 2
+      },
+      {
+        "action_id": "race-14",
+        "actor_id": "actor-race-14",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416919,
+        "payload_hash": "8e543dfe8a6b6007dffa96b65a194aa2ef22c755562c91843fef4ad8018a38d8",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 87,
+        "token_hash": "44d346a0c7e89cca9672dda2b5496d8b4d1f7c7dcdc668a3086be36201bb59cf",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-15",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416924,
+        "seq": 88,
+        "version": 1
+      },
+      {
+        "action_id": "race-15",
+        "actor_id": "actor-race-15",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476928,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416928,
+        "payload_hash": "45ecc4641a13fcd7972688b2c18022c53f22e0660a95ae03da760128fe3f6a46",
+        "seq": 89,
+        "token_hash": "5179981ec33ce01e7e6bc8dc5fd6298c2117b77450f7c8896789b0f7ff252354",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-15",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416932,
+        "seq": 90,
+        "version": 2
+      },
+      {
+        "action_id": "race-15",
+        "actor_id": "actor-race-15",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416940,
+        "payload_hash": "45ecc4641a13fcd7972688b2c18022c53f22e0660a95ae03da760128fe3f6a46",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 91,
+        "token_hash": "5179981ec33ce01e7e6bc8dc5fd6298c2117b77450f7c8896789b0f7ff252354",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-16",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416947,
+        "seq": 92,
+        "version": 1
+      },
+      {
+        "action_id": "race-16",
+        "actor_id": "actor-race-16",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476952,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416952,
+        "payload_hash": "2e9163aba5565676dab159a71cbee525e667d6b3dea6a1a055cdf1e13895c4d5",
+        "seq": 93,
+        "token_hash": "d685a6a3715695d1eda84553539e26e24d145a04119626d62d34416340d7dc07",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-16",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416957,
+        "seq": 94,
+        "version": 2
+      },
+      {
+        "action_id": "race-16",
+        "actor_id": "actor-race-16",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416965,
+        "payload_hash": "2e9163aba5565676dab159a71cbee525e667d6b3dea6a1a055cdf1e13895c4d5",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 95,
+        "token_hash": "d685a6a3715695d1eda84553539e26e24d145a04119626d62d34416340d7dc07",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-17",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416970,
+        "seq": 96,
+        "version": 1
+      },
+      {
+        "action_id": "race-17",
+        "actor_id": "actor-race-17",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476974,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416974,
+        "payload_hash": "31126f3ddda10d441ff7f65aef4529553d8a277597a257fd4a15a52d0b59f965",
+        "seq": 97,
+        "token_hash": "fb603758b274522ddb090c9c201aa670600cca33dfbc3c398eed23141b66af50",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-17",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467416980,
+        "seq": 98,
+        "version": 2
+      },
+      {
+        "action_id": "race-17",
+        "actor_id": "actor-race-17",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467416988,
+        "payload_hash": "31126f3ddda10d441ff7f65aef4529553d8a277597a257fd4a15a52d0b59f965",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 99,
+        "token_hash": "fb603758b274522ddb090c9c201aa670600cca33dfbc3c398eed23141b66af50",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-18",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467416992,
+        "seq": 100,
+        "version": 1
+      },
+      {
+        "action_id": "race-18",
+        "actor_id": "actor-race-18",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476997,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467416997,
+        "payload_hash": "957215a4b7c455b31824d93d92c18a0ae029fb28be0257910f4811958980bee9",
+        "seq": 101,
+        "token_hash": "bbbe46e103c49ad4f5c8cbe3218efb411f683081408f7d1d3d61ac7856e3a408",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-18",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467417001,
+        "seq": 102,
+        "version": 2
+      },
+      {
+        "action_id": "race-18",
+        "actor_id": "actor-race-18",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467417009,
+        "payload_hash": "957215a4b7c455b31824d93d92c18a0ae029fb28be0257910f4811958980bee9",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 103,
+        "token_hash": "bbbe46e103c49ad4f5c8cbe3218efb411f683081408f7d1d3d61ac7856e3a408",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-19",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467417014,
+        "seq": 104,
+        "version": 1
+      },
+      {
+        "action_id": "race-19",
+        "actor_id": "actor-race-19",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477019,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467417019,
+        "payload_hash": "6588cd3d77d4254e3a7501372218694f0f1d0f2ddf772d4cf4699fbbd8010eef",
+        "seq": 105,
+        "token_hash": "9ba206ff92a5a14a3201cd3d68c1778b9a55d0d1fb80cc2ebb59deb8e841d527",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-19",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467417024,
+        "seq": 106,
+        "version": 2
+      },
+      {
+        "action_id": "race-19",
+        "actor_id": "actor-race-19",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467417032,
+        "payload_hash": "6588cd3d77d4254e3a7501372218694f0f1d0f2ddf772d4cf4699fbbd8010eef",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 107,
+        "token_hash": "9ba206ff92a5a14a3201cd3d68c1778b9a55d0d1fb80cc2ebb59deb8e841d527",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-20",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467417041,
+        "seq": 108,
+        "version": 1
+      },
+      {
+        "action_id": "race-20",
+        "actor_id": "actor-race-20",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477044,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467417044,
+        "payload_hash": "fa4d70be1d0865893b8c0d12116c19cb8b82d65638e494c03a3195aac1a6c252",
+        "seq": 109,
+        "token_hash": "8e192cf62eac56cc687e784cbce59215ac8ffa70757f4b659afad57d016e107b",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-20",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467417049,
+        "seq": 110,
+        "version": 2
+      },
+      {
+        "action_id": "race-20",
+        "actor_id": "actor-race-20",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467417057,
+        "payload_hash": "fa4d70be1d0865893b8c0d12116c19cb8b82d65638e494c03a3195aac1a6c252",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 111,
+        "token_hash": "8e192cf62eac56cc687e784cbce59215ac8ffa70757f4b659afad57d016e107b",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-21",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467417061,
+        "seq": 112,
+        "version": 1
+      },
+      {
+        "action_id": "race-21",
+        "actor_id": "actor-race-21",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477065,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467417065,
+        "payload_hash": "cd9741f0a4dff7851f3cc2eceadcf3b71b05c3624d1e21713d4533e349707f34",
+        "seq": 113,
+        "token_hash": "d7d9e05333ee12bffe33abd9b1aa5bbf4503035bed5c79c4fa3692dc6773f781",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-21",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467417071,
+        "seq": 114,
+        "version": 2
+      },
+      {
+        "action_id": "race-21",
+        "actor_id": "actor-race-21",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467417080,
+        "payload_hash": "cd9741f0a4dff7851f3cc2eceadcf3b71b05c3624d1e21713d4533e349707f34",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 115,
+        "token_hash": "d7d9e05333ee12bffe33abd9b1aa5bbf4503035bed5c79c4fa3692dc6773f781",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-22",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467417084,
+        "seq": 116,
+        "version": 1
+      },
+      {
+        "action_id": "race-22",
+        "actor_id": "actor-race-22",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477089,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467417089,
+        "payload_hash": "3043a9b1dc97992a2a6527ab29c7024a825609a27d09c8b62e23b4940a426b2b",
+        "seq": 117,
+        "token_hash": "136d9849900e836e4cf9297ff7b53d372c00f541445d5b40fc7b684cb40de9c5",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-22",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467417093,
+        "seq": 118,
+        "version": 2
+      },
+      {
+        "action_id": "race-22",
+        "actor_id": "actor-race-22",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467417102,
+        "payload_hash": "3043a9b1dc97992a2a6527ab29c7024a825609a27d09c8b62e23b4940a426b2b",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 119,
+        "token_hash": "136d9849900e836e4cf9297ff7b53d372c00f541445d5b40fc7b684cb40de9c5",
+        "version": 2
+      },
+      {
+        "actor_id": "actor-race-23",
+        "kind": "GRANT",
+        "observed_at_ms": 1789467417106,
+        "seq": 120,
+        "version": 1
+      },
+      {
+        "action_id": "race-23",
+        "actor_id": "actor-race-23",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477110,
+        "kind": "TOKEN_ISSUED",
+        "observed_at_ms": 1789467417110,
+        "payload_hash": "bba0dad42de4ca0784bb4f27323d31acdc751408d7dc6b28c3b6bc9a3a931feb",
+        "seq": 121,
+        "token_hash": "84775f85a55c657b67da54a10e094f494ef1e7b96420a5255bbe9abbc5df52eb",
+        "version": 1
+      },
+      {
+        "actor_id": "actor-race-23",
+        "kind": "REVOKE",
+        "observed_at_ms": 1789467417115,
+        "seq": 122,
+        "version": 2
+      },
+      {
+        "action_id": "race-23",
+        "actor_id": "actor-race-23",
+        "audience": "synthetic-destination",
+        "decision": "DENY",
+        "gate_id": "gate-B",
+        "kind": "EXECUTE",
+        "observed_at_ms": 1789467417123,
+        "payload_hash": "bba0dad42de4ca0784bb4f27323d31acdc751408d7dc6b28c3b6bc9a3a931feb",
+        "reason": "AUTHORITY_REVOKED",
+        "seq": 123,
+        "token_hash": "84775f85a55c657b67da54a10e094f494ef1e7b96420a5255bbe9abbc5df52eb",
+        "version": 2
+      }
+    ],
+    "store_id": "b888c0d486e08223bea5db9498aac95f",
+    "tokens": [
+      {
+        "action_id": "race-8",
+        "actor_id": "actor-race-8",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476732,
+        "payload_hash": "6102e4974ba5c0906338dffa9a4e3d1770eb84b1077b5323273453be9f611205",
+        "token_hash": "0197f7092dee1ea5b1ebe5bc508e0311caf033e88be8b41dcfe958a41804305e",
+        "version": 1
+      },
+      {
+        "action_id": "race-5",
+        "actor_id": "actor-race-5",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476649,
+        "payload_hash": "eedbaf6b7d0d9f1242e2b97cbcbb4240de6fae5279123e402800525df9783c75",
+        "token_hash": "08ae1f98b30e16d7b9982eb124074d4330edf1608033770e95380b8521d998c1",
+        "version": 1
+      },
+      {
+        "action_id": "race-1",
+        "actor_id": "actor-race-1",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476544,
+        "payload_hash": "96c7e514b3bf4466406f09c72614c61c35fad1395eac73842c9b47dcc24ce2fd",
+        "token_hash": "1333c2c3e18cb42c0c35a27e37b22c731237332d8b8306cb67f96ce0f487e31f",
+        "version": 1
+      },
+      {
+        "action_id": "race-22",
+        "actor_id": "actor-race-22",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477089,
+        "payload_hash": "3043a9b1dc97992a2a6527ab29c7024a825609a27d09c8b62e23b4940a426b2b",
+        "token_hash": "136d9849900e836e4cf9297ff7b53d372c00f541445d5b40fc7b684cb40de9c5",
+        "version": 1
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476325,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "token_hash": "15e2225f6fe7e18cb767f3a5e743e2538b34cb2649300c895cff067a92b6636d",
+        "version": 3
+      },
+      {
+        "action_id": "race-0",
+        "actor_id": "actor-race-0",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476521,
+        "payload_hash": "b17e29168b66393e213a988dc0ca4ad99623caa40a5d3525adea45f572138891",
+        "token_hash": "27fcd08b6f030a0b8834527258016bdbec9257131f10581ed273b9129ebc9a4a",
+        "version": 1
+      },
+      {
+        "action_id": "race-11",
+        "actor_id": "actor-race-11",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476812,
+        "payload_hash": "b667603291f8b3e21e41b541b25c52b3881a3176f692081fa1909f587062b34c",
+        "token_hash": "2cf484f61a320da1e3af8f2c22ee7e8cb9ac0593763ea6476d4688cf0c9faa75",
+        "version": 1
+      },
+      {
+        "action_id": "race-4",
+        "actor_id": "actor-race-4",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476617,
+        "payload_hash": "7ddb865b4b7aa9485981b22640fce6d8f261f77d1a8b1fa3eb7e299baf2f0e72",
+        "token_hash": "33d2d1b3d1ae17d86ff5c687623e286a7eb6e0d3f479233ac9ac972371071dd5",
+        "version": 1
+      },
+      {
+        "action_id": "race-3",
+        "actor_id": "actor-race-3",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476590,
+        "payload_hash": "b3966331ec39a8ef3d30b1ebf220f1ecf83590968f1533d83a72372c09d783ab",
+        "token_hash": "3b28732c7ecacd047246a99784170c3300b6a5e3cfa7e9a44fbca9cbda17b636",
+        "version": 1
+      },
+      {
+        "action_id": "race-9",
+        "actor_id": "actor-race-9",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476758,
+        "payload_hash": "5ae5a4632067b31ac2356e04f93620e11492de9d079f560ca233a95a7ca83f11",
+        "token_hash": "41bbcf562a439019f1c32ce235e622c96ddfed5cae17bb5675ff8bc571959d7a",
+        "version": 1
+      },
+      {
+        "action_id": "race-14",
+        "actor_id": "actor-race-14",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476906,
+        "payload_hash": "8e543dfe8a6b6007dffa96b65a194aa2ef22c755562c91843fef4ad8018a38d8",
+        "token_hash": "44d346a0c7e89cca9672dda2b5496d8b4d1f7c7dcdc668a3086be36201bb59cf",
+        "version": 1
+      },
+      {
+        "action_id": "race-15",
+        "actor_id": "actor-race-15",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476928,
+        "payload_hash": "45ecc4641a13fcd7972688b2c18022c53f22e0660a95ae03da760128fe3f6a46",
+        "token_hash": "5179981ec33ce01e7e6bc8dc5fd6298c2117b77450f7c8896789b0f7ff252354",
+        "version": 1
+      },
+      {
+        "action_id": "race-12",
+        "actor_id": "actor-race-12",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476836,
+        "payload_hash": "37baa3b0e1b70168f06bc34c3d1937288cdf74c3cb8a396afd5d1067097f9e10",
+        "token_hash": "5583b055d831201629396bf66749a93796c1081aa01352aec32e3198ffdc7abc",
+        "version": 1
+      },
+      {
+        "action_id": "write-first",
+        "actor_id": "actor-write-first",
+        "audience": "synthetic-destination",
+        "consumed_seq": 14,
+        "expires_at_ms": 1789467476338,
+        "payload_hash": "890a086b6245170f8aa7e976eeff86118c3a7de66ae0dd4bd05a3ab3b8b7e438",
+        "token_hash": "57bf41292876e8fcd1b25b38d773ff6d2fb030c7c9a9e8139e88ac9dcaa3aa6b",
+        "version": 1
+      },
+      {
+        "action_id": "store-outage",
+        "actor_id": "actor-store-outage",
+        "audience": "synthetic-destination",
+        "consumed_seq": 18,
+        "expires_at_ms": 1789467476356,
+        "payload_hash": "ac6bb1f4f35f9b10198af21d5358f699636d5c7c135cf0c9a63cec6435c160e0",
+        "token_hash": "585922a2ecf74c8f9a2f0a8fefd106b75a5a89dd470403935fd05c8e237bd548",
+        "version": 1
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "consumed_seq": 8,
+        "expires_at_ms": 1789467476312,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "token_hash": "5cc9fd1ee25dafd07cd2c2cf90ec2c50a7ac5c9419edad07b2e331865d7230da",
+        "version": 3
+      },
+      {
+        "action_id": "stale-cache",
+        "actor_id": "actor-stale-cache",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476291,
+        "payload_hash": "4a83a6ecb4d6af739120b6da384ba206d1e8d708d865e04a3702d62060793d8a",
+        "token_hash": "6bec01d5aa000431f9e369f4df73231fb9e1d4430acd0c346c1c1d93512f1107",
+        "version": 1
+      },
+      {
+        "action_id": "race-2",
+        "actor_id": "actor-race-2",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476565,
+        "payload_hash": "64971885eb77be40ff9b597dc7b104c990ad8d3424c28ab632d2ae5e1cdc995b",
+        "token_hash": "823250532fbfeee7c90d57d1ff03073c019758cf8bb5ba5b3c6af79f3957269c",
+        "version": 1
+      },
+      {
+        "action_id": "race-23",
+        "actor_id": "actor-race-23",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477110,
+        "payload_hash": "bba0dad42de4ca0784bb4f27323d31acdc751408d7dc6b28c3b6bc9a3a931feb",
+        "token_hash": "84775f85a55c657b67da54a10e094f494ef1e7b96420a5255bbe9abbc5df52eb",
+        "version": 1
+      },
+      {
+        "action_id": "race-20",
+        "actor_id": "actor-race-20",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477044,
+        "payload_hash": "fa4d70be1d0865893b8c0d12116c19cb8b82d65638e494c03a3195aac1a6c252",
+        "token_hash": "8e192cf62eac56cc687e784cbce59215ac8ffa70757f4b659afad57d016e107b",
+        "version": 1
+      },
+      {
+        "action_id": "race-7",
+        "actor_id": "actor-race-7",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476694,
+        "payload_hash": "3eacee80adcc9fb2efb2f25acdc81cc6a60a98ce8de91ec9c34bf10adfa69d94",
+        "token_hash": "9b84999e8683d27675d8674ec9fdffbd03bedafac8a28293d9096cd8fac7151f",
+        "version": 1
+      },
+      {
+        "action_id": "race-19",
+        "actor_id": "actor-race-19",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477019,
+        "payload_hash": "6588cd3d77d4254e3a7501372218694f0f1d0f2ddf772d4cf4699fbbd8010eef",
+        "token_hash": "9ba206ff92a5a14a3201cd3d68c1778b9a55d0d1fb80cc2ebb59deb8e841d527",
+        "version": 1
+      },
+      {
+        "action_id": "double-use-race",
+        "actor_id": "actor-double-use-race",
+        "audience": "synthetic-destination",
+        "consumed_seq": 26,
+        "expires_at_ms": 1789467476496,
+        "payload_hash": "bd51919a86550cccdc63e843e3a22c88bd75a626f3ea9bb01749fb6094e513dc",
+        "token_hash": "b550f5e58f38ed6e02599be6aaefefc0f59bc22ad14fd95223471d02a513125d",
+        "version": 1
+      },
+      {
+        "action_id": "race-6",
+        "actor_id": "actor-race-6",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476673,
+        "payload_hash": "445e0898e005e2a9661e7ab2863e68dade567a02b9d2dd4434dd16ebbe292b02",
+        "token_hash": "b996f2a63527d3f1411cd8d1d04b74ac9682e745d5c2c212b978750e0bbf2bf4",
+        "version": 1
+      },
+      {
+        "action_id": "race-18",
+        "actor_id": "actor-race-18",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476997,
+        "payload_hash": "957215a4b7c455b31824d93d92c18a0ae029fb28be0257910f4811958980bee9",
+        "token_hash": "bbbe46e103c49ad4f5c8cbe3218efb411f683081408f7d1d3d61ac7856e3a408",
+        "version": 1
+      },
+      {
+        "action_id": "race-10",
+        "actor_id": "actor-race-10",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476780,
+        "payload_hash": "f9514d1d75d731f592cca4c9bfbccf3326a8a46aba169910490316743b74523d",
+        "token_hash": "d2012c052140b20d64c62be11e42dda308fcdd5d671e7c7b20c49c97f4f07e3e",
+        "version": 1
+      },
+      {
+        "action_id": "race-16",
+        "actor_id": "actor-race-16",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476952,
+        "payload_hash": "2e9163aba5565676dab159a71cbee525e667d6b3dea6a1a055cdf1e13895c4d5",
+        "token_hash": "d685a6a3715695d1eda84553539e26e24d145a04119626d62d34416340d7dc07",
+        "version": 1
+      },
+      {
+        "action_id": "race-21",
+        "actor_id": "actor-race-21",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467477065,
+        "payload_hash": "cd9741f0a4dff7851f3cc2eceadcf3b71b05c3624d1e21713d4533e349707f34",
+        "token_hash": "d7d9e05333ee12bffe33abd9b1aa5bbf4503035bed5c79c4fa3692dc6773f781",
+        "version": 1
+      },
+      {
+        "action_id": "binding",
+        "actor_id": "actor-binding",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476473,
+        "payload_hash": "3fbb6eab16948732e11c6d25b6ecf58a304ddcf0f2a7242921a8d87ccd29f356",
+        "token_hash": "d9d00aba08e888629542aaedbbe3ecaccd10457549e6f95ef7b818f6c8956083",
+        "version": 1
+      },
+      {
+        "action_id": "race-13",
+        "actor_id": "actor-race-13",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476852,
+        "payload_hash": "750000c6d33327ec3c7f55862a93d22c0b62fb9d38f48f728b82e4ff5b455757",
+        "token_hash": "e9a0c41c5ef24e026675cfe17994423e2775c3cf7c969cf85019f343acf48a8f",
+        "version": 1
+      },
+      {
+        "action_id": "race-17",
+        "actor_id": "actor-race-17",
+        "audience": "synthetic-destination",
+        "consumed_seq": null,
+        "expires_at_ms": 1789467476974,
+        "payload_hash": "31126f3ddda10d441ff7f65aef4529553d8a277597a257fd4a15a52d0b59f965",
+        "token_hash": "fb603758b274522ddb090c9c201aa670600cca33dfbc3c398eed23141b66af50",
+        "version": 1
+      }
+    ]
+  }
+}

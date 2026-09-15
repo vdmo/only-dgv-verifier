@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "only-core",
+    "only-evolution",
+    "only-memory",
+    "only-lang",
+    "only-lang-wasm",
+    "dgv-verifier",
+    "only-gate",
+    "only-proxy",
+    "only-heal",
+    "only-lang-ir",
+]
+resolver = "2"

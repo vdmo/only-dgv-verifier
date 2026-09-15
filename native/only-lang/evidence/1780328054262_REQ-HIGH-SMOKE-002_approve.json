@@ -1,0 +1,40 @@
+{
+  "run_id": "1780328054262_REQ-HIGH-SMOKE-002_approve",
+  "created_unix_ms": 1780328054262,
+  "request": {
+    "amount": "5000",
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:alice"
+      }
+    },
+    "request_id": "REQ-HIGH-SMOKE-002",
+    "risk_level": "high",
+    "sla_minutes": 15,
+    "vendor": "ACME",
+    "workflow": "procurement_connector"
+  },
+  "policy_version": "gov_payments_v0",
+  "decision": {
+    "approve": true,
+    "approver_id": "user:approver1",
+    "justification": "ok",
+    "stage": "approve"
+  },
+  "decision_hash": "hash_1780328054262_REQ-HIGH-SMOKE-002_approve",
+  "replay_inputs": {
+    "source": "connector_approve"
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

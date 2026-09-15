@@ -1,0 +1,21 @@
+[package]
+name = "only-lang-ir"
+version = "0.1.0"
+edition = "2021"
+description = "Compiled IR for ONLY Lang — sub-microsecond equilibrium checks via pre-compiled bytecode"
+
+[features]
+default = ["std"]
+std = []
+
+[dependencies]
+only-core = { path = "../only-core" }
+only-evolution = { path = "../only-evolution" }
+only-memory = { path = "../only-memory" }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "ir_bench"
+harness = false

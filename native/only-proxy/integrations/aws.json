@@ -1,0 +1,14 @@
+{
+    "app_name": "AWS EC2 (Infrastructure)",
+    "target_domains": [
+        "https://ec2.amazonaws.com"
+    ],
+    "vault_ghost": [
+        196.55406380942622,
+        1.0,
+        -1.0,
+        -196.55406380942622
+    ],
+    "vault_ciphertext": "414b49414f8bb3154c5445444f9ca5135f4b45594fedc274",
+    "base_script": "harmony(1e-6) time_window(100)"
+}

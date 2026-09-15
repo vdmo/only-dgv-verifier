@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Budget coherence</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #0b1020; color: #e6e8ef; font-family: monospace; margin: 0; padding: 16px; }
+    a { color: #61dafb; }
+    .box { background: #0f1730; border: 1px solid #2b365a; padding: 12px; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { border-bottom: 1px solid #2b365a; padding: 6px; text-align: left; }
+    th { color: #aab2d5; }
+    pre { white-space: pre-wrap; margin: 0; }
+  </style>
+</head>
+<body>
+  <h1 style="margin:0 0 10px 0; font-size:16px;">Budget coherence</h1>
+  <div style="color:#aab2d5;">healed_indices=[2]</div>
+
+  <div class="box"><div style="color:#aab2d5; margin-bottom:6px;">Summary</div><pre>repair_target=remaining_budget</pre></div>
+
+  <div class="box"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="240" viewBox="0 0 760 240" preserveAspectRatio="xMinYMin meet">
+  <rect x="0" y="0" width="760" height="240" fill="#0b1020" />
+  <text x="12" y="18" fill="#e6e8ef" font-family="monospace" font-size="14">Budget coherence</text>
+  <rect x="50" y="30" width="690" height="170" fill="#0f1730" stroke="#2b365a" />
+  <polyline fill="none" stroke="#61dafb" stroke-width="2" points="50.00,30.00 740.00,200.00" />
+</svg><div style="margin-top:8px;"><a href="1780300166754_high_submit.svg">Open SVG file</a></div></div>
+
+  <div class="box"><div style="color:#aab2d5; margin-bottom:6px;">Residual history</div><pre>25000.000000, 0.000000</pre></div>
+
+  <div class="box">
+    <div style="color:#aab2d5; margin-bottom:6px;">Field (before vs after)</div>
+    <table>
+      <thead><tr><th>index</th><th>sign</th><th>before</th><th>after</th></tr></thead>
+      <tbody><tr><td>0</td><td>1</td><td>100000.000000</td><td>100000.000000</td></tr><tr><td>1</td><td>-1</td><td>75000.000000</td><td>75000.000000</td></tr><tr><td>2</td><td>-1</td><td>0.000000</td><td>25000.000000</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="box"><div style="color:#aab2d5; margin-bottom:6px;">Script</div><pre>harmony(1e-12) residual() evolve(2) residual() report()</pre></div>
+</body>
+</html>

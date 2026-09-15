@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Policy diff + approval</title>
+  
+/// A cryptographic proof of Thue-Morse PTE Coherence.
+///
+/// In the current hash-commitment implementation:
+/// - `commitment` = `SHA256(vector_bytes ‖ salt_bytes)` in hex
+/// - `output`     = the circuit evaluation result (public)
+/// - `salt`       = random entropy to prevent brute-forcing the vector
+///
+/// IMPORTANT:
+/// `hash-v1` is simulation-only and MUST NOT be accepted for production
+/// minting, membership authorization, or paid access control.
+///
+/// Production trust must come from:
+/// Circom circuit -> Groth16 proof -> Solidity Verifier.sol -> OnlyState.sol.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PirProof {
+    /// Cryptographic commitment to the private vector.
+    ///
+    /// **Current:** SHA-256(vector_bytes ‖ salt_bytes), hex-encoded.
+    /// **Production:** Groth16 proof bytes and public signals verified by
+    /// Solidity or a native BN254 Groth16 verifier.
+    pub commitment: String,
+
+    /// The public circuit output for simulation/local checks.
+    pub output: CircuitOutput,
+
+    /// The cryptographic salt used to prevent dictionary attacks on the vector.
+    pub salt: String,
+
+    /// The version of the proof scheme.
+    /// `"hash-v1-simulation"` = local demo/testing only.
+    /// `"groth16-bn254"`      = production proof family.
+    pub scheme: String,
+}
+
+// ... existing code ...
+
+    Ok(PirProof {
+        commitment,
+        output,
+        salt: salt.to_string(),
+        scheme: "hash-v1-simulation".to_string(),
+    })
+}
+
+// ... existing code ...
+
+/// Returns true only for production-grade proof schemes.
+///
+/// The current Rust SHA-256 commitment proof is intentionally excluded.
+/// Production OnlyState trust must rely on Groth16 verification.
+pub fn is_production_proof_scheme(proof: &PirProof) -> bool {
+    proof.scheme == "groth16-bn254"
+}
+
+/// Rejects simulation proofs when running in production mode.
+pub fn reject_simulation_proof_in_production(proof: &PirProof) -> Result<(), &'static str> {
+    if is_production_proof_scheme(proof) {
+        Ok(())
+    } else {
+        Err("Simulation proof scheme rejected: production requires groth16-bn254")
+    }
+}
+
+// ... existing code ...
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #0b1020; color: #e6e8ef; font-family: monospace; margin: 0; padding: 16px; }
+    a { color: #61dafb; }
+    .box { background: #0f1730; border: 1px solid #2b365a; padding: 12px; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; }
+    td, th { border-bottom: 1px solid #2b365a; padding: 6px; text-align: left; }
+    th { color: #aab2d5; }
+    pre { white-space: pre-wrap; margin: 0; }
+  </style>
+</head>
+<body>
+  <h1 style="margin:0 0 10px 0; font-size:16px;">Policy diff + approval</h1>
+  <div style="color:#aab2d5;">healed_indices=[2]</div>
+
+  <div class="box"><div style="color:#aab2d5; margin-bottom:6px;">Summary</div><pre>workflow=procurement_approval_routing
+request_id=REQ-0001
+policy_v1=policy_v1(threshold=1.00)
+decision_hash_v1=faebaa4f5ed38aa0
+approval_required_v1=true
+execute_allowed_v1=false
+
+policy_v2=policy_v2(threshold=1.80)
+decision_hash_v2=f9d0fda46e1c43ab
+approval_required_v2=false
+execute_allowed_v2=true
+
+policy_change_effect=true</pre></div>
+
+  <div class="box"><svg xmlns="http://www.w3.org/2000/svg" width="760" height="240" viewBox="0 0 760 240">
+  <rect x="0" y="0" width="760" height="240" fill="#0b1020" />
+  <text x="12" y="18" fill="#e6e8ef" font-family="monospace" font-size="14">Policy diff + approval</text>
+  <rect x="50" y="30" width="690" height="170" fill="#0f1730" stroke="#2b365a" />
+  <polyline fill="none" stroke="#61dafb" stroke-width="2" points="50.00,30.00 740.00,200.00" />
+</svg><div style="margin-top:8px;"><a href="gov_demo_policy_diff.svg">Open SVG file</a></div></div>
+
+  <div class="box"><div style="color:#aab2d5; margin-bottom:6px;">Residual history</div><pre>8800.000000, 0.000000</pre></div>
+
+  <div class="box">
+    <div style="color:#aab2d5; margin-bottom:6px;">Field (before vs after)</div>
+    <table>
+      <thead><tr><th>index</th><th>sign</th><th>before</th><th>after</th></tr></thead>
+      <tbody><tr><td>0</td><td>1</td><td>10000.000000</td><td>10000.000000</td></tr><tr><td>1</td><td>-1</td><td>1200.000000</td><td>1200.000000</td></tr><tr><td>2</td><td>-1</td><td>0.000000</td><td>8800.000000</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="box"><div style="color:#aab2d5; margin-bottom:6px;">Script</div><pre>harmony(1e-12) residual() evolve(2) residual() report()</pre></div>
+</body>
+</html>

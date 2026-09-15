@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vitals v0: BP_SYS smooth</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; padding: 24px; background: #0b1020; color: #e6e8ef; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; }
+    a { color: #61dafb; }
+    .card { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 18px; margin: 0 0 10px 0; }
+    .meta { color: #aab2d5; margin: 0 0 18px 0; }
+    .block { background: #0f1730; border: 1px solid #2b365a; border-radius: 10px; padding: 14px; margin: 12px 0; }
+    pre { white-space: pre-wrap; word-break: break-word; margin: 0; color: #e6e8ef; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #2b365a; padding: 8px; text-align: left; }
+    th { color: #aab2d5; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Vitals v0: BP_SYS smooth</h1>
+    <div class="meta">healed_indices=[2]</div>
+
+    <div class="block">
+      <div style="margin-bottom: 8px; color: #aab2d5;">Summary</div>
+      <pre>raw=0.000
+prev=0.000
+smooth=0.000</pre>
+    </div>
+
+    <div class="block">
+      <svg xmlns="http://www.w3.org/2000/svg" width="920" height="300" viewBox="0 0 920 300">
+  <rect x="0" y="0" width="920" height="300" fill="#0b1020" />
+  <text x="18" y="24" fill="#e6e8ef" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="16">Vitals v0: BP_SYS smooth</text>
+
+  <rect x="70" y="40" width="825" height="205" fill="#0f1730" stroke="#2b365a" stroke-width="1" />
+  <line x1="70" y1="245" x2="895" y2="245" stroke="#2b365a" stroke-width="1" />
+  <line x1="70" y1="245" x2="70" y2="40" stroke="#2b365a" stroke-width="1" />
+
+  <text x="70" y="275" fill="#aab2d5" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="12">Residual over time</text>
+  <text x="70" y="291" fill="#93a4d6" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="11">min=0.000000</text>
+  <text x="70" y="307" fill="#93a4d6" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="11">max=1.000000</text>
+
+  <polyline fill="none" stroke="#61dafb" stroke-width="2" points="70.00,245.00 895.00,245.00" />
+</svg>
+      <div style="margin-top:10px;"><a href="vitals_v0_bp_sys.svg">Open SVG file</a></div>
+    </div>
+
+    <div class="block">
+      <div style="margin-bottom: 8px; color: #aab2d5;">Residual history</div>
+      <pre>0.000000, 0.000000</pre>
+    </div>
+
+    <div class="block">
+      <div style="margin-bottom: 8px; color: #aab2d5;">Field (before vs after)</div>
+      <table>
+        <thead>
+          <tr><th>index</th><th>sign</th><th>before</th><th>after</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>0</td><td>1</td><td>0.000000</td><td>0.000000</td></tr><tr><td>1</td><td>1</td><td>0.000000</td><td>0.000000</td></tr><tr><td>2</td><td>-1</td><td>0.000000</td><td>0.000000</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="block">
+      <div style="margin-bottom: 8px; color: #aab2d5;">Script</div>
+      <pre>harmony(1e-12) residual() evolve(2) residual() report()</pre>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+{
+  "run_id": "1780552963452_req_comp_002",
+  "created_unix_ms": 1780552963452,
+  "request": {
+    "amount": 750.0,
+    "identity": {
+      "delegations": [
+        {
+          "delegated_by": "user:charlie",
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "roles": [
+        "ProcurementDelegate"
+      ],
+      "user_id": "user:bob"
+    },
+    "request_id": "REQ-COMP-002",
+    "workflow": "compliance_procurement"
+  },
+  "policy_version": "compliance_budget_coherence_v1",
+  "decision": {
+    "budget_remaining": 99250.0,
+    "gate_state": "ALLOW",
+    "next_step": "Execute",
+    "reason_codes": [],
+    "repaired": true
+  },
+  "decision_hash": "7a8b9c10d2e5199d",
+  "replay_inputs": {
+    "field_before": [
+      100000.0,
+      750.0,
+      0.0
+    ],
+    "script": "harmony(1e-12) residual() evolve(2) residual() report()",
+    "signs": [
+      1,
+      -1,
+      -1
+    ]
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": 750.0,
+        "recipient": "ACME Corp"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": true,
+      "deny_reason": null,
+      "result": {
+        "executed": true
+      }
+    }
+  ]
+}

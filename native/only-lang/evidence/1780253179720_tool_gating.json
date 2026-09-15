@@ -1,0 +1,40 @@
+{
+  "run_id": "1780253179720_tool_gating",
+  "created_unix_ms": 1780253179722,
+  "request": {
+    "model_proposed_action": "execute_payment(vendor=ACME, amount=1200)",
+    "policy": "policy_v1(threshold=1.00)",
+    "request_id": "REQ-0001",
+    "workflow": "procurement_approval_routing"
+  },
+  "policy_version": "policy_v1(threshold=1.00)",
+  "decision": {
+    "deny_reason": "blocked: requires approval",
+    "gateway_execute": false
+  },
+  "decision_hash": "faebaa4f5ed38aa0",
+  "replay_inputs": {
+    "budget_remaining": 8800.0,
+    "triage_score": 1.5499999999999998
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": 1200.0,
+        "vendor": "ACME"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": false,
+      "deny_reason": "blocked: requires approval",
+      "result": {
+        "executed": false
+      }
+    }
+  ]
+}

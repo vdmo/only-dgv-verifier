@@ -1,0 +1,31 @@
+{
+  "run_id": "1780255096807_triage",
+  "created_unix_ms": 1780255096808,
+  "request": {
+    "amount_scaled": 1.2,
+    "budget_remaining": 8800.0,
+    "request_id": "REQ-0001",
+    "vendor_risk": 0.35,
+    "workflow": "procurement_approval_routing"
+  },
+  "policy_version": "triage_scoring_v0",
+  "decision": {
+    "triage_score": 1.5499999999999998
+  },
+  "decision_hash": "bb603c2af3709f2c",
+  "replay_inputs": {
+    "field_before": [
+      1.2,
+      0.35,
+      0.0
+    ],
+    "script": "harmony(1e-12) residual() evolve(2) residual() report()",
+    "signs": [
+      1,
+      1,
+      -1
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

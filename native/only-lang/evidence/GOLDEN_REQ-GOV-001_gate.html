@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>REQ-GOV-001 gate</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { background:#0b1020; color:#e6e8ef; font-family: monospace; margin:0; padding:16px; }
+    .box { background:#0f1730; border:1px solid #2b365a; padding:12px; margin:12px 0; }
+    pre { white-space: pre-wrap; margin:0; }
+  </style>
+</head>
+<body>
+  <h1 style="margin:0 0 10px 0; font-size:16px;">REQ-GOV-001 gate</h1>
+  <div class="box"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="180" viewBox="0 0 760 180" preserveAspectRatio="xMinYMin meet">
+  <rect x="0" y="0" width="760" height="180" rx="12" fill="#0f1730" stroke="#2b365a" />
+  <text x="24" y="46" fill="#e6e8ef" font-family="monospace" font-size="22">REQ-GOV-001 gate</text>
+  <rect x="24" y="70" width="220" height="48" rx="10" fill="#f59e0b" />
+  <text x="40" y="103" fill="#0b1020" font-family="monospace" font-size="24">ESCALATE</text>
+  <text x="24" y="152" fill="#aab2d5" font-family="monospace" font-size="14">ONLY Lang evidence artifact</text>
+</svg></div>
+  <div class="box"><div style="color:#aab2d5;margin-bottom:6px;">Details</div><pre>{
+  "decision": {
+    "approved": false,
+    "execute_allowed": false,
+    "extra": {
+      "approvals_received": 0,
+      "approvals_required": 2,
+      "reason_codes": [
+        "approval_required"
+      ]
+    },
+    "gate_state": "ESCALATE",
+    "needs_approval": true,
+    "next_step": "Await approvals"
+  },
+  "request": {
+    "payload": {
+      "amount": 25000,
+      "identity": {
+        "requester_id": "user:requester"
+      },
+      "memo": "Purchase order",
+      "vendor": "ACME"
+    },
+    "request_id": "REQ-GOV-001"
+  }
+}</pre></div>
+</body>
+</html>

@@ -72,12 +72,17 @@ Planned for v0.3.0: **SLSA Level 3** (reproducible builds from source, isolated 
 
 ## Source Access
 
-The verifier source code is not publicly available due to IP protection (see `TRUST_ROOT.md`).
+The verifier source code is now published in `native/`. Anyone can build, review, and audit it without an NDA.
 
-For NDA-gated source review:
-- Contact: trust@only.institute
-- Review paths: Attestation Review or Sandbox Review (see `TRUST_ROOT.md`)
-- Review scope: verifier source, build system, dependency versions, test coverage
+```bash
+cd native
+cargo build --release -p dgv-verifier
+cargo build --release -p only-gate
+sha256sum target/release/dgv-verifier target/release/only-gate
+# Compare against ../CHECKSUMS.txt
+```
+
+See `AUDIT_PACKAGE.md` for the recommended audit scope and the differential test that compares binary output against expected card results.
 
 ## Build Verification Under NDA
 

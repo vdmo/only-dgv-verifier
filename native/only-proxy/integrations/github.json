@@ -1,0 +1,14 @@
+{
+    "app_name": "GitHub (Pull Request Authority)",
+    "target_domains": [
+        "https://api.github.com"
+    ],
+    "vault_ghost": [
+        579.1644844083587,
+        1.0,
+        -1.0,
+        -579.1644844083587
+    ],
+    "vault_ciphertext": "6768705f4c38710d5445445f5d30700955425f545532610f5f303031",
+    "base_script": "harmony(0.001)"
+}

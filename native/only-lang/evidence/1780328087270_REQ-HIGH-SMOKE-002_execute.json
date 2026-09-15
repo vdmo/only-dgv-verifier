@@ -1,0 +1,55 @@
+{
+  "run_id": "1780328087270_REQ-HIGH-SMOKE-002_execute",
+  "created_unix_ms": 1780328087270,
+  "request": {
+    "amount": "5000",
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:alice"
+      }
+    },
+    "request_id": "REQ-HIGH-SMOKE-002",
+    "risk_level": "high",
+    "sla_minutes": 15,
+    "vendor": "ACME",
+    "workflow": "procurement_connector"
+  },
+  "policy_version": "gov_payments_v0",
+  "decision": {
+    "action": "execute_payment",
+    "authorized": true,
+    "executor_id": "user:exec",
+    "params": {
+      "amount": 5000,
+      "vendor": "ACME"
+    },
+    "reason": "allowed",
+    "token_id": "tok_1780328069804_REQ-HIGH-SMOKE-002",
+    "tool": "finance.payment"
+  },
+  "decision_hash": "hash_1780328087270_REQ-HIGH-SMOKE-002_execute",
+  "replay_inputs": {
+    "source": "connector_execute_action"
+  },
+  "tool_proposals": [],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": true,
+      "deny_reason": null,
+      "result": {
+        "executed": true
+      }
+    }
+  ]
+}

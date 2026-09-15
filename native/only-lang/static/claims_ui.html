@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OnlyOS Claims Pilot</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color: #1a1a1a; background: #f6f7f9; }
+    body { max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.4rem; }
+    section { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    label { display: block; margin: 0.5rem 0 0.2rem; font-size: 0.85rem; color: #444; }
+    input, select { width: 100%; padding: 0.45rem; box-sizing: border-box; }
+    button { margin-top: 0.75rem; padding: 0.5rem 1rem; cursor: pointer; }
+    pre { background: #111; color: #e8e8e8; padding: 0.75rem; overflow: auto; font-size: 0.8rem; border-radius: 6px; }
+    .hint { font-size: 0.8rem; color: #666; }
+  </style>
+</head>
+<body>
+  <h1>Small Claims Pilot UI</h1>
+  <p class="hint">Pilot only — not legal advice. API: <code id="apiBase"></code></p>
+
+  <section>
+    <h2>1. Qualify</h2>
+    <label>Case ID</label>
+    <input id="caseId" value="case_demo_001" />
+    <label>Amount (GBP)</label>
+    <input id="amount" type="number" value="800" />
+    <label>Dispute type</label>
+    <select id="dispute">
+      <option value="deposit">deposit</option>
+      <option value="unpaid_invoice">unpaid_invoice</option>
+      <option value="goods_not_delivered">goods_not_delivered</option>
+      <option value="other">other</option>
+    </select>
+    <label><input id="limitationOk" type="checkbox" checked /> Limitation OK</label>
+    <label><input id="hasContract" type="checkbox" checked /> Has contract</label>
+    <label><input id="hasPaymentProof" type="checkbox" checked /> Has payment proof</label>
+    <label><input id="defendantNamed" type="checkbox" checked /> Defendant named</label>
+    <button id="btnQualify">Qualify</button>
+  </section>
+
+  <section>
+    <h2>2. Generate letter + register manifest</h2>
+    <button id="btnGenerate">Generate LBA PDF</button>
+  </section>
+
+  <section>
+    <h2>3. Court filing stub</h2>
+    <p class="hint">Requires manifest from step 2.</p>
+    <button id="btnFile" disabled>Submit filing stub</button>
+  </section>
+
+  <section>
+    <h2>Response</h2>
+    <pre id="out">{}</pre>
+  </section>
+
+  <script>
+    const apiBase = window.location.origin;
+    document.getElementById("apiBase").textContent = apiBase;
+
+    let lastManifest = null;
+
+    function factsPayload() {
+      return {
+        claim_amount_gbp: Number(document.getElementById("amount").value),
+        limitation_ok: document.getElementById("limitationOk").checked,
+        jurisdiction: "eng_wales",
+        dispute_type: document.getElementById("dispute").value,
+        has_contract: document.getElementById("hasContract").checked,
+        has_payment_proof: document.getElementById("hasPaymentProof").checked,
+        defendant_named: document.getElementById("defendantNamed").checked,
+      };
+    }
+
+    function show(data) {
+      document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function post(path, body) {
+      const res = await fetch(apiBase + path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      return res.json();
+    }
+
+    document.getElementById("btnQualify").onclick = async () => {
+      const data = await post("/api/claims/qualify", factsPayload());
+      show(data);
+    };
+
+    document.getElementById("btnGenerate").onclick = async () => {
+      const body = {
+        case_id: document.getElementById("caseId").value,
+        facts: factsPayload(),
+        gate_state: "ALLOW",
+        governance_run_id: "claims_ui_pilot",
+        decision_hash: "claims_ui_pilot_hash",
+      };
+      const data = await post("/api/claims/generate", body);
+      show(data);
+      if (data.ok && data.manifest) {
+        lastManifest = data;
+        document.getElementById("btnFile").disabled = false;
+      }
+    };
+
+    document.getElementById("btnFile").onclick = async () => {
+      if (!lastManifest) return;
+      const body = {
+        case_id: document.getElementById("caseId").value,
+        content_sha256: lastManifest.content_sha256,
+        manifest_fingerprint: lastManifest.manifest_fingerprint,
+        court_id: "MCOL",
+      };
+      const data = await post("/api/claims/file", body);
+      show(data);
+    };
+  </script>
+</body>
+</html>

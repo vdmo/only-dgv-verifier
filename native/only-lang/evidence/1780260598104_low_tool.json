@@ -1,0 +1,42 @@
+{
+  "run_id": "1780260598104_low_tool",
+  "created_unix_ms": 1780260598105,
+  "request": {
+    "action": "execute_payment",
+    "request_id": "REQ-LOW-0001",
+    "risk_level": "low",
+    "sla_minutes": 15,
+    "tool": "finance.payment",
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "tool_gating_v0",
+  "decision": {
+    "deny_reason": null,
+    "execute_allowed": true,
+    "tool_allowed": true
+  },
+  "decision_hash": "2802bb512d9eca98",
+  "replay_inputs": {
+    "gate_hash": "808804514702cf80"
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": 200.0,
+        "vendor": "ACME"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": true,
+      "deny_reason": null,
+      "result": {
+        "executed": true
+      }
+    }
+  ]
+}

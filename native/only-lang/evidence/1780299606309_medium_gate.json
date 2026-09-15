@@ -1,0 +1,62 @@
+{
+  "run_id": "1780299606309_medium_gate",
+  "created_unix_ms": 1780299606312,
+  "request": {
+    "amount": 1200.0,
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:alice"
+      }
+    },
+    "request_id": "REQ-MED-0001",
+    "risk_level": "medium",
+    "sla_minutes": 60,
+    "triage_score": 1.5499999999999998,
+    "vendor_risk": 0.35,
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "gate(threshold=1.000)",
+  "decision": {
+    "approvals_received": 0,
+    "approvals_required": 1,
+    "approved": false,
+    "evidence_requirements": {
+      "assumptions": false,
+      "citations": false,
+      "uncertainty": false
+    },
+    "execute_allowed": false,
+    "gate_state": "ESCALATE",
+    "needs_approval": true,
+    "next_step": "Await approval",
+    "reason_codes": [
+      "approval_required"
+    ],
+    "restricted_tools": [],
+    "sla_due_unix_ms": 1780303206312
+  },
+  "decision_hash": "09f5c460129e6c2c",
+  "replay_inputs": {
+    "decision_parts": [
+      "risk=medium",
+      "REQ-MED-0001",
+      "threshold=1.000",
+      "triage_score=1.550000",
+      "needs_approval=true",
+      "approved=false",
+      "execute_allowed=false"
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

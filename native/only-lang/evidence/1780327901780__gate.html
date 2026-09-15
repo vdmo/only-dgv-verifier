@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CSV import gate</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { background:#0b1020; color:#e6e8ef; font-family: monospace; margin:0; padding:16px; }
+    .box { background:#0f1730; border:1px solid #2b365a; padding:12px; margin:12px 0; }
+    pre { white-space: pre-wrap; margin:0; }
+  </style>
+</head>
+<body>
+  <h1 style="margin:0 0 10px 0; font-size:16px;">CSV import gate</h1>
+  <div class="box"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="180" viewBox="0 0 760 180" preserveAspectRatio="xMinYMin meet">
+  <rect x="0" y="0" width="760" height="180" fill="#0b1020"/>
+  <text x="16" y="28" fill="#e6e8ef" font-family="monospace" font-size="14">CSV import gate</text>
+  <rect x="16" y="48" width="728" height="110" fill="#0f1730" stroke="#2b365a"/>
+  <text x="32" y="115" fill="#ef4444" font-family="monospace" font-size="34">BLOCKED</text>
+</svg></div>
+  <div class="box"><div style="color:#aab2d5;margin-bottom:6px;">Details</div><pre>{
+  "decision": {
+    "approvals_received": 0,
+    "approvals_required": 2,
+    "approved": false,
+    "auth_token": null,
+    "evidence_requirements": {
+      "assumptions": false,
+      "citations": false,
+      "uncertainty": false
+    },
+    "execute_allowed": false,
+    "gate_state": "ESCALATE",
+    "needs_approval": true,
+    "next_step": "Await approval",
+    "reason_codes": [
+      "approval_required"
+    ],
+    "restricted_tools": [
+      "finance.payment"
+    ],
+    "sla_due_unix_ms": 1780328801780
+  },
+  "run_id": "1780327901780__gate"
+}</pre></div>
+</body>
+</html>

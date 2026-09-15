@@ -1,0 +1,141 @@
+﻿{
+    "session_id":  "INT-20260627-031243",
+    "started_at":  "2026-06-27T03:12:43.1181586+10:00",
+    "base_url":  "http://127.0.0.1:8091",
+    "steps":  [
+                  {
+                      "step":  "A_qualify",
+                      "result":  {
+                                     "auto_send_allowed":  true,
+                                     "eligible":  true,
+                                     "escalate":  false,
+                                     "missing_fields":  [
+
+                                                        ],
+                                     "rule_trace":  [
+                                                        "type_a_qualified"
+                                                    ],
+                                     "track":  "type_a"
+                                 },
+                      "ms":  27
+                  },
+                  {
+                      "content_sha256":  "8fa03b6adbbddb3b1c27219e43b03f2b9370d4817047ed893caf42f378dcb3da",
+                      "step":  "B_generate",
+                      "manifest_fingerprint":  "09440dec9ab98cee",
+                      "verify":  {
+                                     "content_sha256":  "8fa03b6adbbddb3b1c27219e43b03f2b9370d4817047ed893caf42f378dcb3da",
+                                     "integrity":  "NOT_CHECKED",
+                                     "manifest":  {
+                                                      "ai_generated":  true,
+                                                      "c2pa":  {
+                                                                   "assertion_labels":  [
+
+                                                                                        ],
+                                                                   "jumbf_boxes":  0,
+                                                                   "present":  false,
+                                                                   "status":  "not_present",
+                                                                   "validation":  "none"
+                                                               },
+                                                      "capture_trusted":  false,
+                                                      "content_sha256":  "8fa03b6adbbddb3b1c27219e43b03f2b9370d4817047ed893caf42f378dcb3da",
+                                                      "decision_hash":  "hash_INT-20260627-031243_gen",
+                                                      "engine_version":  "0.1.0",
+                                                      "facts_fingerprint":  "5083dee73802e038",
+                                                      "gate_state":  "ALLOW",
+                                                      "governance_run_id":  "run_INT-20260627-031243_gen",
+                                                      "manifest_fingerprint":  "09440dec9ab98cee",
+                                                      "manifest_version":  "0.1",
+                                                      "mime":  "application/pdf",
+                                                      "pir_watermark":  {
+                                                                            "applicable":  false,
+                                                                            "status":  "not_applicable_on_arbitrary_upload",
+                                                                            "verified":  false,
+                                                                            "watermark_len":  64
+                                                                        },
+                                                      "provenance_class":  "platform_generated_letter",
+                                                      "sidecar_path":  "D:\\pir\\only-engine\\only-lang\\documents\\sidecars\\8fa03b6adbbddb3b1c27219e43b03f2b9370d4817047ed893caf42f378dcb3da.manifest.json",
+                                                      "source":  "claims_platform",
+                                                      "template_id":  "LBA_type_a_v1",
+                                                      "warnings":  [
+                                                                       "Platform-generated output â bind to governance decision_hash before send."
+                                                                   ]
+                                                  },
+                                     "ok":  true,
+                                     "registered":  true,
+                                     "warnings":  [
+                                                      "Platform-generated output â bind to governance decision_hash before send."
+                                                  ]
+                                 },
+                      "ms":  29
+                  },
+                  {
+                      "execute":  {
+                                      "authorized":  true,
+                                      "ok":  true,
+                                      "reason":  "allowed",
+                                      "result":  {
+                                                     "channel":  "email_outbox_pilot",
+                                                     "content_sha256":  "8fa03b6adbbddb3b1c27219e43b03f2b9370d4817047ed893caf42f378dcb3da",
+                                                     "delivered":  true,
+                                                     "delivery_receipt_id":  "dlv_8fa03b6adbbd_1782493963811",
+                                                     "message":  "Delivered to pilot outbox â wire SMTP for production",
+                                                     "outbox_path":  "D:\\pir\\only-engine\\only-lang\\documents\\outbox\\dlv_8fa03b6adbbd_1782493963811.eml",
+                                                     "recipient_hash":  "2d3c44001bdbb7a8869187818a5e9112d9b69f229a7f594035ed2fd95b14ef8e"
+                                                 },
+                                      "run_id":  "1782493963830_req_INT-20260627-031243_execute"
+                                  },
+                      "step":  "C_send",
+                      "proposal":  {
+                                       "approvals_received":  0,
+                                       "approvals_required":  2,
+                                       "auth_token":  null,
+                                       "counterfactual":  "Awaiting Approval: Gating requires 2 approvals. Acquire necessary authorizations to execute the task.",
+                                       "decision_hash":  "hash_1782493963677_req_INT-20260627-031243_gate",
+                                       "gate_state":  "ESCALATE",
+                                       "reason_codes":  [
+                                                            "approval_required"
+                                                        ],
+                                       "request_id":  "req_INT-20260627-031243",
+                                       "run_id":  "1782493963677_req_INT-20260627-031243_gate"
+                                   },
+                      "approve":  {
+                                      "auth_token":  {
+                                                         "action":  "deliver_letter",
+                                                         "amount_cap":  100000,
+                                                         "approver_ids":  [
+                                                                              "officer_1",
+                                                                              "officer_2"
+                                                                          ],
+                                                         "expires_unix_ms":  1782495763789,
+                                                         "policy_version":  "gov_payments_v0",
+                                                         "request_id":  "req_INT-20260627-031243",
+                                                         "signature":  "195fd1df8000544d216afc25a14ed742a20f00c8f1ff25e6709d27e3fd1333ed",
+                                                         "token_id":  "tok_1782493963789_req_INT-20260627-031243",
+                                                         "tool":  "document.send",
+                                                         "vendor":  ""
+                                                     },
+                                      "gate_state":  "ALLOW",
+                                      "ok":  true,
+                                      "request_id":  "req_INT-20260627-031243",
+                                      "run_id":  "1782493963773_req_INT-20260627-031243_gate"
+                                  }
+                  },
+                  {
+                      "ok":  true,
+                      "step":  "D_verify",
+                      "integrity":  "MATCH"
+                  }
+              ],
+    "metrics":  {
+                    "M1_track":  "type_a",
+                    "M1_pass_internal":  true,
+                    "M2_missing_fields":  0,
+                    "M3_send_evidence":  true,
+                    "M4_wrong_send":  0,
+                    "M5_minutes_intake_to_send":  0.01,
+                    "M6_integrity_match":  true
+                },
+    "completed_at":  "2026-06-27T03:12:43.9074514+10:00",
+    "elapsed_ms":  790
+}

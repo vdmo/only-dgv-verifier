@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gate update | Audit Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      background-color: #030712;
+      color: #f3f4f6;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    a {
+      color: #38bdf8;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    a:hover {
+      color: #0ea5e9;
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .header-card {
+      background: radial-gradient(100% 100% at 0% 0%, #1e1b4b 0%, #0f172a 100%);
+      border: 1px solid #312e81;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+    }
+    .header-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent);
+    }
+    .badge-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
+    }
+    .pill-allow {
+      background-color: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .pill-escalate {
+      background-color: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .pill-deny {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .pill-stage {
+      background-color: rgba(99, 102, 241, 0.1);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .pill-reason {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      margin-left: 6px;
+    }
+    .title-area {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .title-area h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+    }
+    .run-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .grid-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+      border-top: 1px solid #1e293b;
+      padding-top: 20px;
+    }
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .meta-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .meta-val {
+      font-size: 15px;
+      font-weight: 500;
+      color: #cbd5e1;
+    }
+    .meta-val.mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: #090d16;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #1e293b;
+      word-break: break-all;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 32px 0 16px 0;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #1e293b;
+    }
+    .panel {
+      background-color: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .box {
+      background-color: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .inner-content h1 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 20px 0 10px 0;
+      color: #e2e8f0;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+    }
+    th {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      color: #94a3b8;
+      border-bottom: 1px solid #1e293b;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 13px;
+    }
+    td {
+      border-bottom: 1px solid #0f172a;
+      padding: 8px 12px;
+      color: #cbd5e1;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background-color: #030712;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #a7f3d0;
+    }
+    .mini-json {
+      background: #030712;
+      border: 1px solid #1e293b;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: #cbd5e1;
+      border-radius: 4px;
+      max-height: 100px;
+      overflow-y: auto;
+    }
+    .grid-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .key { color: #f43f5e; font-weight: 500; }
+    .string { color: #10b981; }
+    .number { color: #f59e0b; }
+    .boolean { color: #3b82f6; }
+    .null { color: #64748b; }
+    @media (max-width: 768px) {
+      .grid-two {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header-card">
+      <div class="badge-container">
+        <span class="pill pill-allow">ALLOW</span>
+        <span class="pill pill-stage">gate</span>
+      </div>
+      <div class="title-area">
+        <div>
+          <h1>Gate update</h1>
+          <div class="run-id">run_id: 1788365112537_REQ-PS-2355_gate</div>
+        </div>
+      </div>
+      
+      <div class="grid-meta">
+        <div class="meta-item">
+          <div class="meta-label">Request ID</div>
+          <div class="meta-val">REQ-PS-2355</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Workflow</div>
+          <div class="meta-val">furniture_procurement_v1</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Risk Level</div>
+          <div class="meta-val">high</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Next Step</div>
+          <div class="meta-val">Proceed</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Timestamp</div>
+          <div class="meta-val" id="local-timestamp">—</div>
+        </div>
+        <div class="meta-item" style="grid-column: span 2;">
+          <div class="meta-label">Policy Version</div>
+          <div class="meta-val mono">gov_payments_v0</div>
+        </div>
+        <div class="meta-item" style="grid-column: span 2;">
+          <div class="meta-label">Decision Hash</div>
+          <div class="meta-val mono">hash_1788365112537_REQ-PS-2355_gate</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel"><strong>Reason codes:</strong> <span class="pill pill-reason">approval_required</span></div>
+    <div class="section-title">Tool Gating Details</div><div class="panel"><table><thead><tr><th>Tool</th><th>Action</th><th>Parameters</th><th>Status</th><th>Deny Reason / Outcome</th></tr></thead><tbody><tr><td><code>finance.payment</code></td><td><code>execute_payment</code></td><td><pre class="mini-json">{
+  "amount": "5000",
+  "vendor": "ACME"
+}</pre></td><td><span class="pill pill-deny">Denied</span></td><td><code>blocked: connector stub (not authorized)</code></td></tr></tbody></table></div>
+
+    <div class="section-title">Decision Details</div>
+    <div class="grid-two">
+      <div class="panel">
+        <div class="meta-label" style="margin-bottom:8px;">Request Payload</div>
+        <pre><code class="json-code" id="req-json">{
+  "agent_id": "primeswarm_furniture_agent",
+  "amount": "5000",
+  "identity": {
+    "delegations": [],
+    "requester": {
+      "roles": [
+        "ClientAgent"
+      ],
+      "user_id": "agent:primeswarm"
+    }
+  },
+  "justification": "Desk replacement purchase order: 12 tables + chairs for design studio layout.",
+  "request_id": "REQ-PS-2355",
+  "risk_level": "high",
+  "vendor": "ACME",
+  "workflow": "furniture_procurement_v1"
+}</code></pre>
+      </div>
+      <div class="panel">
+        <div class="meta-label" style="margin-bottom:8px;">Decision Response</div>
+        <pre><code class="json-code" id="dec-json">{
+  "approvals_received": 2,
+  "approvals_required": 2,
+  "approved": true,
+  "auth_token": {
+    "action": "execute_payment",
+    "amount_cap": 80000,
+    "approver_ids": [
+      "user:head_of_procurement",
+      "user:finance_director"
+    ],
+    "expires_unix_ms": 1788366912538,
+    "policy_version": "gov_payments_v0",
+    "request_id": "REQ-PS-2355",
+    "signature": "e93efca5309e161ba8bd69758f20df8fe4bd11820cdee9469a1f7b7a95ae3464",
+    "token_id": "tok_1788365112538_REQ-PS-2355",
+    "tool": "finance.payment",
+    "vendor": "ACME"
+  },
+  "execute_allowed": true,
+  "gate_state": "ALLOW",
+  "needs_approval": true,
+  "next_step": "Proceed",
+  "reason_codes": [
+    "approval_required"
+  ]
+}</code></pre>
+      </div>
+    </div>
+
+    <div class="section-title">Execution &amp; Verification Details</div>
+    <div class="inner-content">
+      
+  <h1 style="margin:0 0 10px 0; font-size:16px;">Gate update</h1>
+  <div class="box"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="180" viewBox="0 0 760 180" preserveAspectRatio="xMinYMin meet">
+  <rect x="0" y="0" width="760" height="180" fill="#0b1020"/>
+  <text x="16" y="28" fill="#e6e8ef" font-family="monospace" font-size="14">Gate update</text>
+  <rect x="16" y="48" width="728" height="110" fill="#0f1730" stroke="#2b365a"/>
+  <text x="32" y="115" fill="#22c55e" font-family="monospace" font-size="34">OK</text>
+</svg></div>
+  <div class="box"><div style="color:#aab2d5;margin-bottom:6px;">Details</div><pre>{
+  "approvals_received": 2,
+  "approvals_required": 2,
+  "approved": true,
+  "auth_token": {
+    "action": "execute_payment",
+    "amount_cap": 80000,
+    "approver_ids": [
+      "user:head_of_procurement",
+      "user:finance_director"
+    ],
+    "expires_unix_ms": 1788366912538,
+    "policy_version": "gov_payments_v0",
+    "request_id": "REQ-PS-2355",
+    "signature": "e93efca5309e161ba8bd69758f20df8fe4bd11820cdee9469a1f7b7a95ae3464",
+    "token_id": "tok_1788365112538_REQ-PS-2355",
+    "tool": "finance.payment",
+    "vendor": "ACME"
+  },
+  "execute_allowed": true,
+  "gate_state": "ALLOW",
+  "needs_approval": true,
+  "next_step": "Proceed",
+  "reason_codes": [
+    "approval_required"
+  ]
+}</pre></div>
+
+    </div>
+  </div>
+
+  <script>
+    // Format timestamp in local time
+    try {
+      const unixMs = 1788365112538;
+      if (unixMs) {
+        document.getElementById('local-timestamp').textContent = new Date(Number(unixMs)).toLocaleString();
+      }
+    } catch (e) {}
+
+    // JSON syntax highlighting
+    function syntaxHighlight(jsonStr) {
+      try {
+        const obj = JSON.parse(jsonStr);
+        jsonStr = JSON.stringify(obj, null, 2);
+      } catch(e) {}
+      jsonStr = jsonStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return jsonStr.replace(/("(\\u[a-zA-Z0-9]Gate update|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function (match) {
+        let cls = 'number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'key';
+          } else {
+            cls = 'string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'boolean';
+        } else if (/null/.test(match)) {
+          cls = 'null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
+    }
+
+    try {
+      const reqEl = document.getElementById('req-json');
+      reqEl.innerHTML = syntaxHighlight(reqEl.textContent);
+      const decEl = document.getElementById('dec-json');
+      decEl.innerHTML = syntaxHighlight(decEl.textContent);
+    } catch(e) {}
+  </script>
+</body>
+</html>

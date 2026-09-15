@@ -1,0 +1,25 @@
+{
+  "policy_version": "gov_payments_v0",
+  "enabled_controls": {
+    "vendor_lists": true
+  },
+  "token_ttl_minutes": 30,
+  "approvals_required_by_risk": {
+    "medium": 1,
+    "low": 0,
+    "high": 2
+  },
+  "vendor_allowlist": [
+    "ACME",
+    "OMNI-MED",
+    "CITY-SUPPLY"
+  ],
+  "vendor_denylist": [
+    "EVILCORP"
+  ],
+  "amount_caps_by_risk": {
+    "medium": 10000,
+    "low": 1000,
+    "high": 80000
+  }
+}

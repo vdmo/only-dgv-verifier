@@ -1,0 +1,72 @@
+{
+  "run_id": "1780328105517_REQ-DENY-SMOKE-002_gate",
+  "created_unix_ms": 1780328105517,
+  "request": {
+    "amount": "10",
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:bob"
+      }
+    },
+    "request_id": "REQ-DENY-SMOKE-002",
+    "risk_level": "low",
+    "sla_minutes": 15,
+    "vendor": "EVILCORP",
+    "workflow": "procurement_connector"
+  },
+  "policy_version": "gov_payments_v0",
+  "decision": {
+    "approvals_received": 0,
+    "approvals_required": 0,
+    "approved": false,
+    "auth_token": null,
+    "evidence_requirements": {
+      "assumptions": false,
+      "citations": false,
+      "uncertainty": false
+    },
+    "execute_allowed": false,
+    "gate_state": "DENY",
+    "needs_approval": false,
+    "next_step": "Blocked",
+    "reason_codes": [
+      "vendor_denylist"
+    ],
+    "restricted_tools": [],
+    "sla_due_unix_ms": 1780329005517
+  },
+  "decision_hash": "hash_1780328105517_REQ-DENY-SMOKE-002_gate",
+  "replay_inputs": {
+    "source": "csv_import"
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": "10",
+        "vendor": "EVILCORP"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": false,
+      "deny_reason": "blocked: connector stub (not authorized)",
+      "result": {
+        "executed": false
+      }
+    }
+  ]
+}

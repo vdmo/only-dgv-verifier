@@ -1,0 +1,59 @@
+{
+  "run_id": "1780305683799_REQ-CSV-0001_gate",
+  "created_unix_ms": 1780305683799,
+  "request": {
+    "amount": "0",
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:anonymous"
+      }
+    },
+    "request_id": "REQ-CSV-0001",
+    "risk_level": "medium",
+    "vendor": "ACME",
+    "workflow": "procurement_connector"
+  },
+  "policy_version": "connector_gate_v0",
+  "decision": {
+    "approvals_received": 0,
+    "approvals_required": 1,
+    "approved": false,
+    "execute_allowed": false,
+    "needs_approval": true,
+    "restricted_tools": []
+  },
+  "decision_hash": "hash_1780305683799_REQ-CSV-0001_gate",
+  "replay_inputs": {
+    "source": "csv_import"
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": "0",
+        "vendor": "ACME"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": false,
+      "deny_reason": "blocked: connector stub (not authorized)",
+      "result": {
+        "executed": false
+      }
+    }
+  ]
+}

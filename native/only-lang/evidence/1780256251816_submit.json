@@ -1,0 +1,31 @@
+{
+  "run_id": "1780256251816_submit",
+  "created_unix_ms": 1780256251816,
+  "request": {
+    "budget_total": 10000.0,
+    "request_amount": 1200.0,
+    "request_id": "REQ-0001",
+    "workflow": "procurement_approval_routing"
+  },
+  "policy_version": "submit_budget_coherence_v0",
+  "decision": {
+    "budget_remaining": 8800.0,
+    "repaired": true
+  },
+  "decision_hash": "4a6240f9cbcbdf85",
+  "replay_inputs": {
+    "field_before": [
+      10000.0,
+      1200.0,
+      0.0
+    ],
+    "script": "harmony(1e-12) residual() evolve(2) residual() report()",
+    "signs": [
+      1,
+      -1,
+      -1
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

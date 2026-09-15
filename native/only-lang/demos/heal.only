@@ -1,0 +1,5 @@
+harmony(1e-12)
+corrupt(1)
+residual()
+if_broken{evolve(1) residual()}
+report()

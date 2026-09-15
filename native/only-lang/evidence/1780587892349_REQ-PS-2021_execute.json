@@ -1,0 +1,57 @@
+{
+  "run_id": "1780587892349_REQ-PS-2021_execute",
+  "created_unix_ms": 1780587892349,
+  "request": {
+    "agent_id": "primeswarm_furniture_agent",
+    "amount": "5000",
+    "identity": {
+      "delegations": [],
+      "requester": {
+        "roles": [
+          "ClientAgent"
+        ],
+        "user_id": "agent:primeswarm"
+      }
+    },
+    "justification": "Desk replacement purchase order: 12 tables + chairs for design studio layout.",
+    "request_id": "REQ-PS-2021",
+    "risk_level": "high",
+    "vendor": "ACME",
+    "workflow": "furniture_procurement_v1"
+  },
+  "policy_version": "gov_payments_v0",
+  "decision": {
+    "action": "execute_payment",
+    "authorized": true,
+    "executor_id": "user:finance_bridge_operator",
+    "params": {
+      "amount": 5000,
+      "vendor": "ACME"
+    },
+    "reason": "allowed",
+    "receipt": {
+      "block_timestamp": 1780587892314,
+      "evidence_signature": "ONLY_GATEWAY_SIG_0x712aefbc90"
+    },
+    "token_id": "tok_1780587892279_REQ-PS-2021",
+    "tool": "finance.payment"
+  },
+  "decision_hash": "hash_1780587892349_REQ-PS-2021_execute",
+  "replay_inputs": {
+    "script": "harmony(1e-12) residual() report()",
+    "source": "primeswarm_client_execution"
+  },
+  "tool_proposals": [],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": true,
+      "deny_reason": null,
+      "result": {
+        "success": true,
+        "transaction_id": "TXN-SECURE-898231",
+        "transferred_to": "ACME"
+      }
+    }
+  ]
+}

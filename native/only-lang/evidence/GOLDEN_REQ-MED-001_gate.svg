@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="180" viewBox="0 0 760 180" preserveAspectRatio="xMinYMin meet">
+  <rect x="0" y="0" width="760" height="180" rx="12" fill="#0f1730" stroke="#2b365a" />
+  <text x="24" y="46" fill="#e6e8ef" font-family="monospace" font-size="22">REQ-MED-001 gate</text>
+  <rect x="24" y="70" width="220" height="48" rx="10" fill="#f59e0b" />
+  <text x="40" y="103" fill="#0b1020" font-family="monospace" font-size="24">ESCALATE</text>
+  <text x="24" y="152" fill="#aab2d5" font-family="monospace" font-size="14">ONLY Lang evidence artifact</text>
+</svg>

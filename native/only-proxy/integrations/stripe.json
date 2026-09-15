@@ -1,0 +1,14 @@
+{
+  "app_name": "Stripe (Financial Gateway)",
+  "target_domains": [
+    "https://api.stripe.com"
+  ],
+  "vault_ghost": [
+    187.28053823075155,
+    1.0,
+    -1.0,
+    -187.28053823075155
+  ],
+  "vault_ciphertext": "736b5f6c4956941f535452497065ae1641554c546564ae144f4b454e7f10c173",
+  "base_script": "budget_limit(100)"
+}

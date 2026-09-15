@@ -1,0 +1,71 @@
+{
+  "run_id": "1780317153892_REQ-CHECK-001_gate",
+  "created_unix_ms": 1780317153892,
+  "request": {
+    "amount": "1234",
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:alice"
+      }
+    },
+    "request_id": "REQ-CHECK-001",
+    "risk_level": "medium",
+    "sla_minutes": 60,
+    "vendor": "ACME",
+    "workflow": "procurement_connector"
+  },
+  "policy_version": "connector_gate_v0",
+  "decision": {
+    "approvals_received": 0,
+    "approvals_required": 1,
+    "approved": false,
+    "evidence_requirements": {
+      "assumptions": false,
+      "citations": false,
+      "uncertainty": false
+    },
+    "execute_allowed": false,
+    "gate_state": "ESCALATE",
+    "needs_approval": true,
+    "next_step": "Await approval",
+    "reason_codes": [
+      "approval_required"
+    ],
+    "restricted_tools": [],
+    "sla_due_unix_ms": 1780320753892
+  },
+  "decision_hash": "hash_1780317153892_REQ-CHECK-001_gate",
+  "replay_inputs": {
+    "source": "csv_import"
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": "1234",
+        "vendor": "ACME"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": false,
+      "deny_reason": "blocked: connector stub (not authorized)",
+      "result": {
+        "executed": false
+      }
+    }
+  ]
+}

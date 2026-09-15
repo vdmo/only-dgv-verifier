@@ -1,0 +1,30 @@
+{
+  "run_id": "RUN_MIN",
+  "created_unix_ms": 1700000000000,
+  "request": {
+    "identity": {
+      "requester_id": "user:test"
+    },
+    "request_id": "REQ-TEST-001"
+  },
+  "policy_version": "pol_v0",
+  "decision": {
+    "gate_state": "ALLOW",
+    "next_step": "Execute",
+    "reason_codes": []
+  },
+  "decision_hash": "hash_RUN_MIN",
+  "replay_inputs": {
+    "llm": {
+      "prompt": "hi",
+      "provider": "gemini",
+      "response": "ok"
+    }
+  },
+  "tool_proposals": [],
+  "tool_outcomes": [],
+  "event_type": "unknown",
+  "token_id": null,
+  "agent_id": null,
+  "actor": null
+}

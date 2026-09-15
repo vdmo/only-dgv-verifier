@@ -1,0 +1,10 @@
+[package]
+name = "only-heal"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+only-core = { path = "../only-core" }
+only-memory = { path = "../only-memory" }
+only-evolution = { path = "../only-evolution" }
+tokio = { version = "1", features = ["full"] }

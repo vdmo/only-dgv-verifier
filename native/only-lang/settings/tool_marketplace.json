@@ -1,0 +1,181 @@
+{
+  "tools": [
+    {
+      "name": "finance.payment",
+      "action": "execute_payment",
+      "risk_class": "high",
+      "schema": {
+        "inputs": {
+          "type": "object",
+          "properties": {
+            "vendor": { "type": "string" },
+            "amount": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["vendor", "amount"]
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" },
+            "transaction_id": { "type": "string" }
+          }
+        }
+      },
+      "deterministic_wrapper_rules": "Rule: Secure banking API call. Must sign payload with private key. Hash of inputs must match decision_hash.",
+      "required_approvals": 2,
+      "amount_cap": 100000,
+      "vendor_constraints": {
+        "check_allowlist": true,
+        "check_denylist": true
+      }
+    },
+    {
+      "name": "procurement.order",
+      "action": "create_purchase_order",
+      "risk_class": "medium",
+      "schema": {
+        "inputs": {
+          "type": "object",
+          "properties": {
+            "vendor": { "type": "string" },
+            "item": { "type": "string" },
+            "quantity": { "type": "integer", "minimum": 1 }
+          },
+          "required": ["vendor", "item", "quantity"]
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "po_number": { "type": "string" },
+            "status": { "type": "string" }
+          }
+        }
+      },
+      "deterministic_wrapper_rules": "Rule: Check inventory levels. Output is deterministic mock generation.",
+      "required_approvals": 1,
+      "amount_cap": 10000,
+      "vendor_constraints": {
+        "check_allowlist": true,
+        "check_denylist": false
+      }
+    },
+    {
+      "name": "document.ingest",
+      "action": "register_upload",
+      "risk_class": "medium",
+      "schema": {
+        "inputs": {
+          "type": "object",
+          "properties": {
+            "content_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+            "mime": { "type": "string" },
+            "source": { "type": "string" },
+            "provenance_class": {
+              "type": "string",
+              "enum": ["client_upload", "third_party_import", "trusted_capture"]
+            }
+          },
+          "required": ["content_sha256", "mime", "source", "provenance_class"]
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "manifest_fingerprint": { "type": "string" },
+            "sidecar_path": { "type": "string" }
+          }
+        }
+      },
+      "deterministic_wrapper_rules": "Rule: Hash-addressed ingest only. content_sha256 must match uploaded bytes. Writes sidecar manifest + registry entry. Does not prove world truth — integrity only.",
+      "required_approvals": 0,
+      "amount_cap": 0,
+      "side_effects": true,
+      "vendor_constraints": { "check_allowlist": false, "check_denylist": false }
+    },
+    {
+      "name": "document.generate",
+      "action": "render_pdf",
+      "risk_class": "medium",
+      "schema": {
+        "inputs": {
+          "type": "object",
+          "properties": {
+            "template_id": { "type": "string" },
+            "facts_fingerprint": { "type": "string" },
+            "content_sha256": { "type": "string" }
+          },
+          "required": ["template_id", "facts_fingerprint", "content_sha256"]
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "manifest_fingerprint": { "type": "string" },
+            "ai_generated": { "type": "boolean", "const": true }
+          }
+        }
+      },
+      "deterministic_wrapper_rules": "Rule: Same template_id + facts_fingerprint + render engine version must yield same content_sha256. Bind manifest before send.",
+      "required_approvals": 0,
+      "amount_cap": 0,
+      "side_effects": false,
+      "vendor_constraints": { "check_allowlist": false, "check_denylist": false }
+    },
+    {
+      "name": "document.send",
+      "action": "deliver_letter",
+      "risk_class": "high",
+      "schema": {
+        "inputs": {
+          "type": "object",
+          "properties": {
+            "content_sha256": { "type": "string" },
+            "manifest_fingerprint": { "type": "string" },
+            "decision_hash": { "type": "string" },
+            "recipient": { "type": "string" }
+          },
+          "required": ["content_sha256", "manifest_fingerprint", "decision_hash", "recipient"]
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "delivered": { "type": "boolean" },
+            "delivery_receipt_id": { "type": "string" }
+          }
+        }
+      },
+      "deterministic_wrapper_rules": "Rule: Refuse send unless manifest_fingerprint matches registry and decision_hash matches latest ALLOW evidence pack for this content_sha256.",
+      "required_approvals": 1,
+      "amount_cap": 0,
+      "side_effects": true,
+      "vendor_constraints": { "check_allowlist": false, "check_denylist": false }
+    },
+    {
+      "name": "claims.court.file",
+      "action": "submit_filing",
+      "risk_class": "high",
+      "schema": {
+        "inputs": {
+          "type": "object",
+          "properties": {
+            "case_id": { "type": "string" },
+            "content_sha256": { "type": "string" },
+            "manifest_fingerprint": { "type": "string" },
+            "court_id": { "type": "string" }
+          },
+          "required": ["case_id", "content_sha256", "manifest_fingerprint", "court_id"]
+        },
+        "outputs": {
+          "type": "object",
+          "properties": {
+            "accepted": { "type": "boolean" },
+            "filing_reference": { "type": "string" }
+          }
+        }
+      },
+      "deterministic_wrapper_rules": "Rule: Pilot stub — records filing intent when manifest is registered. Real court API integration TBD.",
+      "required_approvals": 1,
+      "amount_cap": 0,
+      "side_effects": true,
+      "vendor_constraints": { "check_allowlist": false, "check_denylist": false }
+    }
+  ]
+}

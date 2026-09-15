@@ -84,6 +84,44 @@ def verify(path: str) -> bool:
 def main() -> int:
     args = sys.argv[1:]
 
+    if '--revocation-report' in args:
+        import argparse
+        from objective_contract import load_json
+        from revocation_experiment import verify_report
+        parser = argparse.ArgumentParser(description='Verify local revocation history against an independently retained report checkpoint')
+        parser.add_argument('--revocation-report', required=True)
+        parser.add_argument('--expected-hash', help='Report checkpoint retained independently at experiment execution time')
+        options = parser.parse_args(args)
+        try:
+            with open(options.revocation_report, encoding='utf-8') as stream:
+                result = verify_report(load_json(stream), expected_hash=options.expected_hash)
+        except (OSError, ValueError, RecursionError) as error:
+            print(f'INVALID: {error}')
+            return 1
+        print(json.dumps(result, sort_keys=True))
+        return 0 if result['status'] == 'VERIFIED_LOCAL_HISTORY' else 1
+
+    if '--objective-receipt' in args:
+        import argparse
+        from objective_contract import load_json, verify_receipt
+        parser = argparse.ArgumentParser(description='Replay an experimental Objective Contract receipt; replay never grants execution authority')
+        parser.add_argument('--objective-receipt', required=True)
+        parser.add_argument('--objective-request', help='Independent host-supplied original request/context, not extracted from the receipt')
+        options = parser.parse_args(args)
+        try:
+            with open(options.objective_receipt, encoding='utf-8') as stream:
+                receipt = load_json(stream)
+            request = None
+            if options.objective_request:
+                with open(options.objective_request, encoding='utf-8') as stream:
+                    request = load_json(stream)
+            result = verify_receipt(receipt, expected_request=request)
+        except (OSError, ValueError, RecursionError) as error:
+            print(f'INVALID: {error}')
+            return 1
+        print(json.dumps(result, sort_keys=True))
+        return 0 if result['status'] == 'VERIFIED_AGAINST_SUPPLIED_CONTEXT' else 1
+
     if not args:
         print(__doc__)
         return 1

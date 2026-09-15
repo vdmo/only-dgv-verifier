@@ -1,0 +1,52 @@
+{
+  "run_id": "1780264692237_low_gate",
+  "created_unix_ms": 1780264692238,
+  "request": {
+    "amount": 200.0,
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:alice"
+      }
+    },
+    "request_id": "REQ-LOW-0001",
+    "risk_level": "low",
+    "sla_minutes": 15,
+    "triage_score": 0.30000000000000004,
+    "vendor_risk": 0.1,
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "gate(threshold=2.000)",
+  "decision": {
+    "approvals_received": 0,
+    "approvals_required": 0,
+    "approved": true,
+    "execute_allowed": true,
+    "needs_approval": false,
+    "restricted_tools": [],
+    "sla_due_unix_ms": 1780265592238
+  },
+  "decision_hash": "808804514702cf80",
+  "replay_inputs": {
+    "decision_parts": [
+      "risk=low",
+      "REQ-LOW-0001",
+      "threshold=2.000",
+      "triage_score=0.300000",
+      "needs_approval=false",
+      "approved=true",
+      "execute_allowed=true"
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

@@ -1,0 +1,67 @@
+{
+  "run_id": "1780300166754_medium_tool",
+  "created_unix_ms": 1780300166759,
+  "request": {
+    "action": "execute_payment",
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:alice"
+      }
+    },
+    "request_id": "REQ-MED-0001",
+    "risk_level": "medium",
+    "sla_minutes": 60,
+    "tool": "finance.payment",
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "tool_gating_v0",
+  "decision": {
+    "deny_reason": "blocked: not authorized",
+    "evidence_requirements": {
+      "assumptions": false,
+      "citations": false,
+      "uncertainty": false
+    },
+    "execute_allowed": false,
+    "gate_state": "DENY",
+    "next_step": "Escalate",
+    "reason_codes": [
+      "not_authorized"
+    ],
+    "tool_allowed": false
+  },
+  "decision_hash": "c0b8446ac486510f",
+  "replay_inputs": {
+    "gate_hash": "09f5c460129e6c2c"
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": 1200.0,
+        "vendor": "ACME"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": false,
+      "deny_reason": "blocked: not authorized",
+      "result": {
+        "executed": false
+      }
+    }
+  ]
+}

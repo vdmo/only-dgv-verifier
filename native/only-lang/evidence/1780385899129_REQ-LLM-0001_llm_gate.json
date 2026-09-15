@@ -1,0 +1,81 @@
+{
+  "run_id": "1780385899129_REQ-LLM-0001_llm_gate",
+  "created_unix_ms": 1780385899129,
+  "request": {
+    "amount": "5000",
+    "identity": {
+      "delegations": [],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:llm_requester"
+      }
+    },
+    "proposal": "",
+    "request_id": "REQ-LLM-0001",
+    "risk_level": "high",
+    "vendor": "ACME",
+    "workflow": "gov_llm_payment"
+  },
+  "policy_version": "gov_payments_v0",
+  "decision": {
+    "approvals_received": 0,
+    "approvals_required": 2,
+    "approved": false,
+    "auth_token": null,
+    "execute_allowed": false,
+    "gate_state": "ESCALATE",
+    "needs_approval": true,
+    "next_step": "Await approval",
+    "reason_codes": [
+      "approval_required"
+    ]
+  },
+  "decision_hash": "hash_1780385899129_REQ-LLM-0001_llm_gate",
+  "replay_inputs": {
+    "llm": {
+      "model": "gemini-1.5-flash",
+      "prompt": {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": "You are a procurement assistant. Propose a short payment memo and checklist for paying vendor ACME amount 5000. Output plain text with a memo line and 3 bullet checks."
+              }
+            ],
+            "role": "user"
+          }
+        ]
+      },
+      "provider": "gemini",
+      "response": {
+        "error": {
+          "code": 404,
+          "message": "models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.",
+          "status": "NOT_FOUND"
+        }
+      }
+    }
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": "5000",
+        "vendor": "ACME"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": false,
+      "deny_reason": "proposal only",
+      "result": {
+        "executed": false
+      }
+    }
+  ]
+}

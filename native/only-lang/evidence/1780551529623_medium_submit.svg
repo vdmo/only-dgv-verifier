@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="240" viewBox="0 0 760 240" preserveAspectRatio="xMinYMin meet">
+  <rect x="0" y="0" width="760" height="240" fill="#0b1020" />
+  <text x="12" y="18" fill="#e6e8ef" font-family="monospace" font-size="14">Budget coherence</text>
+  <rect x="50" y="30" width="690" height="170" fill="#0f1730" stroke="#2b365a" />
+  <polyline fill="none" stroke="#61dafb" stroke-width="2" points="50.00,30.00 740.00,200.00" />
+</svg>

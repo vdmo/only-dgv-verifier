@@ -1,0 +1,37 @@
+{
+  "run_id": "1780255586929_replay",
+  "created_unix_ms": 1780255586949,
+  "request": {
+    "budget_total": 10000.0,
+    "request_amount": 1200.0,
+    "request_id": "REQ-0001",
+    "vendor_risk": 0.35,
+    "workflow": "procurement_approval_routing"
+  },
+  "policy_version": "policy_v1(threshold=1.00)",
+  "decision": {
+    "approval_required": true,
+    "approved": false,
+    "budget_remaining": 8800.0,
+    "execute_allowed": false,
+    "replay_ok": true,
+    "triage_score": 1.5499999999999998
+  },
+  "decision_hash": "faebaa4f5ed38aa0",
+  "replay_inputs": {
+    "decision_parts": [
+      "policy_v1(threshold=1.00)",
+      "REQ-0001",
+      "amount=1200.00",
+      "vendor_risk=0.350000",
+      "triage_score=1.550000",
+      "budget_remaining=8800.000000",
+      "approval_required=true",
+      "approved=false",
+      "execute_allowed=false"
+    ],
+    "replay_hash": "faebaa4f5ed38aa0"
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

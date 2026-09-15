@@ -13,44 +13,41 @@ The following components are fully open and independently verifiable:
 | Component | Status | Verification Method |
 |---|---|---|
 | **DGV Specification** (`spec.md`) | Public, MIT licensed | Read it. Challenge it. Implement your own verifier against it. |
-| **Test Cards** (60 cards, JSON) | Public | Schema-validated, human-readable, machine-executable |
+| **Test Cards** (89 cards, JSON) | Public | Schema-validated, human-readable, machine-executable |
 | **Evidence Format** (JSON) | Public | Schema-validated, receipt-hashable, independently re-computable |
 | **Registry Schema** (`registry.schema.json`) | Public | JSON Schema Draft 2020-12, validates with any compliant validator |
 | **Public Registry** (`registry.json`) | Public | Append-only, every entry independently verifiable |
-| **Receipt Verification** (`verify_registry.py`) | Public, MIT licensed | Recomputes SHA-256 hashes, validates schema, enforces badge rules |
-| **Reproducibility Kit** (`Dockerfile`) | Public | One-command verification of all 60 test cards |
+| **Receipt Verification** (`verify_receipt.py`) | Public, MIT licensed | Recomputes SHA-256 hashes, validates schema, enforces badge rules |
+| **Reproducibility Kit** (`Dockerfile`) | Public | One-command verification of all test cards |
 | **Test Card Schema** (`testcards.schema.json`) | Public | JSON Schema for test card validation |
+| **Native Verifier Source** (`native/`) | Public | Rust source for dgv-verifier, only-gate, only-lang, only-core, only-evolution, only-memory |
+| **Audit Package** (`AUDIT_PACKAGE.md`) | Public | Everything an independent auditor needs to review the verifier |
 
 Anyone can:
 1. Read the specification and challenge any test card
-2. Run the Docker container and execute all 60 test cards
-3. Verify every receipt hash independently
-4. Validate the registry against the schema
-5. Check badge enforcement rules
-6. Inspect every evidence package in full
+2. Build the native binaries from source (`cd native && cargo build --release`)
+3. Run the Docker container and execute all test cards
+4. Verify every receipt hash independently
+5. Run the differential test (`python differential_test.py`)
+6. Review the Rust source for the math core and simulate-case handler
+7. Validate the registry against the schema
+8. Check badge enforcement rules
+9. Inspect every evidence package in full
 
 ## What Is Not Public
 
-The native verifier engines (`dgv-verifier`, `only-gate`) are distributed as precompiled binaries. Their Rust source code is not published.
+Nothing. The native verifier source is now published in `native/`. The previous NDA-gated review paths are no longer necessary.
 
-### Why
+## What the Native Binary Implements vs Simulates
 
-The verifier engines implement proprietary algorithms derived from Prime Integer Relations (PIR) research, including:
+**Critical for any reviewer:** The native binary has two modes:
 
-- **Thue-Morse signed moment computation** — the mathematical core that detects structural dissonance in time-series data
-- **TPNN spatial constraint enforcement** — topological protocol neural network logic that validates adversarial resistance claims
-- **PIR balance gap scoring** — the tension metric that quantifies how far a system deviates from theoretical balance
-- **Cryptographic receipt anchoring** — the content-hash algorithm that ties evidence to a specific execution
+1. **Math core (computed):** `harmony`, `evolve`, `data`, `residual`, `corrupt` — real computation in Rust
+2. **Simulate-case (hard-coded):** `--simulate-case=TC-XXX` returns pre-programmed JSON for each test card
 
-These algorithms are the subject of ongoing research and patent-pending work at Only Institute / PIR. Publishing the source would expose the mathematical constructions before IP protection is finalized.
+The governance checks described in test cards TC-006 through TC-069 are **simulated**, not computed. The binary returns the expected JSON response when asked to simulate a specific case, but does not actually implement the governance logic (token replay detection, revocation, fairness, etc.).
 
-This is the same trust model used by:
-- **Hardware Security Modules (HSMs)** — e.g., Thales, Utimaca: the cryptographic engine is sealed, but the interface, API, and attestation are public
-- **Trusted Execution Environments (TEEs)** — e.g., Intel SGX, ARM TrustZone: the enclave code is opaque, but attestation proves the code is genuine
-- **Commercial security scanners** — e.g., Veracode, Checkmarx: the analysis engine is proprietary, but the findings are verifiable
-- **Cryptographic libraries in TEEs** — the implementation is sealed, but the cryptographic primitives and test vectors are public
-
-In all these cases, the trust comes from **verifiable outputs and attestations**, not from source visibility alone.
+See `AUDIT_PACKAGE.md` for the full claims matrix and differential test results.
 
 ---
 
@@ -96,60 +93,11 @@ Every evidence package now includes an `execution_mode` field that explicitly st
 
 **Verification:** Check the `execution_mode` field in any evidence package. If it says `simulation`, you know the test was not run against a live system.
 
-### Layer 4: NDA-Gated Source Review
+### Layer 4: Open Source Review
 
-For organizations that require source-level verification (e.g., government agencies, regulated industries, security auditors), DGV offers two NDA-gated review paths:
+The native verifier source is now published in `native/`. Any party can review the source without an NDA. See `AUDIT_PACKAGE.md` for the recommended review scope.
 
-#### Path A: Attestation Review
-
-1. **NDA Execution** — The reviewing party signs a mutual NDA with Only Institute
-2. **Source Access** — The reviewing party receives time-limited access to the verifier source code (read-only, no copies, no downloads)
-3. **Review Period** — The reviewing party examines the source, focusing on:
-   - Correctness of PIR tension computation
-   - Integrity of receipt hashing
-   - Completeness of test card evaluation
-   - Absence of backdoors or bypass logic
-4. **Attestation** — The reviewing party issues a signed attestation receipt containing:
-   - Reviewer identity and credentials
-   - Scope of review (which components, which versions)
-   - Findings (pass/fail per reviewed component)
-   - Attestation hash (SHA-256 of the attestation document)
-   - Review date and expiry
-5. **Registry Publication** — The attestation receipt is published in the public registry under the `independent_audit` field, upgrading affected certifications to `gold` badge status
-
-#### Path B: Sandbox Review
-
-1. **NDA Execution** — Same as Path A
-2. **Sandbox Environment** — The reviewing party is given access to a controlled environment where they can:
-   - Read the source code on-screen (no copying, no printing)
-   - Run the verifier with custom inputs
-   - Inspect intermediate computation states
-   - Modify test inputs and observe outputs
-3. **Review Period** — Same as Path A, but with hands-on testing capability
-4. **Attestation** — Same as Path A, with additional notes on any custom tests performed
-5. **Registry Publication** — Same as Path A
-
-#### What the NDA Covers
-
-The NDA protects:
-- The verifier source code and algorithms
-- PIR mathematical constructions
-- Internal implementation details
-- Build system configuration
-
-The NDA does **not** prevent the reviewer from:
-- Publishing their attestation receipt (including pass/fail findings)
-- Stating publicly that they reviewed the source
-- Describing the review methodology
-- Reporting security vulnerabilities through responsible disclosure
-
-#### How to Request a Review
-
-Contact `trust@only.institute` with:
-- Organization name and contact details
-- Intended review scope
-- Preferred review path (Attestation or Sandbox)
-- Required timeline
+For a formal attestation (signed audit report published in the registry), contact `trust@only.institute`.
 
 Reviews are typically scheduled within 2-4 weeks of NDA execution.
 

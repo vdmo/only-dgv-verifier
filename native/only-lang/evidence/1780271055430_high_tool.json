@@ -1,0 +1,57 @@
+{
+  "run_id": "1780271055430_high_tool",
+  "created_unix_ms": 1780271055482,
+  "request": {
+    "action": "execute_payment",
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:alice"
+      }
+    },
+    "request_id": "REQ-HIGH-0001",
+    "risk_level": "high",
+    "sla_minutes": 15,
+    "tool": "finance.payment",
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "tool_gating_v0",
+  "decision": {
+    "deny_reason": "blocked: not authorized",
+    "execute_allowed": false,
+    "tool_allowed": false
+  },
+  "decision_hash": "34faae872e9278b7",
+  "replay_inputs": {
+    "gate_hash": "378330bfbca93385"
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "execute_payment",
+      "params": {
+        "amount": 75000.0,
+        "vendor": "ACME"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": false,
+      "deny_reason": "blocked: not authorized",
+      "result": {
+        "executed": false
+      }
+    }
+  ]
+}

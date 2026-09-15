@@ -1,0 +1,34 @@
+{
+  "run_id": "1780261271447_medium_gate",
+  "created_unix_ms": 1780261271452,
+  "request": {
+    "amount": 1200.0,
+    "request_id": "REQ-MED-0001",
+    "risk_level": "medium",
+    "sla_minutes": 60,
+    "triage_score": 1.5499999999999998,
+    "vendor_risk": 0.35,
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "gate(threshold=1.000)",
+  "decision": {
+    "approved": false,
+    "execute_allowed": false,
+    "needs_approval": true,
+    "sla_due_unix_ms": 1780264871452
+  },
+  "decision_hash": "09f5c460129e6c2c",
+  "replay_inputs": {
+    "decision_parts": [
+      "risk=medium",
+      "REQ-MED-0001",
+      "threshold=1.000",
+      "triage_score=1.550000",
+      "needs_approval=true",
+      "approved=false",
+      "execute_allowed=false"
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

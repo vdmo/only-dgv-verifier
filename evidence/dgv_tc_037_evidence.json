@@ -11,7 +11,7 @@
   "execution_mode": "native",
   "executor": "only-gate",
   "binary_checksum": {
-    "dgv_verifier_sha256": "f7b107b8491500644091648e53a22d9a19af615ac59cc3f4bbfdb3c327dfd7ac",
+    "dgv_verifier_sha256": "7cd8df2fb832982026a3fb1f73548e23f1772613b93ae2d32a21f289905045d2",
     "only_gate_sha256": "2b06443755be4f0241eeb69a41e387b10127c3129f1cdb59be17588829a83f21"
   },
   "build_provenance": {
@@ -22,7 +22,7 @@
     "target": "x86_64-unknown-linux-gnu",
     "optimization": "release (opt-level=3, lto=true)"
   },
-  "verified_timestamp": "2026-08-31T12:26:42Z",
+  "verified_timestamp": "2026-09-13T14:43:33Z",
   "status": "passed",
   "results": [
     {
@@ -68,8 +68,8 @@
   "settlement_receipt": {
     "layer": "GitOps Cryptographic Registry",
     "anchor_method": "sha256-content-hash",
-    "transaction_id": "dgv-sha256:94c12d30219be52c5f6f0eeb43a96a76f75a77f68ed44e3313fd24522b162ae1",
-    "signature": "dgv-sha256:94c12d30219be52c5f6f0eeb43a96a76f75a77f68ed44e3313fd24522b162ae1",
-    "timestamp": "2026-08-31T12:26:42Z"
+    "transaction_id": "dgv-sha256:adc86fd4df30ac54e765ab52a8944c63d49ed225d6b4d1c33420ab926bed6e37",
+    "signature": "dgv-sha256:adc86fd4df30ac54e765ab52a8944c63d49ed225d6b4d1c33420ab926bed6e37",
+    "timestamp": "2026-09-13T14:43:33Z"
   }
 }

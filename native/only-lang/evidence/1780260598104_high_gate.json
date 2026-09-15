@@ -1,0 +1,34 @@
+{
+  "run_id": "1780260598104_high_gate",
+  "created_unix_ms": 1780260598110,
+  "request": {
+    "amount": 75000.0,
+    "request_id": "REQ-HIGH-0001",
+    "risk_level": "high",
+    "sla_minutes": 15,
+    "triage_score": 75.7,
+    "vendor_risk": 0.7,
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "gate(threshold=0.800)",
+  "decision": {
+    "approved": false,
+    "execute_allowed": false,
+    "needs_approval": true,
+    "sla_due_unix_ms": 1780261498110
+  },
+  "decision_hash": "378330bfbca93385",
+  "replay_inputs": {
+    "decision_parts": [
+      "risk=high",
+      "REQ-HIGH-0001",
+      "threshold=0.800",
+      "triage_score=75.700000",
+      "needs_approval=true",
+      "approved=false",
+      "execute_allowed=false"
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

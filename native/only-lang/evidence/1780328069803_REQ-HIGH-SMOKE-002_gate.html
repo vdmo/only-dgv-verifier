@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gate update</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { background:#0b1020; color:#e6e8ef; font-family: monospace; margin:0; padding:16px; }
+    .box { background:#0f1730; border:1px solid #2b365a; padding:12px; margin:12px 0; }
+    pre { white-space: pre-wrap; margin:0; }
+  </style>
+</head>
+<body>
+  <h1 style="margin:0 0 10px 0; font-size:16px;">Gate update</h1>
+  <div class="box"><svg xmlns="http://www.w3.org/2000/svg" width="100%" height="180" viewBox="0 0 760 180" preserveAspectRatio="xMinYMin meet">
+  <rect x="0" y="0" width="760" height="180" fill="#0b1020"/>
+  <text x="16" y="28" fill="#e6e8ef" font-family="monospace" font-size="14">Gate update</text>
+  <rect x="16" y="48" width="728" height="110" fill="#0f1730" stroke="#2b365a"/>
+  <text x="32" y="115" fill="#22c55e" font-family="monospace" font-size="34">OK</text>
+</svg></div>
+  <div class="box"><div style="color:#aab2d5;margin-bottom:6px;">Details</div><pre>{
+  "approvals_received": 2,
+  "approvals_required": 2,
+  "approved": true,
+  "auth_token": {
+    "action": "execute_payment",
+    "amount_cap": 100000,
+    "approver_ids": [
+      "user:approver1",
+      "user:approver2"
+    ],
+    "expires_unix_ms": 1780329869804,
+    "policy_version": "gov_payments_v0",
+    "request_id": "REQ-HIGH-SMOKE-002",
+    "token_id": "tok_1780328069804_REQ-HIGH-SMOKE-002",
+    "tool": "finance.payment",
+    "vendor": "ACME"
+  },
+  "execute_allowed": true,
+  "gate_state": "ALLOW",
+  "needs_approval": true,
+  "next_step": "Proceed",
+  "reason_codes": [
+    "approval_required"
+  ]
+}</pre></div>
+</body>
+</html>

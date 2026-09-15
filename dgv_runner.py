@@ -176,11 +176,66 @@ def parse_args():
     p.add_argument('--execution-mode', type=str, default='native',
                    choices=['simulation', 'native', 'live', 'audited_live'],
                    help='Execution mode for evidence packages (default: native)')
-    return p.parse_args()
+    objective = p.add_mutually_exclusive_group()
+    objective.add_argument('--objective-experiment', action='store_true', help='Run synthetic quote Objective Contract cases without CRM or native engine execution')
+    objective.add_argument('--objective-request', help='Evaluate a host-supplied JSON bundle with contract, proposal, context and now_ms')
+    objective.add_argument('--revocation-experiment', action='store_true', help='Test two local gate processes against one temporary SQLite authority store')
+    p.add_argument('--race-trials', type=int, default=24, help='Simultaneous revoke/write trials for --revocation-experiment (1–100)')
+    p.add_argument('--output', help='Write experimental evidence JSON to a NEW file (never overwrite)')
+    args = p.parse_args()
+    experimental = args.objective_experiment or args.objective_request or args.revocation_experiment
+    if experimental and (args.card or args.case or args.dry_run or args.execution_mode != 'native'):
+        p.error('Local experiments cannot be combined with native card or execution-mode options')
+    if args.race_trials != 24 and not args.revocation_experiment:
+        p.error('--race-trials requires --revocation-experiment')
+    if not 1 <= args.race_trials <= 100:
+        p.error('--race-trials must be between 1 and 100')
+    if args.output and not experimental:
+        p.error('--output requires a local experiment or objective request')
+    return args
 
 
 def main():
     args = parse_args()
+    if args.objective_experiment or args.objective_request or args.revocation_experiment:
+        from objective_contract import issue_receipt, load_json
+        from objective_experiment import run_experiment
+        try:
+            if args.revocation_experiment:
+                from revocation_experiment import run_experiment as run_revocation_experiment
+                result = run_revocation_experiment(race_trials=args.race_trials)
+                success = result['passed']
+            elif args.objective_experiment:
+                result = run_experiment()
+                success = result['passed']
+            else:
+                with open(args.objective_request, encoding='utf-8') as stream:
+                    request = load_json(stream)
+                result = issue_receipt(**request)
+                success = result['gate_decision']['gate_state'] == 'ALLOW'
+            if args.output:
+                with open(args.output, 'x', encoding='utf-8') as stream:
+                    json.dump(result, stream, indent=2, sort_keys=True, allow_nan=False)
+                    stream.write('\n')
+            if args.revocation_experiment:
+                for case in result['cases']:
+                    print(f"{'PASS' if case['passed'] else 'FAIL'} {case['name']}")
+                print(f"{result['passed_count']}/{result['case_count']} local revocation cases matched expectations; history audit: {result['history_audit']['valid']}")
+                print(f"Gate PIDs: {result['gate_pids']}; race orderings: {result['measurements']['race_orderings']}")
+                print(f"Report checkpoint: {result['report_hash']}")
+                print('Single SQLite authority; no network partition, replicated consensus or CRM execution tested.')
+            elif args.objective_experiment:
+                for row in result['results']:
+                    print(f"{'PASS' if row['passed'] else 'FAIL'} {row['name']}: {row['receipt']['gate_decision']['gate_state']}")
+                print(f"{result['passed_count']}/{result['case_count']} synthetic cases matched expectations; no CRM execution or certification.")
+            elif not args.output:
+                print(json.dumps(result, indent=2, sort_keys=True, allow_nan=False))
+            if args.output:
+                print(f"Evidence written to {args.output}")
+            sys.exit(0 if success else 1)
+        except (OSError, ValueError, TypeError, RuntimeError, EOFError) as error:
+            print(f"Local experiment failed: {error}", file=sys.stderr)
+            sys.exit(1)
     dgv_dir = os.path.dirname(os.path.abspath(__file__))
     cards_dir = os.path.join(dgv_dir, "test_cards")
     evidence_dir = os.path.join(dgv_dir, "evidence")
@@ -522,44 +577,6 @@ def main():
             "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
-        if card.get("id", "").startswith("DGV-TC-07"):
-            evidence_pack["governance_root"] = {
-                "actors": [
-                    {
-                        "actor_id": "dgv-test-harness",
-                        "role": "test_executor",
-                        "authority_scope": card.get("claim_name", "verification"),
-                    }
-                ],
-                "lineage": [],
-                "policy_version": card.get("benchmark_version", "1.0.0"),
-                "justification": f"Test card {card['id']} executed under DGV conformance suite",
-                "context_t0": {
-                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                    "data_hash": evidence_sha256,
-                    "policy_hash": card.get("policy_hash", ""),
-                    "metadata": {
-                        "test_card_id": card["id"],
-                        "layer": card.get("svrnos_layer", ""),
-                    },
-                },
-            }
-            evidence_pack["gate_decision"] = {
-                "context_t1": {
-                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                    "data_hash": evidence_sha256,
-                    "policy_hash": card.get("policy_hash", ""),
-                    "metadata": {
-                        "test_card_id": card["id"],
-                        "execution_mode": args.execution_mode,
-                    },
-                },
-                "authority_still_valid": True,
-                "condition_drift": False,
-                "condition_drift_fields": [],
-                "revocation_detected": False,
-                "lineage_intact": True,
-            }
 
         with open(evidence_path, "w") as ef:
             json.dump(evidence_pack, ef, indent=2)
@@ -570,11 +587,11 @@ def main():
 
     if overall_success:
         print(
-            "\nAll DGV Test Cards passed successfully! System is DGV v1.0.0 compliant."
+            "\nSelected DGV test cases matched their expected outputs. This is not independent certification."
         )
         sys.exit(0)
     else:
-        print("\nSome DGV Test Cards failed. System is not DGV compliant.")
+        print("\nSome selected DGV test cases did not match their expected outputs.")
         sys.exit(1)
 
 

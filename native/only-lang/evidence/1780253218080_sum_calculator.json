@@ -1,0 +1,26 @@
+{
+  "run_id": "1780253218080_sum_calculator",
+  "created_unix_ms": 1780253218083,
+  "request": {
+    "a": 10.0,
+    "b": 32.0,
+    "c": 5.0,
+    "d": 7.0
+  },
+  "policy_version": "sum_calculator_v0",
+  "decision": {
+    "s1": 42.0,
+    "s2": 12.0,
+    "total": 54.0
+  },
+  "decision_hash": "80fcfe2606e902a2",
+  "replay_inputs": {
+    "reports": {
+      "s1_html": "/home/vdmo/pir/only-engine/only-lang/report_cards/sum_calc_stage1_s1.html",
+      "s2_html": "/home/vdmo/pir/only-engine/only-lang/report_cards/sum_calc_stage2_s2.html",
+      "total_html": "/home/vdmo/pir/only-engine/only-lang/report_cards/sum_calc_stage3_total.html"
+    }
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

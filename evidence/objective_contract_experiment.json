@@ -1,0 +1,5522 @@
+{
+  "case_count": 28,
+  "execution_mode": "local_synthetic_experiment",
+  "experiment": "quote-objective-contract-v1",
+  "limitations": [
+    "Synthetic host-supplied approvals and ledger; no external identity or signature verification",
+    "No CRM writes, ONLY Lang interpreter integration, distributed consistency or semantic model",
+    "Budget safety assumes a complete ledger; live use requires atomic check-and-reserve",
+    "Replay verifies historical evaluation, never authorizes a fresh execution",
+    "Hashes are not signatures and require an externally trusted reference to resist wholesale replacement"
+  ],
+  "passed": true,
+  "passed_count": 28,
+  "results": [
+    {
+      "expected_gate": "ALLOW",
+      "expected_reason": "OBJECTIVE_CONTRACT_SATISFIED",
+      "name": "valid-reviewed-quote",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "ce1188bc58c27df9d18f56605a7f616398179c927cbf2ead037d9cf719bccc9f",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "ALLOW",
+          "reason_codes": [
+            "OBJECTIVE_CONTRACT_SATISFIED"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "82b2f6b2e16eda1b14e6509d336e25f8825be0d18b3f05fa0eccebdad980d315",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "CUSTOMER_MISMATCH",
+      "name": "correct-action-wrong-customer",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "1b86dc8a5b194eaba0b7bf746a93af488bbe1816e76bd384e07e07d7da4613e1",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "CUSTOMER_MISMATCH",
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "3ba282c5ba91dd2b3facd3828c085e88e09c22b6e6cdb2795b880a74efb82607",
+        "receipt_hash": "c18b6f56f1e3ba1e083f667f4bd6de8b45f6dbdbd9560086bc07b61407e433d5",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-B",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "SERVICE_EXCLUDED",
+      "name": "correct-customer-excluded-service",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "e3ab1985491397f44b5ac36b4c32ee33395b7597de997b0474cfcbe1e80c2ef0",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "SERVICE_EXCLUDED",
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "f3fb413705d09b30c3902bd0139884a094b1dbdb21b1a6f3e6dc0df834182f30",
+        "receipt_hash": "315f384d80d6d5cc40ca0108854092753ccfd2d691a07d1d5797a1a6cd209a6f",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Federation"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "AGGREGATE_BUDGET_EXCEEDED",
+      "name": "aggregate-budget-bypass",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "b6863b927f6743baebbfe9e4cde8672c92e6458a08e3b2dd31ceedbe610e2ae3",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "b32422493a9bd373d6ecb13a59f7e2b1e7592ec6af44ab0ab2b6daa66c61cc44",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "AGGREGATE_BUDGET_EXCEEDED"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "a722c47bb0cfbeded5753f9d5ab6e1812ee9493fe7653677ec1db78c86e1c732",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 2500000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "APPROVAL_MISSING",
+      "name": "missing-transaction-approval",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "7490a8fcb30746faf2b149104c801a38fc2abc5e7d447c90047f4419a1c767d4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "14e9466639bb025a3182bef757c83aa320c73c551ed6dca562bce62d6e5b86d7",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": false
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "APPROVAL_MISSING"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "a39039240b428863ce0dbc864053d81d11a9e8d1e873b9d20f24cacefa67ce84",
+        "replay_inputs": {
+          "context": {
+            "approval": null,
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "APPROVAL_STALE",
+      "name": "stale-transaction-approval",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "5cab890ce23c0d296170a3c25b557ee1b1c7a937e804fc11ea9feea4ae7d622c",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "039c791dceb2bfee94e0e72dff9d92c6682a0bc137415d9e6f68ce87f4e4d214",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": false
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "APPROVAL_STALE"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "6a089c4ea1a86001ac2658396ea0e24b696eb1e001786dc1ba478a45a171e422",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999699999,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "UNRESOLVED_REQUIREMENTS",
+      "name": "ambiguous-objective",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "1a05342727f536261286141dd99291927ea220fde08139644abf1744a423e795",
+        "contract_hash": "b0c18d5ef0b25ae96e65d9df1e629929b12e00706e70c701682e7f39411528ca",
+        "decision_hash": "d56eb5bb7ec6fa8b2eebee4c05d674805a5d2999285116b369a58421c4459756",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": false
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "UNRESOLVED_REQUIREMENTS"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "d54d9fcfe02bbf8a2460640eefa4dafb7a6b2f797da13e8e341e89d03f84c8fa",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b0c18d5ef0b25ae96e65d9df1e629929b12e00706e70c701682e7f39411528ca",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b0c18d5ef0b25ae96e65d9df1e629929b12e00706e70c701682e7f39411528ca",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [
+              "Customer asked for the best option but has not selected a service"
+            ],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "STALE_CONTEXT",
+      "name": "stale-snapshot",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "d213f223140543a6da3a54946127ec36d665f13c0337fe2b73618a1bbd03e6cf",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "515867635b0a9dac30ffe2e1524c76fa997902a70c7f1e6b94b72ba932850708",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": false
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": false
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": false
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "STALE_CONTEXT",
+            "CONTRACT_APPROVAL_TIME_INVALID",
+            "APPROVAL_STALE"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "65b56e0e0fac151d02ad97c1c42329260cbaed67e0676096eac10d1344766788",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999939999,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "AUTHORITY_REVOKED",
+      "name": "revoked-authority",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "6358d7d65ea7a34a6cf79211e3c515692be7025243145b019f8887d98fa3523e",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "d7233962428126ee7968fef376698dc972cb592710bd5b2612b3b7c339effc88",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "AUTHORITY_REVOKED"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "7c479cfa058f2e9d0db141ba5cecb0a94d7deacdbe2ba6d0fd5b371cd20283cb",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": true,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "POLICY_CHANGED",
+      "name": "policy-substitution",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "a77e8ca6d9349b5195d7c36508660418b9b8f2d9b2b4ee417d4838d55090c2f2",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "c75795046f7ff7979844a034b68b08c8c4d6ed48084d5f27de32c9d6674a979c",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": false
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "POLICY_CHANGED"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "3cdaa7142757f80565228099aa7563daa852f320c026b63c08c859e89278bca9",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-2",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "CONTRACT_APPROVAL_MISMATCH",
+      "name": "unapproved-contract-edit",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "da83050a28ae7a3bafc21ffba6810a7ebc91135d64855404004a70e484d19289",
+        "decision_hash": "19ff6aa9071398611c460233edb509cfd1493d524f4de438c6964c5f53b5d6e0",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "CONTRACT_APPROVAL_MISMATCH",
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "ab140dc09446030ef0fff43363cde17bd38a30334cdd6af08c28f7e8244b5f65",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 9000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "APPROVAL_BINDING_MISMATCH",
+      "name": "approval-for-different-payload",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "592b1843835c1550f4efd2c977e7b9571dc5a693e66bdf78f035f73249b9ab42",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "71e11b385884b4a1e76dfab5e53c1894e3377d6bac45b892fd84bed74c1c904a",
+        "receipt_hash": "a908c58a93a63dc1d28628c2e3af6b2f811e756f5f4600c7a9a7e2b15f5d0384",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3100000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "ACTION_OUT_OF_SCOPE",
+      "name": "attempt-to-send-quote",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "2063809fe22e27a8cfe4ee8d476186ef9dc3b4c99defadf6da9fb6f8f8efcdec",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "ACTION_OUT_OF_SCOPE",
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "48ccc8494c72cf61e35f9e53d990598048079d63359755883c923e95c3a683a4",
+        "receipt_hash": "a6ba5be4aa58e75475a8bfd5cec150035363c0fbd603408a33872e9505681c0a",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "send_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "CURRENCY_MISMATCH",
+      "name": "wrong-currency",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "f7ad4eb8f558bf7203d5d556dbac4d4ddf93af500626b3d6b3e9bc9497116af6",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "CURRENCY_MISMATCH",
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "97850b24ec6f063341f9b0ba5b68768a4f69f0b3fe1d7175da7acb94941b5a4a",
+        "receipt_hash": "1d6f8c580e9c95cea406316d5c425d7b7977bfdda61e83e78a46e44bf165a49d",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "USD",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "REQUEST_ALREADY_RECORDED",
+      "name": "already-recorded-request",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "b2c12d7a94a1accc886bb999a5653ef16ee43a3cd4ff2581200b012dd3f056cf",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "REQUEST_ALREADY_RECORDED",
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "b0f3204ed6380ca8658e5a3bd68dd4fe78ea16bb9281cee51a8f265558b78222",
+        "receipt_hash": "53f94439d5129e9f0ceeceddef63204cbb09695a5303d6d492f1f6d0da6e9387",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-1",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "ACTOR_MISMATCH",
+      "name": "wrong-actor",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "62d154825c44d224a46be13157917b448a60d4cf864fc4471f9cf7cd72c6f549",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "ACTOR_MISMATCH",
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "cb22e5ed0c63be254a319cf4621a4185d263b4eee2f29d3f1e9efe6e74b90d79",
+        "receipt_hash": "fb3053fb13332030ed965439af06ac4fab6b73c03f22bc4c9f76316b8f2b4a15",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "other-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "CONTRACT_APPROVAL_MISSING",
+      "name": "missing-contract-review",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "030623e886b082b8dc588b75bb71cce7d76e7010404da28c372446235bf8031b",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "e2c2b5580c65b500fcd6aca467717a8f44b058c06eda2629085fe88a029d4426",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": false
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "CONTRACT_APPROVAL_MISSING"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "bd8440c5ee0ddefca80c32befadb6d12586ea73ad8165e83769f2eb1c30cd2c8",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": null,
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "APPROVER_UNTRUSTED",
+      "name": "unknown-reviewer",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "38912d924fdc97d6bccfc3c7726a9efc372ee18593adb5f2748a41b57f682b95",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "044d4d3851b437e2005ae9e711a45219f186c1f2b9487285400007b75e981707",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "APPROVER_UNTRUSTED"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "a942c33f187c7bef4594fa450c1b11674544d5b15f784890ba57048a0c002859",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "self-appointed-agent"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "STALE_CONTEXT",
+      "name": "future-snapshot",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "97048d250cf41d46b04d8d0e2b48a03ef93a30763b8f0e7b57452819943ac4ad",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "e711df6189d019c5da205d303870b3d9601f21f06f628c632569c6df7fd91ad7",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": false
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": false
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "STALE_CONTEXT",
+            "CONTRACT_APPROVAL_TIME_INVALID"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "58d948a67d3911e4021b291701f8f48a587695ddbf6efcc2e3038a59fc226928",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1800000000001,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "INVALID_SCHEMA",
+      "name": "missing-ledger",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "086e83f50a3ff4cf30a0fc922a904346118f7dc610fbaf6b3f9f9b0f84605e15",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "efa73ffcfff4e25a5ea49e51e6da426d2e18cceac991f5be30bdc6fb2f42ac35",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "INVALID_SCHEMA",
+              "on_failure": "DENY",
+              "passed": false
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "INVALID_SCHEMA"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "822178e0f55e79c0dde797611501d645f46535709f17c90119242393cdbc9ba5",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": null,
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "LEDGER_SCOPE_MISMATCH",
+      "name": "wrong-ledger-customer",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "7acfb20363c915c87f551089485d024dbd2b19ec4fcc1ed93330be7be5d819ba",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "7351c1e427d70c1f8cc893fea40203ad125087955e12e8df53734044cee1bc80",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "LEDGER_SCOPE_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "9d6df2e3ef8b20b727078f12b9b4a40baa8f8abc83f57dbad36399aef394fc00",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "other-customer",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "OBJECTIVE_MISMATCH",
+      "name": "objective-substitution",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "8a0c6da79c0acf14d0ec5dfb02ac306fb87101949bdd9847a4730d3b5c010122",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "OBJECTIVE_MISMATCH",
+            "APPROVAL_BINDING_MISMATCH"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "3d6e72850811957c4c13aa57f7e687c430a243fa1ffc47201ddd2b354a4a6e69",
+        "receipt_hash": "0ba58102dcaaab9b77814e08a7a0d88473ab514efa966623ff0b56bf2054814a",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "other-objective",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "CONTRACT_EXPIRED",
+      "name": "expired-contract",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "959eef4c3d0bf937bbe53e446b575bf2d5ec5ff0f05cc4c3bf7cfeee8f2209e4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "072a54c4aa53791dd1ec522e22b6bba6b0913310bb03704324223d041ee54713",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": false
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": false
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "CONTRACT_EXPIRED",
+            "STALE_CONTEXT",
+            "APPROVAL_STALE"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "2d62a53b3e14d98c5b15e7eb5b10dc7c83212d826a6563a12ba8ab19d6bb60fb",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000600000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "MISSING_EVIDENCE",
+      "name": "missing-host-context",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "57166abff2bcaa30806869a998aa840f576c1f101aef6966215ae5d217ab5044",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "MISSING_EVIDENCE",
+              "on_failure": "ESCALATE",
+              "passed": false
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "MISSING_EVIDENCE"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "dc5737943a9da0616c92f31c41b0971f751991836b0185d0f12517b7fc39e315",
+        "replay_inputs": {
+          "context": null,
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ALLOW",
+      "expected_reason": "OBJECTIVE_CONTRACT_SATISFIED",
+      "name": "exact-approval-threshold",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "7490a8fcb30746faf2b149104c801a38fc2abc5e7d447c90047f4419a1c767d4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "c52f271a95a80cc435f2666692698058711ff493693934a9bc151d60f08063e6",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            }
+          ],
+          "gate_state": "ALLOW",
+          "reason_codes": [
+            "OBJECTIVE_CONTRACT_SATISFIED"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "b3318bbc658981ce4ba79f03cbc7963865130c5aab1635a67f842f337a53e85f",
+        "receipt_hash": "5502fbc7a74fdc0dff8e59cc07433805f40def7ef593cb215b86503f5a05b45d",
+        "replay_inputs": {
+          "context": {
+            "approval": null,
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 1500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ALLOW",
+      "expected_reason": "OBJECTIVE_CONTRACT_SATISFIED",
+      "name": "exact-budget-limit",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "598961da24a07c500c0604a5b8991b7b8c3ddab40492690cb466d6b0101b7966",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "ce1188bc58c27df9d18f56605a7f616398179c927cbf2ead037d9cf719bccc9f",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "ALLOW",
+          "reason_codes": [
+            "OBJECTIVE_CONTRACT_SATISFIED"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "316e3c88f1fa582e497e22cd2725b72b1b28f887966877856707748a43028941",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 2000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "ESCALATE",
+      "expected_reason": "APPROVAL_MISSING",
+      "name": "split-quotes-cross-approval-threshold",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "7490a8fcb30746faf2b149104c801a38fc2abc5e7d447c90047f4419a1c767d4",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "14e9466639bb025a3182bef757c83aa320c73c551ed6dca562bce62d6e5b86d7",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": false
+            }
+          ],
+          "gate_state": "ESCALATE",
+          "reason_codes": [
+            "APPROVAL_MISSING"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "c31abfea6ee5c0eb433fa9cebc82564a86da5d8a5f131ba3974a4c2ee99c67b7",
+        "receipt_hash": "d8346597262fe4b813d01b0d614f3f33467078f65466d08b8c756ec9adc51944",
+        "replay_inputs": {
+          "context": {
+            "approval": null,
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 1500001,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    },
+    {
+      "expected_gate": "DENY",
+      "expected_reason": "LEDGER_DUPLICATE",
+      "name": "duplicate-ledger-entry",
+      "passed": true,
+      "receipt": {
+        "assurance": "Deterministic evaluation of host-supplied evidence; no identity authentication, signature, live execution or continuous-authority proof",
+        "canonicalization": "ascii-safe-integer-json-v1",
+        "context_hash": "ae3bec20a0677603bb66388e66029f4401049c843df42fde1bdc998540b366c6",
+        "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+        "decision_hash": "f2c773fb015628fa2f56f0f70b1d292e22d3b92f8c29350564d2c4e4d15bfeaa",
+        "evaluator": "quote-objective-v1",
+        "execution_mode": "local_synthetic_experiment",
+        "execution_performed": false,
+        "gate_decision": {
+          "checks": [
+            {
+              "code": "UNRESOLVED_REQUIREMENTS",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_EXPIRED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "POLICY_CHANGED",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTOR_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AUTHORITY_REVOKED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "STALE_CONTEXT",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_REVIEWER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CONTRACT_APPROVAL_TIME_INVALID",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "ACTION_OUT_OF_SCOPE",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "OBJECTIVE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CUSTOMER_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "SERVICE_EXCLUDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "CURRENCY_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_DUPLICATE",
+              "on_failure": "DENY",
+              "passed": false
+            },
+            {
+              "code": "REQUEST_ALREADY_RECORDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "LEDGER_SCOPE_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "AGGREGATE_BUDGET_EXCEEDED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_MISSING",
+              "on_failure": "ESCALATE",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_BINDING_MISMATCH",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVER_UNTRUSTED",
+              "on_failure": "DENY",
+              "passed": true
+            },
+            {
+              "code": "APPROVAL_STALE",
+              "on_failure": "ESCALATE",
+              "passed": true
+            }
+          ],
+          "gate_state": "DENY",
+          "reason_codes": [
+            "LEDGER_DUPLICATE"
+          ]
+        },
+        "profile": "DGV-OBJECTIVE-EXPERIMENT-1",
+        "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+        "receipt_hash": "d9813258cbec494b49deb68d69400ed6a2c2413a481ee819e054de66325d77ee",
+        "replay_inputs": {
+          "context": {
+            "approval": {
+              "approved_at_ms": 1799999998000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "proposal_hash": "acc88f1bf965253abd41424e4282122cfc28a0b0523920ccd55b2fa6fa10871c",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "authority_revoked": false,
+            "authorized_actor_id": "synthetic-agent",
+            "contract_approval": {
+              "approved_at_ms": 1799999990000,
+              "contract_hash": "b24ef391c64cdcdb604b1d0ded7fb934c2230689c0432a706209fb05fb66eeac",
+              "reviewer_id": "synthetic-human-reviewer"
+            },
+            "ledger": [
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              },
+              {
+                "amount_minor": 1000000,
+                "currency": "GBP",
+                "customer_id": "synthetic-customer-A",
+                "objective_id": "synthetic-quote-objective-1",
+                "request_id": "synthetic-request-1"
+              }
+            ],
+            "observed_at_ms": 1799999999000,
+            "policy_version": "synthetic-policy-1",
+            "trusted_reviewers": [
+              "synthetic-human-reviewer"
+            ]
+          },
+          "contract": {
+            "approval_threshold_minor": 2500000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "expires_at_ms": 1800000600000,
+            "max_approval_age_ms": 300000,
+            "max_snapshot_age_ms": 60000,
+            "max_total_minor": 5000000,
+            "objective_id": "synthetic-quote-objective-1",
+            "permitted_services": [
+              "Guard"
+            ],
+            "policy_version": "synthetic-policy-1",
+            "source_instruction": "Prepare Guard quotes for synthetic-customer-A only, in GBP, at most 50000 total including prior quotes. Require reviewed approval above 25000 total. Do not send or accept quotes.",
+            "unresolved_requirements": [],
+            "version": "quote-objective-v1"
+          },
+          "now_ms": 1800000000000,
+          "proposal": {
+            "action": "prepare_quote",
+            "actor_id": "synthetic-agent",
+            "amount_minor": 3000000,
+            "currency": "GBP",
+            "customer_id": "synthetic-customer-A",
+            "objective_id": "synthetic-quote-objective-1",
+            "request_id": "synthetic-request-2",
+            "service": "Guard"
+          }
+        }
+      },
+      "replay": {
+        "execution_authorized": false,
+        "reason_codes": [
+          "HASH_AND_DECISION_MATCH"
+        ],
+        "status": "VERIFIED_AGAINST_SUPPLIED_CONTEXT"
+      }
+    }
+  ]
+}

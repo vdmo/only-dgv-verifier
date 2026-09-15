@@ -1,0 +1,48 @@
+{
+  "run_id": "1780255801744_policy_diff",
+  "created_unix_ms": 1780255801753,
+  "request": {
+    "budget_remaining": 8800.0,
+    "request_id": "REQ-0001",
+    "triage_score": 1.5499999999999998,
+    "workflow": "procurement_approval_routing"
+  },
+  "policy_version": "policy_diff",
+  "decision": {
+    "approval_required_v1": true,
+    "approval_required_v2": false,
+    "decision_hash_v1": "faebaa4f5ed38aa0",
+    "decision_hash_v2": "f9d0fda46e1c43ab",
+    "execute_allowed_v1": false,
+    "execute_allowed_v2": true,
+    "policy_v1": "policy_v1(threshold=1.00)",
+    "policy_v2": "policy_v2(threshold=1.80)"
+  },
+  "decision_hash": "0d76a0952f0eaf8c",
+  "replay_inputs": {
+    "policy_v1_parts": [
+      "policy_v1(threshold=1.00)",
+      "REQ-0001",
+      "amount=1200.00",
+      "vendor_risk=0.350000",
+      "triage_score=1.550000",
+      "budget_remaining=8800.000000",
+      "approval_required=true",
+      "approved=false",
+      "execute_allowed=false"
+    ],
+    "policy_v2_parts": [
+      "policy_v2(threshold=1.80)",
+      "REQ-0001",
+      "amount=1200.00",
+      "vendor_risk=0.350000",
+      "triage_score=1.550000",
+      "budget_remaining=8800.000000",
+      "approval_required=false",
+      "approved=true",
+      "execute_allowed=true"
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

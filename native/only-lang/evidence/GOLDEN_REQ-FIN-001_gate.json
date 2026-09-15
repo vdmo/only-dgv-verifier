@@ -1,0 +1,57 @@
+{
+  "run_id": "GOLDEN_REQ-FIN-001_gate",
+  "created_unix_ms": 1700000002000,
+  "request": {
+    "payload": {
+      "amount": 125,
+      "identity": {
+        "requester_id": "user:analyst"
+      },
+      "purpose": "Recurring supplies",
+      "vendor": "CITY-SUPPLY"
+    },
+    "request_id": "REQ-FIN-001"
+  },
+  "policy_version": "only_control_golden_v0",
+  "decision": {
+    "approved": true,
+    "execute_allowed": true,
+    "extra": {
+      "amount_cap": 1000,
+      "reason_codes": []
+    },
+    "gate_state": "ALLOW",
+    "needs_approval": false,
+    "next_step": "Execute"
+  },
+  "decision_hash": "hash_GOLDEN_REQ-FIN-001_gate",
+  "replay_inputs": {
+    "llm": {
+      "model": "gemini-2.0-flash",
+      "observed": false,
+      "prompt": "Decide if this request can proceed.",
+      "provider": "gemini",
+      "response": "GATE=ESCALATE if approvals required; otherwise ALLOW."
+    },
+    "script": "harmony(1e-12) residual() evolve(2) residual() report()"
+  },
+  "tool_proposals": [
+    {
+      "tool": "finance.payment",
+      "action": "gate",
+      "params": {
+        "request_id": "REQ-FIN-001"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "finance.payment",
+      "allowed": true,
+      "deny_reason": null,
+      "result": {
+        "gate_state": "ALLOW"
+      }
+    }
+  ]
+}

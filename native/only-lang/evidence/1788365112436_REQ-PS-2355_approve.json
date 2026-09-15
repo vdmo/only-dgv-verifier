@@ -1,0 +1,40 @@
+{
+  "run_id": "1788365112436_REQ-PS-2355_approve",
+  "created_unix_ms": 1788365112436,
+  "request": {
+    "agent_id": "primeswarm_furniture_agent",
+    "amount": "5000",
+    "identity": {
+      "delegations": [],
+      "requester": {
+        "roles": [
+          "ClientAgent"
+        ],
+        "user_id": "agent:primeswarm"
+      }
+    },
+    "justification": "Desk replacement purchase order: 12 tables + chairs for design studio layout.",
+    "request_id": "REQ-PS-2355",
+    "risk_level": "high",
+    "vendor": "ACME",
+    "workflow": "furniture_procurement_v1"
+  },
+  "policy_version": "gov_payments_v0",
+  "decision": {
+    "approve": true,
+    "approver_id": "user:head_of_procurement",
+    "justification": "Desks are necessary for studio space onboarding. Budget approved.",
+    "stage": "approve"
+  },
+  "decision_hash": "hash_1788365112436_REQ-PS-2355_approve",
+  "replay_inputs": {
+    "script": "harmony(1e-12) residual() report()",
+    "source": "connector_approve"
+  },
+  "tool_proposals": [],
+  "tool_outcomes": [],
+  "event_type": "unknown",
+  "token_id": null,
+  "agent_id": null,
+  "actor": null
+}

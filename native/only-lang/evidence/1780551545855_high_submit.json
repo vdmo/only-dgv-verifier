@@ -1,0 +1,56 @@
+{
+  "run_id": "1780551545855_high_submit",
+  "created_unix_ms": 1780551545859,
+  "request": {
+    "amount": 75000.0,
+    "identity": {
+      "delegations": [
+        {
+          "from_role": "ProcurementOfficer",
+          "scope": "low_risk_only",
+          "to_role": "ProcurementDelegate"
+        }
+      ],
+      "requester": {
+        "roles": [
+          "Requester"
+        ],
+        "user_id": "user:alice"
+      }
+    },
+    "request_id": "REQ-HIGH-0001",
+    "risk_level": "high",
+    "sla_minutes": 15,
+    "vendor_risk": 0.7,
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "submit_budget_coherence_v0",
+  "decision": {
+    "budget_remaining": 25000.0,
+    "evidence_requirements": {
+      "assumptions": false,
+      "citations": false,
+      "uncertainty": false
+    },
+    "gate_state": "ALLOW",
+    "next_step": "Continue",
+    "reason_codes": [],
+    "repaired": true
+  },
+  "decision_hash": "878d8273485ff9de",
+  "replay_inputs": {
+    "field_before": [
+      100000.0,
+      75000.0,
+      0.0
+    ],
+    "script": "harmony(1e-12) residual() evolve(2) residual() report()",
+    "signs": [
+      1,
+      -1,
+      -1
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}

@@ -1,0 +1,60 @@
+{
+  "run_id": "GOLDEN_REQ-GOV-001_gate",
+  "created_unix_ms": 1700000000000,
+  "request": {
+    "payload": {
+      "amount": 25000,
+      "identity": {
+        "requester_id": "user:requester"
+      },
+      "memo": "Purchase order",
+      "vendor": "ACME"
+    },
+    "request_id": "REQ-GOV-001"
+  },
+  "policy_version": "only_control_golden_v0",
+  "decision": {
+    "approved": false,
+    "execute_allowed": false,
+    "extra": {
+      "approvals_received": 0,
+      "approvals_required": 2,
+      "reason_codes": [
+        "approval_required"
+      ]
+    },
+    "gate_state": "ESCALATE",
+    "needs_approval": true,
+    "next_step": "Await approvals"
+  },
+  "decision_hash": "hash_GOLDEN_REQ-GOV-001_gate",
+  "replay_inputs": {
+    "llm": {
+      "model": "gemini-2.0-flash",
+      "observed": false,
+      "prompt": "Decide if this request can proceed.",
+      "provider": "gemini",
+      "response": "GATE=ESCALATE if approvals required; otherwise ALLOW."
+    },
+    "script": "harmony(1e-12) residual() evolve(2) residual() report()"
+  },
+  "tool_proposals": [
+    {
+      "tool": "government.procurement",
+      "action": "gate",
+      "params": {
+        "request_id": "REQ-GOV-001"
+      }
+    }
+  ],
+  "tool_outcomes": [
+    {
+      "tool": "government.procurement",
+      "allowed": false,
+      "deny_reason": null,
+      "result": {
+        "gate_state": "ESCALATE"
+      }
+    }
+  ]
+}

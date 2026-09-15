@@ -1,0 +1,32 @@
+{
+  "run_id": "1780260598104_high_triage",
+  "created_unix_ms": 1780260598109,
+  "request": {
+    "amount_scaled": 75.0,
+    "request_id": "REQ-HIGH-0001",
+    "risk_level": "high",
+    "sla_minutes": 15,
+    "vendor_risk": 0.7,
+    "workflow": "procurement_pilot"
+  },
+  "policy_version": "triage_scoring_v0",
+  "decision": {
+    "triage_score": 75.7
+  },
+  "decision_hash": "30279c85b923e588",
+  "replay_inputs": {
+    "field_before": [
+      75.0,
+      0.7,
+      0.0
+    ],
+    "script": "harmony(1e-12) residual() evolve(2) residual() report()",
+    "signs": [
+      1,
+      1,
+      -1
+    ]
+  },
+  "tool_proposals": [],
+  "tool_outcomes": []
+}
