@@ -259,6 +259,15 @@ struct JwtConfig {
     issuer: Option<String>,
     /// Expected audience (aud claim)
     audience: Option<String>,
+    /// JWKS response cache — avoids fetching on every request.
+    /// TTL via DGV_JWKS_CACHE_TTL_MS (default 300s). On unknown kid, one
+    /// forced refetch handles key rotation faster than the TTL.
+    jwks_cache: Arc<std::sync::Mutex<Option<JwksCacheEntry>>>,
+}
+
+struct JwksCacheEntry {
+    keys: Vec<JwksKey>,
+    fetched_unix_ms: i64,
 }
 
 /// JWT claims extracted from the Authorization header
@@ -377,26 +386,71 @@ struct JwksResponse {
     keys: Vec<JwksKey>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 struct JwksKey {
     kid: String,
     kty: String, // "RSA"
     n: String,   // base64url-encoded modulus
     e: String,   // base64url-encoded exponent
     #[serde(default)]
+    #[allow(dead_code)]
     alg: Option<String>,
 }
 
-/// Fetch a JWKS and find the key matching the given kid.
-async fn fetch_jwks_key(jwks_url: &str, kid: &str) -> Result<DecodingKey, String> {
-    let client = reqwest::Client::new();
+/// Fetch the JWKS document, using the TTL cache when fresh.
+async fn fetch_jwks(
+    jwks_url: &str,
+    cache: &Arc<std::sync::Mutex<Option<JwksCacheEntry>>>,
+    force_refresh: bool,
+) -> Result<Vec<JwksKey>, String> {
+    let ttl_ms: i64 = std::env::var("DGV_JWKS_CACHE_TTL_MS")
+        .ok().and_then(|v| v.parse().ok()).unwrap_or(300_000);
+
+    if !force_refresh {
+        let cached = cache.lock().unwrap().as_ref().and_then(|e| {
+            if now_unix_ms() - e.fetched_unix_ms < ttl_ms {
+                Some(e.keys.clone())
+            } else {
+                None
+            }
+        });
+        if let Some(keys) = cached {
+            return Ok(keys);
+        }
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .unwrap_or_default();
     let resp = client.get(jwks_url).send().await
         .map_err(|e| format!("JWKS fetch failed: {}", e))?;
-
     let jwks: JwksResponse = resp.json().await
         .map_err(|e| format!("JWKS parse failed: {}", e))?;
 
-    let key = jwks.keys.iter()
+    *cache.lock().unwrap() = Some(JwksCacheEntry {
+        keys: jwks.keys.clone(),
+        fetched_unix_ms: now_unix_ms(),
+    });
+    Ok(jwks.keys)
+}
+
+/// Fetch a JWKS and find the key matching the given kid.
+/// Uses the TTL cache; on unknown kid with a fresh cache, forces one refetch
+/// to handle key rotation without waiting for TTL expiry.
+async fn fetch_jwks_key(
+    jwks_url: &str,
+    kid: &str,
+    cache: &Arc<std::sync::Mutex<Option<JwksCacheEntry>>>,
+) -> Result<DecodingKey, String> {
+    let mut keys = fetch_jwks(jwks_url, cache, false).await?;
+
+    if !keys.iter().any(|k| k.kid == kid) {
+        // Unknown kid — may be a key rotation; force one refetch
+        keys = fetch_jwks(jwks_url, cache, true).await?;
+    }
+
+    let key = keys.iter()
         .find(|k| k.kid == kid)
         .ok_or_else(|| format!("no key found for kid: {}", kid))?;
 
@@ -404,7 +458,6 @@ async fn fetch_jwks_key(jwks_url: &str, kid: &str) -> Result<DecodingKey, String
         return Err(format!("unsupported key type: {}", key.kty));
     }
 
-    // Build DecodingKey from RSA components (n, e are base64url-encoded)
     DecodingKey::from_rsa_components(&key.n, &key.e)
         .map_err(|e| format!("RSA key construction failed: {}", e))
 }
@@ -453,9 +506,9 @@ async fn verify_jwt(
     validation.validate_exp = true;
 
     let key = if let Some(ref jwks_url) = config.jwks_url {
-        // JWKS mode — fetch the key by kid
+        // JWKS mode — fetch the key by kid (TTL-cached)
         let kid = header.kid.ok_or("JWT missing kid header")?;
-        fetch_jwks_key(jwks_url, &kid).await?
+        fetch_jwks_key(jwks_url, &kid, &config.jwks_cache).await?
     } else if let Some(ref secret) = config.secret {
         DecodingKey::from_secret(secret.as_bytes())
     } else if let Some(ref pem) = config.public_key_pem {
@@ -2390,6 +2443,7 @@ async fn main() {
                 jwks_url,
                 issuer,
                 audience,
+                jwks_cache: Arc::new(std::sync::Mutex::new(None)),
             })
         } else {
             log_event("info", "jwt_auth_disabled", json!({}));

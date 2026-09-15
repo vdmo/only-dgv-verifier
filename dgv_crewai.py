@@ -39,36 +39,28 @@ except ImportError:
     CrewAIBaseTool = object
 
 
-class CrewAIGovernedTool(CrewAIBaseTool):
-    """A CrewAI tool wrapper that enforces DGV governance before executing.
+def _tool_name(tool: Any) -> str:
+    return getattr(tool, "name", None) or "unknown_tool"
 
-    Every call first goes through /govern; if ALLOW, executes via /execute
-    with the issued token, then runs the inner tool. DENY returns a JSON
-    error object instead of calling the inner tool.
-    """
 
-    def __init__(self, tool: Any, gate_url: str = "http://localhost:7878",
-                 agent_id: str = "crewai-agent", workflow: str = "default",
-                 admin_key: Optional[str] = None, jwt_token: Optional[str] = None):
-        name = f"governed_{getattr(tool, 'name', 'tool')}"
-        description = f"Governed version of {getattr(tool, 'name', 'tool')}: {getattr(tool, 'description', '')}"
-        if HAS_CREWAI:
-            super().__init__(name=name, description=description)
-        self.inner_tool = tool
-        self.gate_url = gate_url
-        self.agent_id = agent_id
-        self.workflow = workflow
-        self.client = GateClient(gate_url, admin_key=admin_key, jwt_token=jwt_token)
+def _tool_desc(tool: Any) -> str:
+    return getattr(tool, "description", None) or ""
+
+
+class _GovernedMixin:
+    """Shared govern+execute logic for both the real-BaseTool and
+    duck-typed variants. Expects self.inner_tool, self.client,
+    self.agent_id, self.workflow to be set."""
 
     # CrewAI's BaseTool calls _run; plain callables may expose run
-    def _run(self, **kwargs) -> str:
+    def _run(self, *args, **kwargs) -> str:
         return self._governed_call(**kwargs)
 
-    def run(self, **kwargs) -> str:
+    def run(self, *args, **kwargs) -> str:
         return self._governed_call(**kwargs)
 
     def _governed_call(self, **kwargs) -> str:
-        tool_name = getattr(self.inner_tool, "name", "unknown_tool")
+        tool_name = _tool_name(self.inner_tool)
 
         try:
             decision = self.client.govern(
@@ -130,6 +122,50 @@ class CrewAIGovernedTool(CrewAIBaseTool):
             "execution": {"allowed": True, "receipt": exec_result.receipt},
             "result": result,
         })
+
+
+if HAS_CREWAI:
+    class CrewAIGovernedTool(_GovernedMixin, CrewAIBaseTool):
+        """CrewAI BaseTool that enforces DGV governance before executing.
+
+        Real-crewai variant: declares pydantic fields so attribute
+        assignment passes validation and the wrapper can sit directly in a
+        Crew's tools list.
+        """
+
+        inner_tool: Any
+        gate_url: str
+        agent_id: str
+        workflow: str
+        client: Any
+
+        def __init__(self, tool: Any, gate_url: str = "http://localhost:7878",
+                     agent_id: str = "crewai-agent", workflow: str = "default",
+                     admin_key: Optional[str] = None, jwt_token: Optional[str] = None):
+            name = _tool_name(tool)
+            super().__init__(
+                name=f"governed_{name}",
+                description=f"Governed version of {name}: {_tool_desc(tool)}",
+                inner_tool=tool,
+                gate_url=gate_url,
+                agent_id=agent_id,
+                workflow=workflow,
+                client=GateClient(gate_url, admin_key=admin_key, jwt_token=jwt_token),
+            )
+else:
+    class CrewAIGovernedTool(_GovernedMixin):
+        """Duck-typed variant for environments without crewai installed."""
+
+        def __init__(self, tool: Any, gate_url: str = "http://localhost:7878",
+                     agent_id: str = "crewai-agent", workflow: str = "default",
+                     admin_key: Optional[str] = None, jwt_token: Optional[str] = None):
+            self.name = f"governed_{_tool_name(tool)}"
+            self.description = f"Governed version of {_tool_name(tool)}: {_tool_desc(tool)}"
+            self.inner_tool = tool
+            self.gate_url = gate_url
+            self.agent_id = agent_id
+            self.workflow = workflow
+            self.client = GateClient(gate_url, admin_key=admin_key, jwt_token=jwt_token)
 
 
 def govern_crew_tools(

@@ -180,7 +180,7 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - YAML policy file loading — bulk-load policies from a file
 - Distributed revocation — revocation on one instance is visible to all instances sharing the same database
 - Admin authentication — `X-Admin-Key` header required for admin endpoints when `DGV_ADMIN_KEY` is set
-- **JWT identity verification** — HS256 (`DGV_JWT_SECRET`), RS256 static PEM (`DGV_JWT_PUBLIC_KEY`), or RS256 via JWKS (`DGV_JWT_JWKS_URL`) with `kid`-based key rotation; `sub` claim becomes the verified `agent_id`; algorithm pinned per mode (HS256 tokens rejected in RS256/JWKS mode)
+- **JWT identity verification** — HS256 (`DGV_JWT_SECRET`), RS256 static PEM (`DGV_JWT_PUBLIC_KEY`), or RS256 via JWKS (`DGV_JWT_JWKS_URL`) with `kid`-based key rotation and TTL-cached JWKS responses (`DGV_JWKS_CACHE_TTL_MS`, default 300s; unknown `kid` forces one refetch); `sub` claim becomes the verified `agent_id`; algorithm pinned per mode (HS256 tokens rejected in RS256/JWKS mode)
 - **Approval workflow** — `min_approvals` in policies enforces multi-approval before execution; `POST /approve/:token_id` stores approvals
 - **Approver identity verification** — when JWT is configured, `/approve` requires a valid JWT and the verified `sub` is stored as the approver identity (body-supplied `approver_id` cannot be forged)
 - **Policy signing** — policies are Ed25519-signed when stored; verified on load; tampered policies rejected
@@ -200,7 +200,7 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 
 **What the gate does NOT yet do:**
 - Rate limit config is per-instance in memory (each instance has its own config; counters are shared via the database for distributed rate limiting)
-- JWKS keys are fetched per-request — no TTL-based key caching yet (each verification hits the JWKS endpoint)
+- JWKS responses are TTL-cached (`DGV_JWKS_CACHE_TTL_MS`, default 300s); an unknown `kid` triggers exactly one forced refetch to handle key rotation faster than TTL expiry
 - Circuit-breaker state is per-instance in memory — not shared across multi-instance deployments (unlike revocations, which live in shared storage)
 - Circuit breakers depend on callers honestly reporting tool outcomes — the gate cannot observe downstream failures itself
 - A2A payloads are hash-only at the gate — end-to-end payload encryption is the agents' responsibility
@@ -345,7 +345,7 @@ result = gate.govern({"request_id": "r1", "agent_id": "agent", "tool": "t", ...}
 | "Python SDK for gate" | `dgv_sdk.py` + `test_sdk_langchain.py` | **True** — 11/11 SDK tests pass; zero-dependency stdlib client covering all 12 endpoints |
 | "LangChain adapter" | `dgv_langchain.py` + `test_sdk_langchain.py` | **True** — 4/4 LangChain tests pass; GovernedTool, GateTool, GovernanceCallbackHandler |
 | "In-process governance (no HTTP)" | `native/dgv-python/` + `test_dgv_python.py` | **True** — 9/9 PyO3 tests pass; govern, execute, verify, revoke, policies without HTTP server |
-| "RS256/JWKS identity" | `test_gate_v4.py` | **True** — 6/6 tests pass; kid-selected keys, rotation, unknown kid denied, algorithm confusion rejected |
+| "RS256/JWKS identity" | `test_gate_v4.py` | **True** — 8/8 tests pass; kid-selected keys, rotation, unknown kid denied, algorithm confusion rejected, JWKS responses TTL-cached with forced refetch on unknown kid |
 | "Approver identity verification" | `test_gate_v4.py` | **True** — 3/3 tests pass; approve without JWT = 401, verified sub persisted as approver |
 | "Semantic verifier hook" | `test_gate_v4.py` | **True** — 3/3 tests pass; webhook allow/deny enforced, fail-closed on unreachable |
 | "Circuit breakers" | `test_gate_v4.py` | **True** — 5/5 tests pass; open after threshold, per-tool isolation, half-open recovery, admin reset |
@@ -355,9 +355,9 @@ result = gate.govern({"request_id": "r1", "agent_id": "agent", "tool": "t", ...}
 | "Prometheus metrics" | `test_gate_v5.py` | **True** — `/metrics` exposes decisions/denials/tokens/uptime/circuit state in text format |
 | "Structured JSON logging" | `test_gate_v5.py` | **True** — `DGV_LOG_FORMAT=json` emits one JSON object per log line |
 | "Graceful shutdown" | `test_gate_v5.py` | **True** — SIGTERM drains in-flight requests and exits 0 |
-| "CrewAI adapter" | `dgv_crewai.py` + `test_gate_v5.py` | **True** — CrewAIGovernedTool wraps CrewAI/duck-typed tools; allow and deny paths verified |
+| "CrewAI adapter" | `dgv_crewai.py` + `test_gate_v5.py` | **True** — verified against real `crewai` 1.x `BaseTool` (end-to-end allow path) plus duck-typed fallback; allow and deny paths verified |
 | "Agent executor middleware" | `dgv_langchain.py` `govern_all_tools` + `test_gate_v5.py` | **True** — wraps an entire tool list; every call governed |
-| "PyPI packaging" | `pyproject.toml` + `native/dgv-python/pyproject.toml` | **Configured** — `dgv-sdk` (pure Python) + `dgv-python` (maturin wheel) build configs; publication not yet performed |
+| "PyPI packaging" | `pyproject.toml` + `native/dgv-python/pyproject.toml` | **Build-verified** — `dgv_sdk-0.4.0` sdist+wheel and `dgv_python-0.4.0` manylinux wheel build and install cleanly; PyPI publication not performed |
 
 ## 4c. Concurrent multi-instance test results
 
@@ -390,7 +390,7 @@ Run `test_gate_v4.py` to verify RS256/JWKS, approver identity, the semantic
 verifier hook, circuit breakers, and A2A signed envelopes:
 
 ```bash
-python3 test_gate_v4.py    # 29 tests across 5 suites
+python3 test_gate_v4.py    # 31 tests across 5 suites
 ```
 
 Results from the current run:
@@ -404,7 +404,7 @@ Coverage:
 | Circuit breakers | 5 | closed→open at threshold, per-tool isolation, half-open probe after cooldown, success closes circuit, admin reset |
 | A2A envelopes | 12 | admin key registration, valid envelope accepted, envelope_id replay → 409, nonce replay → 409, tampered payload → 403, wrong-key signature → 403, expired → 410, unregistered sender → 403, inbox+ack flow, revoked sender → 403, deactivated recipient key → 403 |
 | Semantic verifier | 3 | webhook allow → ALLOW, webhook deny → DENY with reason code, unreachable + fail-closed → DENY |
-| RS256/JWKS | 6 | valid RS256 via JWKS, key rotation (two kids), unknown kid → 401, wrong key for kid → 401, expired → 401, HS256 rejected in JWKS mode (algorithm confusion) |
+| RS256/JWKS | 8 | valid RS256 via JWKS, key rotation (two kids), unknown kid → 401, wrong key for kid → 401, expired → 401, HS256 rejected in JWKS mode (algorithm confusion), JWKS TTL cache hit, unknown kid → one forced refetch |
 | Approver identity | 3 | approve without JWT → 401, JWT sub persisted as approver, body approver_id cannot be forged |
 
 
@@ -427,15 +427,13 @@ Coverage:
 - It does not claim the enforcement gate is production-ready (rate limit config is per-instance in memory; admin auth is a single shared key, not OIDC/JWT)
 - It does not claim the LangChain adapter is a complete production integration (GovernedTool wraps individual tools; `govern_all_tools` covers a full tool list, but agent-loop governance — intercepting the model's reasoning itself — is not addressed)
 - It does not claim the PyO3 bindings cover all gate functionality (they provide core govern/execute/verify/revoke; admin endpoints like rate limit config require the HTTP API)
-- It does not claim Python package distribution is live (build configs exist for `dgv-sdk` and `dgv-python`; PyPI publication has not been performed)
-- It does not claim the CrewAI adapter was tested against the real `crewai` package (it is duck-typed and tested with mock tools)
-- It does not claim OIDC discovery refreshes (the discovery document is fetched once at startup; JWKS keys themselves are fetched per-request)
+- It does not claim Python package distribution is live (`dgv-sdk` and `dgv-python` wheels build and install locally — verified; PyPI publication has not been performed)
+- It does not claim OIDC discovery refreshes (the discovery document is fetched once at startup; JWKS keys are TTL-cached with forced refetch on unknown kid)
 - It does not claim structured logging covers all code paths (key events are structured; some startup banner lines remain plain text)
 - It does not claim the gate's default governance script is suitable for production use (it is a demonstration script; custom policies can be stored via API or loaded from YAML files)
 - It does not claim the semantic verifier performs analysis inside the gate (the gate delegates to a configured webhook; verifier quality is external)
 - It does not claim circuit-breaker state is distributed (it is per-instance in memory; shared-state breakers are future work)
 - It does not claim A2A payloads are confidential (the gate stores hashes only; payload encryption is the agents' responsibility)
-- It does not claim JWKS responses are cached (each verification fetches the JWKS endpoint; caching is future work)
 
 ## 8. Recommended audit scope
 

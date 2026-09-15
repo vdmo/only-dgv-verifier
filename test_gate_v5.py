@@ -423,6 +423,32 @@ def main():
             assert result["error"] == "governance_denied"
         test("CrewAI GovernedTool (deny path)", t_crewai_denied)
 
+        def t_crewai_real_basetool():
+            try:
+                from crewai.tools import BaseTool
+            except ImportError:
+                print("    (skipped — crewai not installed)")
+                return
+            from dgv_crewai import CrewAIGovernedTool
+
+            class RealSearchTool(BaseTool):
+                name: str = "real_search"
+                description: str = "Real CrewAI search tool"
+                def _run(self, query: str = "", **kw) -> str:
+                    return f"real results for {query}"
+
+            governed = CrewAIGovernedTool(
+                tool=RealSearchTool(),
+                gate_url=BASE_URL,
+                agent_id="real-crew-agent",
+            )
+            # Must be a real BaseTool instance — usable in a Crew directly
+            assert isinstance(governed, BaseTool)
+            result = json.loads(governed.run(query="crewai"))
+            assert result["governance"]["gate_state"] == "ALLOW"
+            assert "real results for crewai" in result["result"]
+        test("CrewAI real BaseTool (end-to-end)", t_crewai_real_basetool)
+
         def t_govern_all_tools():
             try:
                 from langchain_core.tools import tool as lc_tool

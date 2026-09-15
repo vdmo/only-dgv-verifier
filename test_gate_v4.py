@@ -176,6 +176,7 @@ class TestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == "/jwks.json":
+            JWKS_STATE["fetches"] = JWKS_STATE.get("fetches", 0) + 1
             body = json.dumps({"keys": JWKS_STATE["keys"]}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
@@ -632,6 +633,30 @@ def main():
                 "jwks-6", "x", "jwks_tool", "act"), jwt_token=token)
             assert code == 401
         test("HS256 token rejected in JWKS mode (alg confusion)", t_hs256_rejected_in_jwks_mode)
+
+        def t_jwks_cached():
+            # Two governs with same kid → only one JWKS fetch (cache hit)
+            JWKS_STATE["fetches"] = 0
+            token = make_rs256_jwt("cache-agent", RSA_KEY_1, "key-1")
+            for i in range(2):
+                code, resp = post_auth("/govern", govern_req(
+                    f"jwks-cache-{i}", "cache-agent", "jwks_tool", "act"),
+                    jwt_token=token)
+                assert code == 200
+            assert JWKS_STATE["fetches"] == 0, \
+                f"expected 0 fetches (cache warm), got {JWKS_STATE['fetches']}"
+        test("JWKS cache hit (no refetch within TTL)", t_jwks_cached)
+
+        def t_jwks_rotation_refetch():
+            # Unknown kid triggers exactly one forced refetch
+            JWKS_STATE["fetches"] = 0
+            token = make_rs256_jwt("new-agent", RSA_KEY_1, "key-rotated")
+            code, resp = post_auth("/govern", govern_req(
+                "jwks-rot", "new-agent", "jwks_tool", "act"), jwt_token=token)
+            assert code == 401  # key not in JWKS even after refetch
+            assert JWKS_STATE["fetches"] == 1, \
+                f"expected 1 forced refetch, got {JWKS_STATE['fetches']}"
+        test("unknown kid → one forced refetch", t_jwks_rotation_refetch)
 
     finally:
         proc.terminate()

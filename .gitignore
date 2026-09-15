@@ -31,3 +31,4 @@ native/target/
 *.db-wal
 native/dgv_*_key.hex
 
+dist/
