@@ -43,6 +43,8 @@ pub struct TokenRecord {
     pub decision_hash: String,
     pub signature: String,
     pub created_unix_ms: i64,
+    /// Minimum approvals required before this token can be used (0 = no approval needed)
+    pub min_approvals: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -54,6 +56,12 @@ pub struct PolicyRecord {
     pub policy_version: String,
     pub created_unix_ms: i64,
     pub active: bool,
+    /// Ed25519 signature of the policy script — prevents tampering
+    pub signature: Option<String>,
+    /// Minimum approvals required before execution (0 = no approval needed)
+    pub min_approvals: i64,
+    /// Minimum justification length in characters (0 = no minimum)
+    pub min_justification_length: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -71,6 +79,14 @@ pub struct RateLimitRecord {
     pub count: i64,
     pub max_count: i64,
     pub window_ms: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApprovalRecord {
+    pub token_id: String,
+    pub approver_id: String,
+    pub approved_unix_ms: i64,
+    pub signature: String,
 }
 
 // ── Storage trait ────────────────────────────────────────────────────────────
@@ -102,6 +118,10 @@ pub trait Storage: Send + Sync {
     // Multi-tenant
     async fn store_tenant_policy(&self, tenant_id: &str, p: PolicyRecord) -> Result<(), StorageError>;
     async fn get_tenant_active_policy(&self, tenant_id: &str, tool: &str, action: &str) -> Result<Option<PolicyRecord>, StorageError>;
+
+    // Approvals
+    async fn store_approval(&self, a: ApprovalRecord) -> Result<(), StorageError>;
+    async fn count_approvals(&self, token_id: &str) -> Result<i64, StorageError>;
 
     // Health
     async fn ping(&self) -> Result<(), StorageError>;

@@ -210,6 +210,7 @@ impl Gate {
                 decision_hash: decision_hash.clone(),
                 signature: signature_hex.clone(),
                 created_unix_ms: now,
+                min_approvals: 0,
             };
             let _ = self.rt.block_on(self.storage.store_token(token_rec));
             Some(token_id)
@@ -442,6 +443,9 @@ impl Gate {
             policy_version: policy_version.to_string(),
             created_unix_ms: now_unix_ms(),
             active: true,
+            signature: None,
+            min_approvals: 0,
+            min_justification_length: 0,
         };
         match self.rt.block_on(self.storage.store_policy(rec)) {
             Ok(()) => Ok(policy_id),

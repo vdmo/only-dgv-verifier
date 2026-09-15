@@ -321,6 +321,66 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /approve/{token_id}:
+    post:
+      tags: [Governance]
+      summary: Approve a token
+      description: Approve a token for multi-approval policies. Requires admin key.
+      operationId: approveToken
+      security:
+        - adminKey: []
+      parameters:
+        - name: token_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [approver_id]
+              properties:
+                approver_id:
+                  type: string
+                  description: ID of the approving entity
+      responses:
+        '200':
+          description: Token approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  approved:
+                    type: boolean
+                  token_id:
+                    type: string
+                  approval_count:
+                    type: integer
+                  min_approvals:
+                    type: integer
+        '404':
+          description: Token not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Token already consumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Admin auth required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /config/rate-limit:
     get:
       tags: [Config]
@@ -396,6 +456,9 @@ components:
         tenant_id:
           type: string
           description: Optional tenant ID for multi-tenant isolation
+        context_hash:
+          type: string
+          description: Optional SHA-256 hash of the agent's full context (memory, session, etc.). Used in bind_context instead of tool+params hash.
 
     GovernResponse:
       type: object
@@ -555,6 +618,14 @@ components:
         policy_version:
           type: string
           default: v1
+        min_approvals:
+          type: integer
+          default: 0
+          description: Minimum approvals required before execution (0 = no approval needed)
+        min_justification_length:
+          type: integer
+          default: 0
+          description: Minimum justification length in characters (0 = no minimum)
 
     StorePolicyResponse:
       type: object
@@ -563,6 +634,9 @@ components:
           type: string
         active:
           type: boolean
+        signature:
+          type: string
+          description: Ed25519 signature of the policy script (hex)
 
     LoadPolicyFileRequest:
       type: object

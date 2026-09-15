@@ -180,6 +180,11 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - YAML policy file loading — bulk-load policies from a file
 - Distributed revocation — revocation on one instance is visible to all instances sharing the same database
 - Admin authentication — `X-Admin-Key` header required for admin endpoints when `DGV_ADMIN_KEY` is set
+- **JWT identity verification** — `DGV_JWT_SECRET` enables HS256 JWT verification on `/govern` and `/execute`; `sub` claim becomes the verified `agent_id`
+- **Approval workflow** — `min_approvals` in policies enforces multi-approval before execution; `POST /approve/:token_id` stores approvals
+- **Policy signing** — policies are Ed25519-signed when stored; verified on load; tampered policies rejected
+- **Full context hashing** — `context_hash` field in proposal binds the agent's full context (not just tool+params)
+- **Justification enforcement** — `min_justification_length` in policies requires minimum justification length
 - CORS — configurable via `DGV_CORS_ORIGINS` (permissive `*` in dev, restrictive list in production)
 - Formal soundness proof — `FORMAL_SOUNDNESS_PROOF.md` proves receipt integrity, path compliance, null effect on deny, replayability, continuing authority, and distributed revocation
 
@@ -191,8 +196,10 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 
 **What the gate does NOT yet do:**
 - Rate limit config is per-instance in memory (each instance has its own config; counters are shared via the database for distributed rate limiting)
-- Admin auth is a single shared key (no per-user RBAC; production deployments should use OIDC/JWT)
+- JWT is HS256 shared secret only (no RS256/JWKS for key rotation; production deployments should use RS256)
+- Approval identities are strings, not verified credentials (a compromised approver ID could approve malicious actions)
 - TLS termination is handled by reverse proxy (nginx profile in docker-compose; the gate itself is plain HTTP)
+- Policy signing verifies integrity but not provenance (no SLSA/dependency chain verification)
 
 ## 4b. Framework integration (Phase 3)
 
@@ -319,6 +326,11 @@ result = gate.govern({"request_id": "r1", "agent_id": "agent", "tool": "t", ...}
 | "Distributed revocation" | `test_distributed_revocation.py` | **True** — 11/11 tests pass; revocation on one instance is visible to all instances sharing the same database |
 | "Concurrent multi-instance" | `test_concurrent_multi_instance.py` | **True** — 11/11 tests pass with Postgres; revocation propagates without restart, decisions verifiable across instances, rate limit config per-instance |
 | "Admin auth on admin endpoints" | `test_gate.py` | **True** — 401 without key, 401 with wrong key, 200 with correct key |
+| "JWT identity verification" | `test_gate_v3.py` | **True** — 6/6 JWT tests pass; no token = 401, valid token = allow, expired/wrong secret = deny, sub claim overrides agent_id |
+| "Approval workflow" | `test_gate_v3.py` | **True** — min_approvals enforced at execute; POST /approve/:token_id stores approvals; insufficient approvals = 403 |
+| "Policy signing" | `test_gate_v3.py` | **True** — policies signed with Ed25519 on store; signature verified on load; tampered policies rejected |
+| "Full context hashing" | `test_gate_v3.py` | **True** — context_hash field binds full agent context, not just tool+params |
+| "Justification enforcement" | `test_gate_v3.py` | **True** — min_justification_length denies short justifications |
 | "Formal soundness proof" | `FORMAL_SOUNDNESS_PROOF.md` | **True** — receipt integrity, path compliance, null effect on deny, replayability, continuing authority, distributed revocation all proven |
 | "Production deployment" | `Dockerfile.gate` + `docker-compose.gate.yml` | **True** — multi-stage Dockerfile, docker-compose with Postgres + replica + nginx TLS profile |
 | "Python SDK for gate" | `dgv_sdk.py` + `test_sdk_langchain.py` | **True** — 11/11 SDK tests pass; zero-dependency stdlib client covering all 12 endpoints |

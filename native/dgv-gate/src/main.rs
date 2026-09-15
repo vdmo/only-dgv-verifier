@@ -25,10 +25,11 @@ use axum::{
     Router,
 };
 use dgv_storage::{
-    DecisionRecord, PolicyRecord, PostgresStorage, RevocationRecord, SqliteStorage, Storage,
-    StorageError, TokenRecord,
+    ApprovalRecord, DecisionRecord, PolicyRecord, PostgresStorage, RevocationRecord, SqliteStorage,
+    Storage, StorageError, TokenRecord,
 };
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
+use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
 use only_core::{generate_signs, Sign};
 use only_lang::evidence_pack::{AuthTokenIssued, DecisionReturned, ProposalSubmitted};
 use only_memory::GhostMemory;
@@ -143,6 +144,42 @@ struct AppState {
     /// Admin API key for privileged endpoints (POST /policies, POST /revocations, etc.)
     /// If None, admin endpoints are open (dev mode only — not for production).
     admin_key: Option<String>,
+    /// JWT verification config — when set, /govern and /execute require a valid JWT
+    /// in the Authorization: Bearer header. The `sub` claim becomes the verified agent_id.
+    jwt_config: Option<JwtConfig>,
+}
+
+/// JWT verification configuration
+#[derive(Clone)]
+struct JwtConfig {
+    /// HS256 shared secret (for dev/test)
+    secret: Option<String>,
+    /// RS256 public key PEM (for production — verify with issuer's public key)
+    public_key_pem: Option<String>,
+    /// Expected issuer (iss claim)
+    issuer: Option<String>,
+    /// Expected audience (aud claim)
+    audience: Option<String>,
+}
+
+/// JWT claims extracted from the Authorization header
+#[derive(Debug, Deserialize)]
+struct JwtClaims {
+    sub: String,
+    #[serde(default)]
+    iss: Option<String>,
+    #[serde(default)]
+    aud: Option<String>,
+    #[serde(default)]
+    exp: Option<u64>,
+    #[serde(default)]
+    iat: Option<u64>,
+    #[serde(default)]
+    scope: Option<String>,
+    /// Custom claim for agent role (e.g., "admin", "operator", "agent")
+    #[serde(default)]
+    #[allow(dead_code)]
+    agent_role: Option<String>,
 }
 
 #[derive(Clone)]
@@ -175,7 +212,7 @@ struct Counters {
 
 // ── Default governance script ────────────────────────────────────────────────
 
-fn default_governance_script(agent_id: &str, tool: &str, action: &str, params: &Value, risk: f64) -> String {
+fn default_governance_script(agent_id: &str, tool: &str, action: &str, _params: &Value, risk: f64, context_hash: &str) -> String {
     format!(
         "harmony(1e-12)\n\
          bind_authority(\"{}\", \"agent\", \"{}\")\n\
@@ -192,7 +229,7 @@ fn default_governance_script(agent_id: &str, tool: &str, action: &str, params: &
         tool,
         action,
         action,
-        sha256_hex(&params.to_string()),
+        context_hash, // Use provided context hash or computed one
         sha256_hex(tool),
         risk,
         agent_id,
@@ -233,6 +270,77 @@ async fn admin_auth_middleware(
     }
 }
 
+// ── JWT verification ─────────────────────────────────────────────────────────
+
+/// Verify a JWT from the Authorization header and extract the agent_id.
+/// Returns (verified_agent_id, claims) on success, or an error message.
+fn verify_jwt(
+    headers: &HeaderMap,
+    config: &JwtConfig,
+) -> Result<(String, JwtClaims), String> {
+    let auth_header = headers
+        .get("Authorization")
+        .and_then(|v| v.to_str().ok())
+        .ok_or("missing Authorization header")?;
+
+    let token = auth_header
+        .strip_prefix("Bearer ")
+        .ok_or("Authorization header must be 'Bearer <token>'")?;
+
+    let mut validation = Validation::new(Algorithm::HS256);
+    if let Some(ref iss) = config.issuer {
+        validation.set_issuer(&[iss]);
+    }
+    if let Some(ref aud) = config.audience {
+        validation.set_audience(&[aud]);
+    }
+    validation.validate_exp = true;
+
+    let key = if let Some(ref secret) = config.secret {
+        DecodingKey::from_secret(secret.as_bytes())
+    } else if let Some(ref pem) = config.public_key_pem {
+        DecodingKey::from_rsa_pem(pem.as_bytes())
+            .map_err(|e| format!("invalid RSA public key: {}", e))?
+    } else {
+        return Err("no JWT verification key configured".to_string());
+    };
+
+    let claims = decode::<JwtClaims>(token, &key, &validation)
+        .map_err(|e| format!("JWT verification failed: {}", e))?;
+
+    let agent_id = claims.claims.sub.clone();
+    Ok((agent_id, claims.claims))
+}
+
+/// Extract verified agent_id from JWT if JWT auth is configured.
+/// Returns Some(agent_id) if JWT is configured and valid, None if JWT not configured,
+/// Err(msg) if JWT is configured but invalid.
+fn extract_agent_id(
+    headers: &HeaderMap,
+    jwt_config: &Option<JwtConfig>,
+    request_agent_id: &str,
+) -> Result<String, String> {
+    match jwt_config {
+        Some(config) => {
+            let (agent_id, _claims) = verify_jwt(headers, config)?;
+            Ok(agent_id)
+        }
+        None => Ok(request_agent_id.to_string()),
+    }
+}
+
+// ── Policy signing ────────────────────────────────────────────────────────────
+
+/// Sign a policy script with the gate's signing key.
+fn sign_policy(keys: &SigningKeys, script: &str) -> String {
+    keys.sign_decision(script)
+}
+
+/// Verify a policy's signature against the gate's verifying key.
+fn verify_policy_signature(keys: &SigningKeys, script: &str, signature: &str) -> bool {
+    keys.verify_signature(script, signature)
+}
+
 // ── POST /govern ────────────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
@@ -241,6 +349,9 @@ struct GovernRequest {
     proposal: ProposalSubmitted,
     /// Optional tenant ID for multi-tenant isolation
     tenant_id: Option<String>,
+    /// Optional full context hash — if provided, used in bind_context instead of tool+params hash.
+    /// This is a SHA-256 hash of the agent's full context (memory state, session data, etc.)
+    context_hash: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -253,9 +364,45 @@ struct GovernResponse {
 
 async fn handle_govern(
     State(app): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<GovernRequest>,
 ) -> impl IntoResponse {
-    let p = req.proposal;
+    let mut p = req.proposal;
+
+    // 0. JWT verification — if configured, verify the JWT and use the verified agent_id
+    if app.jwt_config.is_some() {
+        match extract_agent_id(&headers, &app.jwt_config, &p.agent_id) {
+            Ok(verified_id) => {
+                // Override the claimed agent_id with the verified one from JWT
+                p.agent_id = verified_id;
+            }
+            Err(e) => {
+                let run_id = only_lang::evidence_pack::run_id_unix_ms();
+                let decision = DecisionReturned {
+                    request_id: p.request_id.clone(),
+                    gate_state: "DENY".to_string(),
+                    reason_codes: vec![format!("identity_verification_failed: {}", e)],
+                    approvals_required: 0,
+                    approvals_received: 0,
+                    auth_token: None,
+                    run_id: run_id.clone(),
+                    decision_hash: compute_decision_hash(&p.request_id, "DENY", &["identity_verification_failed".to_string()], &p.tool, &p.action, &p.params),
+                    counterfactual: None,
+                };
+                let signature = app.keys.sign_decision(&decision.decision_hash);
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(GovernResponse {
+                        decision,
+                        evidence_pack_id: run_id,
+                        signature,
+                        verifying_key: hex::encode(app.keys.vk.to_bytes()),
+                    }),
+                );
+            }
+        }
+    }
+
     let request_id = p.request_id.clone();
     let run_id = only_lang::evidence_pack::run_id_unix_ms();
     let now = now_unix_ms();
@@ -305,11 +452,12 @@ async fn handle_govern(
 
     // 1. Check revocation (from persistent storage)
     let revocation = app.storage.check_revocation(&p.agent_id).await.ok().flatten();
-    let (gate_state, reason_codes, pass) = if let Some(rev) = revocation {
+    let (gate_state, reason_codes, pass, policy_min_approvals) = if let Some(rev) = revocation {
         (
             "DENY".to_string(),
             vec![format!("authority_revoked: {}", rev.reason)],
             false,
+            0i64,
         )
     } else {
         // 2. Load policy from storage (tenant-specific or global)
@@ -334,9 +482,95 @@ async fn handle_govern(
             .flatten();
         let policy = policy.or(global_policy);
 
+        // Verify policy signature — reject tampered policies
+        if let Some(ref pol) = policy {
+            if let Some(ref sig) = pol.signature {
+                if !verify_policy_signature(&app.keys, &pol.script, sig) {
+                    eprintln!("WARNING: policy signature invalid for {} {}", pol.tool, pol.action);
+                    let decision = DecisionReturned {
+                        request_id: request_id.clone(),
+                        gate_state: "DENY".to_string(),
+                        reason_codes: vec!["policy_signature_invalid".to_string()],
+                        approvals_required: 0,
+                        approvals_received: 0,
+                        auth_token: None,
+                        run_id: run_id.clone(),
+                        decision_hash: compute_decision_hash(&request_id, "DENY", &["policy_signature_invalid".to_string()], &p.tool, &p.action, &p.params),
+                        counterfactual: None,
+                    };
+                    let signature = app.keys.sign_decision(&decision.decision_hash);
+                    {
+                        let mut c = app.counters.lock().unwrap();
+                        c.decisions_made += 1;
+                        c.denials += 1;
+                    }
+                    return (
+                        StatusCode::OK,
+                        Json(GovernResponse {
+                            decision,
+                            evidence_pack_id: run_id,
+                            signature,
+                            verifying_key: hex::encode(app.keys.vk.to_bytes()),
+                        }),
+                    );
+                }
+            }
+            // If signature is None, policy was stored before signing was implemented — allow but warn
+            else {
+                eprintln!("WARNING: unsigned policy for {} {}", pol.tool, pol.action);
+            }
+        }
+        let policy_min_approvals = policy.as_ref().map(|p| p.min_approvals).unwrap_or(0);
+
+        // Check minimum justification length (if policy requires it)
+        if let Some(ref pol) = policy {
+            if pol.min_justification_length > 0
+                && p.justification.len() < pol.min_justification_length as usize
+            {
+                let decision = DecisionReturned {
+                    request_id: request_id.clone(),
+                    gate_state: "DENY".to_string(),
+                    reason_codes: vec![format!(
+                        "justification_too_short: required {} chars, got {}",
+                        pol.min_justification_length,
+                        p.justification.len()
+                    )],
+                    approvals_required: 0,
+                    approvals_received: 0,
+                    auth_token: None,
+                    run_id: run_id.clone(),
+                    decision_hash: compute_decision_hash(&request_id, "DENY", &["justification_too_short".to_string()], &p.tool, &p.action, &p.params),
+                    counterfactual: None,
+                };
+                let signature = app.keys.sign_decision(&decision.decision_hash);
+                {
+                    let mut c = app.counters.lock().unwrap();
+                    c.decisions_made += 1;
+                    c.denials += 1;
+                }
+                return (
+                    StatusCode::OK,
+                    Json(GovernResponse {
+                        decision,
+                        evidence_pack_id: run_id,
+                        signature,
+                        verifying_key: hex::encode(app.keys.vk.to_bytes()),
+                    }),
+                );
+            }
+        }
+
+        // Use context_hash if provided (full context hashing), otherwise hash tool+params
+        let context_binding = req.context_hash.as_deref()
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| {
+                sha256_hex(&format!("{}{}", p.tool, p.params))
+            });
+
         let script = policy
-            .map(|p| p.script)
-            .unwrap_or_else(|| default_governance_script(&p.agent_id, &p.tool, &p.action, &p.params, p.risk_level.parse::<f64>().unwrap_or(1000.0)));
+            .as_ref()
+            .map(|p| p.script.clone())
+            .unwrap_or_else(|| default_governance_script(&p.agent_id, &p.tool, &p.action, &p.params, p.risk_level.parse::<f64>().unwrap_or(1000.0), &context_binding));
 
         // 3. Evaluate the script
         let n = 4;
@@ -349,11 +583,11 @@ async fn handle_govern(
                 if res.authority_revoked {
                     let reason = res.authority_revocation_reason
                         .unwrap_or_else(|| "authority_revoked".to_string());
-                    ("DENY".to_string(), vec![reason], false)
+                    ("DENY".to_string(), vec![reason], false, policy_min_approvals)
                 } else if res.pass {
-                    ("ALLOW".to_string(), vec![], true)
+                    ("ALLOW".to_string(), vec![], true, policy_min_approvals)
                 } else {
-                    ("DENY".to_string(), vec!["mathematical_drift_detected".to_string()], false)
+                    ("DENY".to_string(), vec!["mathematical_drift_detected".to_string()], false, policy_min_approvals)
                 }
             }
             Err(e) => {
@@ -367,9 +601,9 @@ async fn handle_govern(
                     || err_str.contains("bounds")
                     || err_str.contains("bind");
                 if is_governance {
-                    ("DENY".to_string(), vec![e.to_string()], false)
+                    ("DENY".to_string(), vec![e.to_string()], false, policy_min_approvals)
                 } else {
-                    ("SILENCE".to_string(), vec![format!("system_error: {}", e)], false)
+                    ("SILENCE".to_string(), vec![format!("system_error: {}", e)], false, policy_min_approvals)
                 }
             }
         }
@@ -402,6 +636,7 @@ async fn handle_govern(
             decision_hash: decision_hash.clone(),
             signature: signature.clone(),
             created_unix_ms: now,
+            min_approvals: policy_min_approvals,
         };
         let _ = app.storage.store_token(token_rec).await;
         {
@@ -429,8 +664,8 @@ async fn handle_govern(
         request_id: request_id.clone(),
         gate_state: gate_state.clone(),
         reason_codes: reason_codes.clone(),
-        approvals_required: if pass { 0 } else { 1 },
-        approvals_received: if pass { 1 } else { 0 },
+        approvals_required: policy_min_approvals as u32,
+        approvals_received: 0,
         auth_token,
         run_id: run_id.clone(),
         decision_hash: decision_hash.clone(),
@@ -497,10 +732,26 @@ struct ExecuteResponse {
 
 async fn handle_execute(
     State(app): State<AppState>,
+    headers: HeaderMap,
     Json(req): Json<ExecuteRequest>,
 ) -> impl IntoResponse {
     let now = now_unix_ms();
     let run_id = only_lang::evidence_pack::run_id_unix_ms();
+
+    // 0. JWT verification — if configured, verify the JWT
+    if app.jwt_config.is_some() {
+        if let Err(e) = extract_agent_id(&headers, &app.jwt_config, &req.executor_id) {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(ExecuteResponse {
+                    allowed: false,
+                    deny_reason: Some(format!("identity_verification_failed: {}", e)),
+                    receipt: json!({"run_id": run_id, "verified": false}),
+                    run_id,
+                }),
+            );
+        }
+    }
 
     // 0. Rate limiting (per executor+tool)
     let rl_enabled = { app.rate_limit.read().unwrap().enabled };
@@ -632,6 +883,30 @@ async fn handle_execute(
         );
     }
 
+    // 6b. Check approvals — if the policy required min_approvals, verify count
+    if token.min_approvals > 0 {
+        let approval_count = app.storage.count_approvals(&req.token_id).await.unwrap_or(0);
+        if approval_count < token.min_approvals {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ExecuteResponse {
+                    allowed: false,
+                    deny_reason: Some(format!(
+                        "insufficient_approvals: {} required, {} received",
+                        token.min_approvals, approval_count
+                    )),
+                    receipt: json!({
+                        "run_id": run_id,
+                        "verified": false,
+                        "approvals_required": token.min_approvals,
+                        "approvals_received": approval_count,
+                    }),
+                    run_id,
+                }),
+            );
+        }
+    }
+
     // 7. Mark token consumed (atomic)
     if let Err(StorageError::Conflict) = app.storage.mark_token_consumed(&req.token_id, now).await {
         return (
@@ -747,12 +1022,17 @@ struct StorePolicyRequest {
     action: String,
     script: String,
     policy_version: Option<String>,
+    /// Minimum approvals required before execution (default 0)
+    min_approvals: Option<i64>,
+    /// Minimum justification length in characters (default 0)
+    min_justification_length: Option<i64>,
 }
 
 #[derive(Serialize)]
 struct StorePolicyResponse {
     policy_id: String,
     active: bool,
+    signature: String,
 }
 
 async fn handle_store_policy(
@@ -760,6 +1040,8 @@ async fn handle_store_policy(
     Json(req): Json<StorePolicyRequest>,
 ) -> impl IntoResponse {
     let policy_id = format!("pol_{}", &sha256_hex(&format!("{}{}{}", req.tool, req.action, now_unix_ms()))[..16]);
+    // Sign the policy script — prevents tampering with stored policies
+    let sig = sign_policy(&app.keys, &req.script);
     let rec = PolicyRecord {
         policy_id: policy_id.clone(),
         tool: req.tool,
@@ -768,10 +1050,13 @@ async fn handle_store_policy(
         policy_version: req.policy_version.unwrap_or_else(|| "v1".to_string()),
         created_unix_ms: now_unix_ms(),
         active: true,
+        signature: Some(sig.clone()),
+        min_approvals: req.min_approvals.unwrap_or(0),
+        min_justification_length: req.min_justification_length.unwrap_or(0),
     };
     match app.storage.store_policy(rec).await {
-        Ok(()) => (StatusCode::OK, Json(StorePolicyResponse { policy_id, active: true })),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(StorePolicyResponse { policy_id: format!("error: {}", e), active: false })),
+        Ok(()) => (StatusCode::OK, Json(StorePolicyResponse { policy_id, active: true, signature: sig })),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(StorePolicyResponse { policy_id: format!("error: {}", e), active: false, signature: String::new() })),
     }
 }
 
@@ -830,6 +1115,8 @@ struct StoreTenantPolicyRequest {
     action: String,
     script: String,
     policy_version: Option<String>,
+    min_approvals: Option<i64>,
+    min_justification_length: Option<i64>,
 }
 
 async fn handle_store_tenant_policy(
@@ -838,6 +1125,7 @@ async fn handle_store_tenant_policy(
     Json(req): Json<StoreTenantPolicyRequest>,
 ) -> impl IntoResponse {
     let policy_id = format!("tpol_{}", &sha256_hex(&format!("{}{}{}{}", tenant_id, req.tool, req.action, now_unix_ms()))[..16]);
+    let sig = sign_policy(&app.keys, &req.script);
     let rec = PolicyRecord {
         policy_id: policy_id.clone(),
         tool: req.tool,
@@ -846,10 +1134,13 @@ async fn handle_store_tenant_policy(
         policy_version: req.policy_version.unwrap_or_else(|| "v1".to_string()),
         created_unix_ms: now_unix_ms(),
         active: true,
+        signature: Some(sig.clone()),
+        min_approvals: req.min_approvals.unwrap_or(0),
+        min_justification_length: req.min_justification_length.unwrap_or(0),
     };
     match app.storage.store_tenant_policy(&tenant_id, rec).await {
-        Ok(()) => (StatusCode::OK, Json(StorePolicyResponse { policy_id, active: true })),
-        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(StorePolicyResponse { policy_id: format!("error: {}", e), active: false })),
+        Ok(()) => (StatusCode::OK, Json(StorePolicyResponse { policy_id, active: true, signature: sig })),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(StorePolicyResponse { policy_id: format!("error: {}", e), active: false, signature: String::new() })),
     }
 }
 
@@ -989,6 +1280,7 @@ async fn handle_load_policy_file(
     if let Some(policies) = parsed.policies {
         for entry in policies {
             let policy_id = format!("pol_{}", &sha256_hex(&format!("{}{}{}{}", entry.tool, entry.action, entry.script, now_unix_ms()))[..16]);
+            let sig = sign_policy(&app.keys, &entry.script);
             let rec = PolicyRecord {
                 policy_id: policy_id.clone(),
                 tool: entry.tool.clone(),
@@ -997,6 +1289,9 @@ async fn handle_load_policy_file(
                 policy_version: entry.policy_version.unwrap_or_else(|| "v1".to_string()),
                 created_unix_ms: now_unix_ms(),
                 active: true,
+                signature: Some(sig),
+                min_approvals: 0,
+                min_justification_length: 0,
             };
             match app.storage.store_policy(rec).await {
                 Ok(()) => loaded += 1,
@@ -1010,6 +1305,7 @@ async fn handle_load_policy_file(
         for (tenant_id, policies) in tenant_policies {
             for entry in policies {
                 let policy_id = format!("tpol_{}", &sha256_hex(&format!("{}{}{}{}{}", tenant_id, entry.tool, entry.action, entry.script, now_unix_ms()))[..16]);
+                let sig = sign_policy(&app.keys, &entry.script);
                 let rec = PolicyRecord {
                     policy_id: policy_id.clone(),
                     tool: entry.tool.clone(),
@@ -1018,6 +1314,9 @@ async fn handle_load_policy_file(
                     policy_version: entry.policy_version.unwrap_or_else(|| "v1".to_string()),
                     created_unix_ms: now_unix_ms(),
                     active: true,
+                    signature: Some(sig),
+                    min_approvals: 0,
+                    min_justification_length: 0,
                 };
                 match app.storage.store_tenant_policy(&tenant_id, rec).await {
                     Ok(()) => loaded += 1,
@@ -1034,6 +1333,81 @@ async fn handle_load_policy_file(
             "errors": errors,
         })),
     )
+}
+
+// ── POST /approve/:token_id ────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct ApproveRequest {
+    approver_id: String,
+}
+
+#[derive(Serialize)]
+#[allow(dead_code)]
+struct ApproveResponse {
+    approved: bool,
+    token_id: String,
+    approval_count: i64,
+}
+
+async fn handle_approve(
+    State(app): State<AppState>,
+    Path(token_id): Path<String>,
+    Json(req): Json<ApproveRequest>,
+) -> impl IntoResponse {
+    // Verify the token exists
+    let token = match app.storage.get_token(&token_id).await {
+        Ok(Some(t)) => t,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({"error": "token_not_found", "token_id": token_id})),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            );
+        }
+    };
+
+    // Check token isn't consumed
+    if token.consumed {
+        return (
+            StatusCode::CONFLICT,
+            Json(json!({"error": "token_already_consumed", "token_id": token_id})),
+        );
+    }
+
+    // Sign the approval with the gate's key (approvals are gate-signed)
+    let approval_sig = app.keys.sign_decision(&format!("approve:{}:{}", token_id, req.approver_id));
+
+    let rec = ApprovalRecord {
+        token_id: token_id.clone(),
+        approver_id: req.approver_id.clone(),
+        approved_unix_ms: now_unix_ms(),
+        signature: approval_sig,
+    };
+
+    match app.storage.store_approval(rec).await {
+        Ok(()) => {
+            let count = app.storage.count_approvals(&token_id).await.unwrap_or(0);
+            (
+                StatusCode::OK,
+                Json(json!({
+                    "approved": true,
+                    "token_id": token_id,
+                    "approval_count": count,
+                    "min_approvals": token.min_approvals,
+                })),
+            )
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("store_failed: {}", e)})),
+        ),
+    }
 }
 
 // ── GET /health ─────────────────────────────────────────────────────────────
@@ -1136,12 +1510,35 @@ async fn main() {
         println!("Admin auth: disabled (DGV_ADMIN_KEY not set — dev mode only)");
     }
 
+    // JWT verification — if DGV_JWT_SECRET or DGV_JWT_PUBLIC_KEY is set, /govern and /execute
+    // require a valid JWT in the Authorization: Bearer header. The sub claim becomes the agent_id.
+    let jwt_config = {
+        let secret = std::env::var("DGV_JWT_SECRET").ok();
+        let public_key_pem = std::env::var("DGV_JWT_PUBLIC_KEY").ok();
+        let issuer = std::env::var("DGV_JWT_ISSUER").ok();
+        let audience = std::env::var("DGV_JWT_AUDIENCE").ok();
+
+        if secret.is_some() || public_key_pem.is_some() {
+            println!("JWT auth: enabled (agents must present valid JWT)");
+            Some(JwtConfig {
+                secret,
+                public_key_pem,
+                issuer,
+                audience,
+            })
+        } else {
+            println!("JWT auth: disabled (no DGV_JWT_SECRET or DGV_JWT_PUBLIC_KEY)");
+            None
+        }
+    };
+
     let app_state = AppState {
         storage,
         keys,
         counters: Arc::new(std::sync::Mutex::new(Counters::default())),
         rate_limit: Arc::new(std::sync::RwLock::new(rate_limit)),
         admin_key: admin_key.clone(),
+        jwt_config,
     };
 
     // Public routes (no auth required)
@@ -1153,6 +1550,7 @@ async fn main() {
         .route("/stats", get(handle_stats))
         .route("/policies/:tool/:action", get(handle_get_policy))
         .route("/revocations", get(list_revocations))
+        .route("/approve/:token_id", post(handle_approve))
         .route("/config/rate-limit", get(handle_get_rate_limit));
 
     // Admin routes (require X-Admin-Key when DGV_ADMIN_KEY is set)
@@ -1196,6 +1594,7 @@ async fn main() {
     println!("Endpoints:");
     println!("  POST /govern                        - evaluate proposal, return signed decision");
     println!("  POST /execute                       - verify token, mark consumed, return receipt");
+    println!("  POST /approve/:token_id             - approve a token (for multi-approval policies)");
     println!("  GET  /verify/:run_id               - re-derive decision hash, compare to stored");
     println!("  GET  /health                        - liveness probe");
     println!("  GET  /stats                         - decision/token counters");
@@ -1203,10 +1602,10 @@ async fn main() {
     println!("  GET  /revocations                   - list revocations");
     println!("  GET  /config/rate-limit             - get rate limit config");
     println!("  ── Admin endpoints (require X-Admin-Key when DGV_ADMIN_KEY is set) ──");
-    println!("  POST /policies                      - store a policy");
+    println!("  POST /policies                      - store a policy (signed)");
     println!("  POST /policies/load-file            - load policies from YAML/JSON file");
     println!("  POST /revocations                   - revoke an actor");
-    println!("  POST /tenant/:tenant_id/policies    - store tenant-specific policy");
+    println!("  POST /tenant/:tenant_id/policies    - store tenant-specific policy (signed)");
     println!("  PUT  /config/rate-limit             - update rate limit config");
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();

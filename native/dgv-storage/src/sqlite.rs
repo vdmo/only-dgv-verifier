@@ -9,8 +9,8 @@ use sqlx::Row;
 use std::str::FromStr;
 
 use crate::{
-    DecisionRecord, PolicyRecord, RateLimitRecord, RevocationRecord, Storage, StorageError,
-    TokenRecord,
+    ApprovalRecord, DecisionRecord, PolicyRecord, RateLimitRecord, RevocationRecord, Storage,
+    StorageError, TokenRecord,
 };
 
 pub struct SqliteStorage {
@@ -57,7 +57,8 @@ impl SqliteStorage {
                 consumed_unix_ms INTEGER,
                 decision_hash TEXT NOT NULL,
                 signature TEXT NOT NULL,
-                created_unix_ms INTEGER NOT NULL
+                created_unix_ms INTEGER NOT NULL,
+                min_approvals INTEGER NOT NULL DEFAULT 0
             )"#,
             r#"CREATE TABLE IF NOT EXISTS policies (
                 policy_id TEXT PRIMARY KEY,
@@ -66,7 +67,10 @@ impl SqliteStorage {
                 script TEXT NOT NULL,
                 policy_version TEXT NOT NULL,
                 created_unix_ms INTEGER NOT NULL,
-                active INTEGER NOT NULL DEFAULT 1
+                active INTEGER NOT NULL DEFAULT 1,
+                signature TEXT,
+                min_approvals INTEGER NOT NULL DEFAULT 0,
+                min_justification_length INTEGER NOT NULL DEFAULT 0
             )"#,
             "CREATE INDEX IF NOT EXISTS idx_policy_lookup ON policies(tool, action, active)",
             r#"CREATE TABLE IF NOT EXISTS tenant_policies (
@@ -78,6 +82,9 @@ impl SqliteStorage {
                 policy_version TEXT NOT NULL,
                 created_unix_ms INTEGER NOT NULL,
                 active INTEGER NOT NULL DEFAULT 1,
+                signature TEXT,
+                min_approvals INTEGER NOT NULL DEFAULT 0,
+                min_justification_length INTEGER NOT NULL DEFAULT 0,
                 PRIMARY KEY (tenant_id, policy_id)
             )"#,
             "CREATE INDEX IF NOT EXISTS idx_tenant_policy ON tenant_policies(tenant_id, tool, action, active)",
@@ -94,6 +101,13 @@ impl SqliteStorage {
                 max_count INTEGER NOT NULL,
                 window_ms INTEGER NOT NULL,
                 PRIMARY KEY (key, window_start_ms)
+            )"#,
+            r#"CREATE TABLE IF NOT EXISTS approvals (
+                token_id TEXT NOT NULL,
+                approver_id TEXT NOT NULL,
+                approved_unix_ms INTEGER NOT NULL,
+                signature TEXT NOT NULL,
+                PRIMARY KEY (token_id, approver_id)
             )"#,
         ];
         for stmt in statements {
@@ -147,8 +161,8 @@ impl Storage for SqliteStorage {
     async fn store_token(&self, t: TokenRecord) -> Result<(), StorageError> {
         sqlx::query(
             r#"INSERT INTO tokens
-               (token_id, request_id, tool, action, params_hash, expires_unix_ms, consumed, consumed_unix_ms, decision_hash, signature, created_unix_ms)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+               (token_id, request_id, tool, action, params_hash, expires_unix_ms, consumed, consumed_unix_ms, decision_hash, signature, created_unix_ms, min_approvals)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(&t.token_id)
         .bind(&t.request_id)
@@ -161,6 +175,7 @@ impl Storage for SqliteStorage {
         .bind(&t.decision_hash)
         .bind(&t.signature)
         .bind(t.created_unix_ms)
+        .bind(t.min_approvals)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -184,6 +199,7 @@ impl Storage for SqliteStorage {
                 decision_hash: r.get("decision_hash"),
                 signature: r.get("signature"),
                 created_unix_ms: r.get("created_unix_ms"),
+                min_approvals: r.get("min_approvals"),
             })),
             None => Ok(None),
         }
@@ -213,8 +229,8 @@ impl Storage for SqliteStorage {
         // Insert new active policy
         sqlx::query(
             r#"INSERT INTO policies
-               (policy_id, tool, action, script, policy_version, created_unix_ms, active)
-               VALUES (?, ?, ?, ?, ?, ?, 1)"#,
+               (policy_id, tool, action, script, policy_version, created_unix_ms, active, signature, min_approvals, min_justification_length)
+               VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)"#,
         )
         .bind(&p.policy_id)
         .bind(&p.tool)
@@ -222,6 +238,9 @@ impl Storage for SqliteStorage {
         .bind(&p.script)
         .bind(&p.policy_version)
         .bind(p.created_unix_ms)
+        .bind(&p.signature)
+        .bind(p.min_approvals)
+        .bind(p.min_justification_length)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -242,6 +261,9 @@ impl Storage for SqliteStorage {
                 policy_version: r.get("policy_version"),
                 created_unix_ms: r.get("created_unix_ms"),
                 active: r.get::<i64, _>("active") != 0,
+                signature: r.get("signature"),
+                min_approvals: r.get("min_approvals"),
+                min_justification_length: r.get("min_justification_length"),
             })),
             None => Ok(None),
         }
@@ -368,8 +390,8 @@ impl Storage for SqliteStorage {
             .await?;
         sqlx::query(
             r#"INSERT INTO tenant_policies
-               (tenant_id, policy_id, tool, action, script, policy_version, created_unix_ms, active)
-               VALUES (?, ?, ?, ?, ?, ?, ?, 1)"#,
+               (tenant_id, policy_id, tool, action, script, policy_version, created_unix_ms, active, signature, min_approvals, min_justification_length)
+               VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)"#,
         )
         .bind(tenant_id)
         .bind(&p.policy_id)
@@ -378,6 +400,9 @@ impl Storage for SqliteStorage {
         .bind(&p.script)
         .bind(&p.policy_version)
         .bind(p.created_unix_ms)
+        .bind(&p.signature)
+        .bind(p.min_approvals)
+        .bind(p.min_justification_length)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -399,9 +424,35 @@ impl Storage for SqliteStorage {
                 policy_version: r.get("policy_version"),
                 created_unix_ms: r.get("created_unix_ms"),
                 active: r.get::<i64, _>("active") != 0,
+                signature: r.get("signature"),
+                min_approvals: r.get("min_approvals"),
+                min_justification_length: r.get("min_justification_length"),
             })),
             None => Ok(None),
         }
+    }
+
+    async fn store_approval(&self, a: ApprovalRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"INSERT OR REPLACE INTO approvals
+               (token_id, approver_id, approved_unix_ms, signature)
+               VALUES (?, ?, ?, ?)"#,
+        )
+        .bind(&a.token_id)
+        .bind(&a.approver_id)
+        .bind(a.approved_unix_ms)
+        .bind(&a.signature)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn count_approvals(&self, token_id: &str) -> Result<i64, StorageError> {
+        let row = sqlx::query("SELECT COUNT(*) as cnt FROM approvals WHERE token_id = ?")
+            .bind(token_id)
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(row.get::<i64, _>("cnt"))
     }
 
     async fn ping(&self) -> Result<(), StorageError> {

@@ -9,7 +9,8 @@ use sqlx::postgres::PgPool;
 use sqlx::Row;
 
 use crate::{
-    DecisionRecord, PolicyRecord, RevocationRecord, Storage, StorageError, TokenRecord,
+    ApprovalRecord, DecisionRecord, PolicyRecord, RevocationRecord, Storage, StorageError,
+    TokenRecord,
 };
 
 pub struct PostgresStorage {
@@ -48,7 +49,8 @@ impl PostgresStorage {
                 consumed_unix_ms BIGINT,
                 decision_hash TEXT NOT NULL,
                 signature TEXT NOT NULL,
-                created_unix_ms BIGINT NOT NULL
+                created_unix_ms BIGINT NOT NULL,
+                min_approvals BIGINT NOT NULL DEFAULT 0
             )"#,
             r#"CREATE TABLE IF NOT EXISTS policies (
                 policy_id TEXT PRIMARY KEY,
@@ -57,7 +59,10 @@ impl PostgresStorage {
                 script TEXT NOT NULL,
                 policy_version TEXT NOT NULL,
                 created_unix_ms BIGINT NOT NULL,
-                active BOOLEAN NOT NULL DEFAULT TRUE
+                active BOOLEAN NOT NULL DEFAULT TRUE,
+                signature TEXT,
+                min_approvals BIGINT NOT NULL DEFAULT 0,
+                min_justification_length BIGINT NOT NULL DEFAULT 0
             )"#,
             "CREATE INDEX IF NOT EXISTS idx_policy_lookup ON policies(tool, action, active)",
             r#"CREATE TABLE IF NOT EXISTS tenant_policies (
@@ -69,6 +74,9 @@ impl PostgresStorage {
                 policy_version TEXT NOT NULL,
                 created_unix_ms BIGINT NOT NULL,
                 active BOOLEAN NOT NULL DEFAULT TRUE,
+                signature TEXT,
+                min_approvals BIGINT NOT NULL DEFAULT 0,
+                min_justification_length BIGINT NOT NULL DEFAULT 0,
                 PRIMARY KEY (tenant_id, policy_id)
             )"#,
             "CREATE INDEX IF NOT EXISTS idx_tenant_policy ON tenant_policies(tenant_id, tool, action, active)",
@@ -85,6 +93,13 @@ impl PostgresStorage {
                 max_count BIGINT NOT NULL,
                 window_ms BIGINT NOT NULL,
                 PRIMARY KEY (key, window_start_ms)
+            )"#,
+            r#"CREATE TABLE IF NOT EXISTS approvals (
+                token_id TEXT NOT NULL,
+                approver_id TEXT NOT NULL,
+                approved_unix_ms BIGINT NOT NULL,
+                signature TEXT NOT NULL,
+                PRIMARY KEY (token_id, approver_id)
             )"#,
         ];
         for stmt in statements {
@@ -138,8 +153,8 @@ impl Storage for PostgresStorage {
     async fn store_token(&self, t: TokenRecord) -> Result<(), StorageError> {
         sqlx::query(
             r#"INSERT INTO tokens
-               (token_id, request_id, tool, action, params_hash, expires_unix_ms, consumed, consumed_unix_ms, decision_hash, signature, created_unix_ms)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)"#,
+               (token_id, request_id, tool, action, params_hash, expires_unix_ms, consumed, consumed_unix_ms, decision_hash, signature, created_unix_ms, min_approvals)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)"#,
         )
         .bind(&t.token_id)
         .bind(&t.request_id)
@@ -152,6 +167,7 @@ impl Storage for PostgresStorage {
         .bind(&t.decision_hash)
         .bind(&t.signature)
         .bind(t.created_unix_ms)
+        .bind(t.min_approvals)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -175,6 +191,7 @@ impl Storage for PostgresStorage {
                 decision_hash: r.get("decision_hash"),
                 signature: r.get("signature"),
                 created_unix_ms: r.get("created_unix_ms"),
+                min_approvals: r.get("min_approvals"),
             })),
             None => Ok(None),
         }
@@ -203,8 +220,8 @@ impl Storage for PostgresStorage {
             .await?;
         sqlx::query(
             r#"INSERT INTO policies
-               (policy_id, tool, action, script, policy_version, created_unix_ms, active)
-               VALUES ($1, $2, $3, $4, $5, $6, TRUE)"#,
+               (policy_id, tool, action, script, policy_version, created_unix_ms, active, signature, min_approvals, min_justification_length)
+               VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7, $8, $9)"#,
         )
         .bind(&p.policy_id)
         .bind(&p.tool)
@@ -212,6 +229,9 @@ impl Storage for PostgresStorage {
         .bind(&p.script)
         .bind(&p.policy_version)
         .bind(p.created_unix_ms)
+        .bind(&p.signature)
+        .bind(p.min_approvals)
+        .bind(p.min_justification_length)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -232,6 +252,9 @@ impl Storage for PostgresStorage {
                 policy_version: r.get("policy_version"),
                 created_unix_ms: r.get("created_unix_ms"),
                 active: r.get("active"),
+                signature: r.get("signature"),
+                min_approvals: r.get("min_approvals"),
+                min_justification_length: r.get("min_justification_length"),
             })),
             None => Ok(None),
         }
@@ -359,8 +382,8 @@ impl Storage for PostgresStorage {
             .await?;
         sqlx::query(
             r#"INSERT INTO tenant_policies
-               (tenant_id, policy_id, tool, action, script, policy_version, created_unix_ms, active)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)"#,
+               (tenant_id, policy_id, tool, action, script, policy_version, created_unix_ms, active, signature, min_approvals, min_justification_length)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE, $8, $9, $10)"#,
         )
         .bind(tenant_id)
         .bind(&p.policy_id)
@@ -369,6 +392,9 @@ impl Storage for PostgresStorage {
         .bind(&p.script)
         .bind(&p.policy_version)
         .bind(p.created_unix_ms)
+        .bind(&p.signature)
+        .bind(p.min_approvals)
+        .bind(p.min_justification_length)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -390,9 +416,37 @@ impl Storage for PostgresStorage {
                 policy_version: r.get("policy_version"),
                 created_unix_ms: r.get("created_unix_ms"),
                 active: r.get("active"),
+                signature: r.get("signature"),
+                min_approvals: r.get("min_approvals"),
+                min_justification_length: r.get("min_justification_length"),
             })),
             None => Ok(None),
         }
+    }
+
+    async fn store_approval(&self, a: ApprovalRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"INSERT INTO approvals (token_id, approver_id, approved_unix_ms, signature)
+               VALUES ($1, $2, $3, $4)
+               ON CONFLICT (token_id, approver_id) DO UPDATE SET
+                 approved_unix_ms = EXCLUDED.approved_unix_ms,
+                 signature = EXCLUDED.signature"#,
+        )
+        .bind(&a.token_id)
+        .bind(&a.approver_id)
+        .bind(a.approved_unix_ms)
+        .bind(&a.signature)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn count_approvals(&self, token_id: &str) -> Result<i64, StorageError> {
+        let row = sqlx::query("SELECT COUNT(*) as cnt FROM approvals WHERE token_id = $1")
+            .bind(token_id)
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(row.get::<i64, _>("cnt"))
     }
 
     async fn ping(&self) -> Result<(), StorageError> {

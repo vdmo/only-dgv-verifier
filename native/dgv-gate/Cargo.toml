@@ -20,3 +20,4 @@ dgv-storage = { path = "../dgv-storage" }
 tower-http = { version = "0.5.2", features = ["cors"] }
 chrono = "0.4"
 serde_yaml = "0.9"
+jsonwebtoken = "9"

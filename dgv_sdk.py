@@ -119,6 +119,9 @@ class PolicyRecord:
     policy_version: str
     created_unix_ms: int
     active: bool
+    signature: Optional[str] = None
+    min_approvals: int = 0
+    min_justification_length: int = 0
 
 
 @dataclass
@@ -151,15 +154,19 @@ class GateError(Exception):
 class GateClient:
     """Client for the DGV Enforcement Gate HTTP API."""
 
-    def __init__(self, base_url: str = "http://localhost:7878", admin_key: Optional[str] = None):
+    def __init__(self, base_url: str = "http://localhost:7878", admin_key: Optional[str] = None,
+                 jwt_token: Optional[str] = None):
         self.base_url = base_url.rstrip("/")
         self.admin_key = admin_key
+        self.jwt_token = jwt_token
 
     def _request(self, method: str, path: str, body: Optional[Dict] = None) -> Dict:
         url = f"{self.base_url}{path}"
         headers = {"Content-Type": "application/json"}
         if self.admin_key:
             headers["X-Admin-Key"] = self.admin_key
+        if self.jwt_token:
+            headers["Authorization"] = f"Bearer {self.jwt_token}"
 
         data = json.dumps(body).encode() if body else None
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
@@ -187,6 +194,7 @@ class GateClient:
         risk_level: str = "1000",
         identity: Optional[Dict] = None,
         tenant_id: Optional[str] = None,
+        context_hash: Optional[str] = None,
     ) -> Decision:
         """Evaluate a proposal. Returns a Decision."""
         body = {
@@ -202,6 +210,8 @@ class GateClient:
         }
         if tenant_id:
             body["tenant_id"] = tenant_id
+        if context_hash:
+            body["context_hash"] = context_hash
 
         resp = self._request("POST", "/govern", body)
         d = resp["decision"]
@@ -294,14 +304,20 @@ class GateClient:
 
     # ── Admin endpoints ───────────────────────────────────────────────────────
 
-    def store_policy(self, tool: str, action: str, script: str, policy_version: str = "v1") -> str:
+    def store_policy(self, tool: str, action: str, script: str, policy_version: str = "v1",
+                     min_approvals: int = 0, min_justification_length: int = 0) -> str:
         """Store a policy. Requires admin key."""
-        resp = self._request("POST", "/policies", {
+        body = {
             "tool": tool,
             "action": action,
             "script": script,
             "policy_version": policy_version,
-        })
+        }
+        if min_approvals > 0:
+            body["min_approvals"] = min_approvals
+        if min_justification_length > 0:
+            body["min_justification_length"] = min_justification_length
+        resp = self._request("POST", "/policies", body)
         return resp["policy_id"]
 
     def get_policy(self, tool: str, action: str) -> Optional[PolicyRecord]:
@@ -358,3 +374,7 @@ class GateClient:
             body["enabled"] = enabled
         resp = self._request("PUT", "/config/rate-limit", body)
         return RateLimitConfig(**resp)
+
+    def approve(self, token_id: str, approver_id: str) -> Dict[str, Any]:
+        """Approve a token (for multi-approval policies). Requires admin key."""
+        return self._request("POST", f"/approve/{token_id}", {"approver_id": approver_id})

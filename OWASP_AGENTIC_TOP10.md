@@ -100,26 +100,30 @@ impersonates an agent to gain unauthorized access.
 | Tenant isolation | Tenant-specific policies override global | **Implemented** — `POST /tenant/:id/policies` |
 | Multi-instance revocation | Revocation visible to all instances sharing DB | **Implemented** — distributed revocation tests |
 | Admin auth | `X-Admin-Key` required for admin endpoints | **Implemented** |
+| **JWT identity** | `DGV_JWT_SECRET` verifies HS256 JWTs; `sub` claim = verified agent_id | **Implemented** — `/govern` and `/execute` require valid JWT when configured |
 | Test cards | TC-013, TC-014, TC-015, TC-016, TC-017 | **89/89 pass** |
 
 **How DGV mitigates:**
-- Each agent has an `agent_id` that is bound to specific authorities via `bind_authority`.
-- Revocation is checked at both govern time (T₀) and execute time (T₁) — even if a token
-  was issued, a subsequent revocation blocks execution.
+- When `DGV_JWT_SECRET` is set, agents must present a valid JWT in the
+  `Authorization: Bearer` header. The `sub` claim becomes the verified `agent_id`
+  — an attacker cannot spoof another agent's ID.
+- Each agent's `agent_id` is bound to specific authorities via `bind_authority`.
+- Revocation is checked at both govern time (T₀) and execute time (T₁) — even if
+  a token was issued, a subsequent revocation blocks execution.
 - Tenant isolation prevents cross-tenant privilege escalation.
-- Admin endpoints require authentication — only authorized operators can revoke or
-  modify policies.
+- Admin endpoints require authentication — only authorized operators can revoke
+  or modify policies.
 
-**Gaps:**
-- **No OIDC/JWT** — agent identity is a raw string (`agent_id`), not a verified credential.
-  An attacker who knows an agent's ID can submit proposals as that agent.
+**Remaining gaps:**
+- **No RS256/JWKS** — only HS256 shared secret is supported. Production deployments
+  should use RS256 with a JWKS endpoint for key rotation.
 - **No per-user RBAC** — admin auth is a single shared key, not per-user permissions.
 - **No delegation tokens** — the `link_lineage` command exists but delegation chains
   are not cryptographically enforced end-to-end.
-- **No identity attestation** — no mechanism to prove an agent is what it claims to be.
 
-**Coverage: Moderate.** The governance model is sound — bind, check, revoke, isolate.
-But identity is not cryptographically verified. This is the single largest gap.
+**Coverage: Strong.** Identity is now verified via JWT — the `sub` claim is the
+authoritative `agent_id`, not a self-declared string. Combined with revocation
+and tenant isolation, this closes the largest gap.
 
 ---
 
@@ -132,31 +136,33 @@ depends on introduce vulnerabilities.
 
 | Control | Mechanism | Status |
 |---|---|---|
-| Policy integrity | Policies stored in DB, signed decisions reference policy version | **Partial** — version tracked, not signed |
+| **Policy signing** | Policies are Ed25519-signed when stored; verified on load | **Implemented** — tampered policies rejected |
+| Policy versioning | Policies stored in DB, signed decisions reference policy version | **Implemented** — version tracked and signed |
 | YAML policy loading | Policies loaded from auditable files | **Implemented** — `POST /policies/load-file` |
 | Evidence packs | Full provenance of every decision | **Implemented** — hash-linked records |
 | `corpus_digest` | Hash of policy corpus for integrity verification | **Implemented** — L8 command |
 | Test cards | TC-018, TC-019, TC-020 | **89/89 pass** |
 
 **How DGV mitigates:**
+- Policies are Ed25519-signed when stored — a tampered policy is rejected at load time.
 - Policies are stored and versioned — you can audit which policy version was in effect
   for any decision.
 - Evidence packs contain full provenance — what was decided, when, by whom, under
   which policy version.
 - The `corpus_digest` command can verify that the policy corpus hasn't been tampered with.
 
-**Gaps:**
-- **No policy signing** — policies are stored but not cryptographically signed. A
-  compromised database could inject malicious policies.
+**Remaining gaps:**
 - **No dependency scanning** — no mechanism to verify that tools/models haven't been
   compromised.
 - **No MCP/A2A security** — the gate doesn't verify the integrity of external tool
   servers or inter-agent protocols.
 - **No SLSA/provenance chain** — no build provenance or dependency chain verification.
+- **Unsigned legacy policies** — policies stored before signing was implemented are
+  allowed but logged as warnings.
 
-**Coverage: Weak.** The policy-as-code approach provides auditability, but there's no
-cryptographic verification of the supply chain itself. This needs policy signing and
-dependency attestation.
+**Coverage: Moderate.** Policy signing closes the injection gap — tampered policies
+are rejected. But the broader supply chain (tools, models, dependencies) is not
+verified. This is the next-largest gap after identity.
 
 ---
 
@@ -309,7 +315,9 @@ actions — through persuasive language, false urgency, or misleading informatio
 | Control | Mechanism | Status |
 |---|---|---|
 | `justification` field | Agent must declare why it's acting | **Implemented** — proposal schema |
-| `approvals_required` | Field exists for multi-approval workflows | **Partial** — field exists, not enforced |
+| `approvals_required` | Field exists for multi-approval workflows | **Implemented** — enforced via `min_approvals` in policies |
+| `POST /approve/:token_id` | Approve a token before execution | **Implemented** — stored in `approvals` table |
+| `min_justification_length` | Policies can require minimum justification length | **Implemented** — `min_justification_length` in policies |
 | `HITL` test cards | Human-in-the-loop simulation | **Implemented** — TC-HITL cards |
 | Evidence packs | Full audit trail of what was proposed and approved | **Implemented** |
 | Test cards | TC-033, TC-034, TC-035 | **89/89 pass** |
@@ -317,20 +325,26 @@ actions — through persuasive language, false urgency, or misleading informatio
 **How DGV mitigates:**
 - The `justification` field creates a record of the agent's stated reasoning — a human
   reviewer can check whether the stated justification matches the actual action.
-- Evidence packs provide a complete audit trail — what was proposed, what was approved,
-  what was executed.
+- `min_justification_length` in policies enforces a minimum justification length —
+  an agent cannot submit a one-word justification for a high-risk action.
+- `min_approvals` in policies enforces multi-approval workflows — a token cannot
+  be executed until enough approvals are received via `POST /approve/:token_id`.
+- Evidence packs provide a complete audit trail — what was proposed, what was
+  approved, what was executed.
 
-**Gaps:**
-- **No enforcement of approvals** — `approvals_required` exists but the gate doesn't
-  block execution until approvals are received.
-- **No justification verification** — the gate doesn't verify that the stated
-  justification is accurate (it can't — that requires semantic understanding).
-- **No approval workflow** — no multi-step approval process for high-risk actions.
-- **HITL is simulated** — the test cards simulate human approval but there's no
-  real human-in-the-loop workflow.
+**Remaining gaps:**
+- **No justification semantic verification** — the gate checks justification
+  *length* but not *accuracy*. An agent could write a long but misleading
+  justification.
+- **No approval identity verification** — approver IDs are strings, not verified
+  credentials. A compromised approver ID could approve malicious actions.
+- **No approval expiry** — approvals don't expire; an approval for a stale
+  token is still valid.
 
-**Coverage: Weak.** The audit trail is solid, but there's no active enforcement of
-human approval requirements. This is the second-largest gap after identity.
+**Coverage: Moderate.** Approval workflow is now enforced — the gate blocks
+execution until `min_approvals` are received. Combined with justification
+requirements and evidence packs, this provides real human-in-the-loop governance.
+The remaining gap is semantic verification of justification content.
 
 ---
 
@@ -386,38 +400,41 @@ mathematical governance — it catches mechanical divergence, not semantic malic
 |---|---|---|---|---|
 | ASI01 | Agent Goal Hijack | **Partial** | `bind_objective` + drift check | No semantic intent analysis |
 | ASI02 | Tool Misuse | **Strong** | Token binding to tool+action+params | No input sanitization |
-| ASI03 | Identity & Privilege | **Moderate** | Revocation + tenant isolation | No OIDC/JWT, no delegation |
-| ASI04 | Supply Chain | **Weak** | Policy versioning + evidence packs | No policy signing, no dep scanning |
+| ASI03 | Identity & Privilege | **Strong** | JWT identity + revocation + tenant isolation | No RS256/JWKS, no delegation |
+| ASI04 | Supply Chain | **Moderate** | Policy signing + evidence packs | No dep scanning, no MCP security |
 | ASI05 | Unexpected Code Exec | **Partial** | Token binding prevents unauthorized exec | No input sanitization/sandboxing |
-| ASI06 | Memory Poisoning | **Moderate** | `bind_context` + drift check | Context = tool+params only |
+| ASI06 | Memory Poisoning | **Moderate** | `bind_context` + drift check + context_hash | Full context hashing is opt-in |
 | ASI07 | Inter-Agent Comms | **Partial** | TLS + signed decisions | No mTLS, no agent-to-agent protocol |
 | ASI08 | Cascading Failures | **Moderate** | Rate limiting + budget caps | No circuit breakers |
-| ASI09 | Human Trust Exploit | **Weak** | Justification + evidence packs | No approval enforcement |
+| ASI09 | Human Trust Exploit | **Moderate** | Approval workflow + justification enforcement | No semantic justification verification |
 | ASI10 | Rogue Agents | **Moderate** | Drift + residual + evidence | Mathematical bounds only |
 
 ## What This Means
 
-**Strongest coverage:** ASI02 (Tool Misuse) — the token binding mechanism is
-specifically designed for this. The same token cannot be repurposed.
+**Strongest coverage:** ASI02 (Tool Misuse) and ASI03 (Identity) — token binding
+prevents tool repurposing, and JWT identity prevents agent impersonation. These are
+the foundation of authorization.
 
-**Weakest coverage:** ASI04 (Supply Chain) and ASI09 (Human Trust) — these require
-capabilities DGV doesn't have yet: policy signing, dependency scanning, approval
-workflow enforcement, and semantic justification verification.
+**Weakest coverage:** ASI04 (Supply Chain) and ASI09 (Human Trust) — policy signing
+closes the injection gap, but broader supply chain verification (tools, models,
+dependencies) is not addressed. Approval workflow is enforced, but semantic
+justification verification is not possible without an LLM.
 
-**Honest assessment:** DGV provides strong *authorization* and *audit* coverage —
-the gate controls who can do what, and produces evidence of what was done. It is
-weaker on *semantic* security — detecting malicious intent within authorized bounds,
-verifying human trust, and securing the supply chain.
+**Honest assessment:** DGV now provides strong *authorization* and *audit* coverage —
+the gate controls who can do what, verifies identity via JWT, enforces approval
+workflows, and produces signed evidence of every decision. It is weaker on *semantic*
+security — detecting malicious intent within authorized bounds, verifying tool safety,
+and securing the external supply chain.
 
 ---
 
 ## Recommended Next Steps (from gap analysis)
 
-1. **ASI03 gap → OIDC/JWT identity providers** (highest priority — identity is the
-   foundation of authorization)
-2. **ASI09 gap → Approval workflow** (human-in-the-loop enforcement for high-risk actions)
-3. **ASI04 gap → Policy signing** (cryptographically sign policies to prevent injection)
-4. **ASI01 gap → Semantic justification verification** (LLM-based check that the
-   stated justification matches the proposed action)
-5. **ASI06 gap → Full context hashing** (hash the agent's full context/memory, not
-   just tool+params)
+1. ~~OIDC/JWT identity providers~~ — **Done** (HS256 JWT verification, `sub` claim = verified agent_id)
+2. ~~Approval workflow~~ — **Done** (`min_approvals` in policies, `POST /approve/:token_id`, enforced at execute)
+3. ~~Policy signing~~ — **Done** (Ed25519-signed policies, verified on load)
+4. **RS256/JWKS support** — upgrade from HS256 shared secret to RS256 with JWKS endpoint
+5. **Semantic justification verification** — LLM-based check that the stated justification matches the proposed action
+6. **Full context hashing by default** — make `context_hash` required, not opt-in
+7. **Circuit breakers** — auto-disable tools that produce bad results
+8. **Agent-to-agent protocol** — secure inter-agent communication with signed messages
