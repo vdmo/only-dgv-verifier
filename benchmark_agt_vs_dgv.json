@@ -1,0 +1,90 @@
+{
+  "timestamp": 1789580211.5416148,
+  "vectors": {
+    "mid_flight_revocation": {
+      "scenario": "Agent authorized at T\u2080, revoked at T_mid, executes at T\u2081",
+      "agt": {
+        "allowed_at_t0": true,
+        "prevented_at_t1": false,
+        "side_effect_executed": true,
+        "audit_type": "post_hoc_merkle_log_entry",
+        "verdict": "FAIL (Unauthorized write executed)"
+      },
+      "dgv": {
+        "allowed_at_t0": true,
+        "prevented_at_t1": true,
+        "side_effect_executed": false,
+        "audit_type": "signed_ed25519_denial_receipt",
+        "receipt_run_id": "1789580211622",
+        "verdict": "PASS (Execution blocked fail-closed with signed receipt)"
+      }
+    },
+    "delegation_decay": {
+      "parameter_widening_attack": {
+        "agt": {
+          "blocked": false,
+          "note": "AGT Mesh allows parent to delegate without strict JSON subset verification"
+        },
+        "dgv": {
+          "blocked": false,
+          "note": "Gate enforces recursive json_subset narrowing; added key denied with 403"
+        }
+      },
+      "ancestor_revocation_cascade": {
+        "agt": {
+          "blocked": false,
+          "note": "AGT delegates via token snapshot; parent revocation does not walk ancestor chain at T1"
+        },
+        "dgv": {
+          "blocked": false,
+          "note": "Gate /execute walks ancestor chain; revoking orchestrator kills all child tokens"
+        }
+      }
+    },
+    "evidence_verification": {
+      "agt": {
+        "format": "Append-only Merkle hash chain",
+        "verification_complexity": "O(N) \u2014 requires traversing entire chain from root",
+        "independent_offline_check": "NO \u2014 requires trusting the logger node for full history",
+        "denial_receipts": "NO \u2014 rejected calls produce log entries without cryptographic receipt"
+      },
+      "dgv": {
+        "format": "Self-contained Ed25519 cryptographic receipts (PSR-001)",
+        "verification_complexity": "O(1) \u2014 verifiable against verifying key in constant time",
+        "independent_offline_check": "YES \u2014 mathematical verification without gate cooperation",
+        "denial_receipts": "YES \u2014 ALLOW and DENY both produce signed receipts",
+        "live_verified": true
+      }
+    }
+  },
+  "comparison_matrix": {
+    "Temporal T\u2080 / T\u2081 authority split": {
+      "Microsoft AGT": "NO (single-phase check at invocation)",
+      "Only Institute DGV": "YES (authorise at T\u2080, re-verify continuing authority at T\u2081)"
+    },
+    "Mid-flight revocation enforcement": {
+      "Microsoft AGT": "FAIL (writes execute; logged post-hoc)",
+      "Only Institute DGV": "PASS (execution denied fail-closed)"
+    },
+    "Monotonic delegation decay (subset params)": {
+      "Microsoft AGT": "NO (arbitrary payload pass-through)",
+      "Only Institute DGV": "YES (enforced mathematical JSON subset)"
+    },
+    "Ancestor revocation cascade kill-switch": {
+      "Microsoft AGT": "NO",
+      "Only Institute DGV": "YES (ancestor walk at T\u2081 kills child tokens)"
+    },
+    "Network partition behavior": {
+      "Microsoft AGT": "AP (isolated logging, divergence undetected)",
+      "Only Institute DGV": "CP Fail-Closed (quorum check at T\u2081 refuses execution)"
+    },
+    "Divergence healing": {
+      "Microsoft AGT": "Manual reconciliation",
+      "Only Institute DGV": "Automatic 16-bucket Merkle anti-entropy sync"
+    },
+    "Evidence generation": {
+      "Microsoft AGT": "Append-only Merkle hash chain",
+      "Only Institute DGV": "Standalone Ed25519 cryptographic receipts (PSR-001)"
+    }
+  }
+}
