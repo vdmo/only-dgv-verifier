@@ -140,6 +140,7 @@ impl PostgresStorage {
                 agent_id TEXT PRIMARY KEY,
                 public_key_hex TEXT NOT NULL,
                 enc_public_key_hex TEXT,
+                pq_public_key_hex TEXT,
                 registered_unix_ms BIGINT NOT NULL,
                 active BOOLEAN NOT NULL DEFAULT TRUE
             )"#,
@@ -160,6 +161,7 @@ impl PostgresStorage {
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_a2a_nonce ON a2a_envelopes(sender_id, nonce)",
             "CREATE INDEX IF NOT EXISTS idx_a2a_inbox ON a2a_envelopes(recipient_id, delivered)",
             "ALTER TABLE agent_keys ADD COLUMN IF NOT EXISTS enc_public_key_hex TEXT",
+            "ALTER TABLE agent_keys ADD COLUMN IF NOT EXISTS pq_public_key_hex TEXT",
             "ALTER TABLE a2a_envelopes ADD COLUMN IF NOT EXISTS transport_ref TEXT",
             "ALTER TABLE tokens ADD COLUMN IF NOT EXISTS granted_to TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE tokens ADD COLUMN IF NOT EXISTS parent_token_id TEXT",
@@ -621,17 +623,19 @@ impl Storage for PostgresStorage {
 
     async fn register_agent_key(&self, k: AgentKeyRecord) -> Result<(), StorageError> {
         sqlx::query(
-            r#"INSERT INTO agent_keys (agent_id, public_key_hex, enc_public_key_hex, registered_unix_ms, active)
-               VALUES ($1, $2, $3, $4, $5)
+            r#"INSERT INTO agent_keys (agent_id, public_key_hex, enc_public_key_hex, pq_public_key_hex, registered_unix_ms, active)
+               VALUES ($1, $2, $3, $4, $5, $6)
                ON CONFLICT (agent_id) DO UPDATE SET
                  public_key_hex = EXCLUDED.public_key_hex,
                  enc_public_key_hex = EXCLUDED.enc_public_key_hex,
+                 pq_public_key_hex = EXCLUDED.pq_public_key_hex,
                  registered_unix_ms = EXCLUDED.registered_unix_ms,
                  active = EXCLUDED.active"#,
         )
         .bind(&k.agent_id)
         .bind(&k.public_key_hex)
         .bind(&k.enc_public_key_hex)
+        .bind(&k.pq_public_key_hex)
         .bind(k.registered_unix_ms)
         .bind(k.active)
         .execute(&self.pool)
@@ -649,6 +653,7 @@ impl Storage for PostgresStorage {
                 agent_id: r.get("agent_id"),
                 public_key_hex: r.get("public_key_hex"),
                 enc_public_key_hex: r.get("enc_public_key_hex"),
+                pq_public_key_hex: r.get("pq_public_key_hex"),
                 registered_unix_ms: r.get("registered_unix_ms"),
                 active: r.get("active"),
             })),

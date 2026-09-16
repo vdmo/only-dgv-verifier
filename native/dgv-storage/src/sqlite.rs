@@ -125,6 +125,7 @@ impl SqliteStorage {
                 agent_id TEXT PRIMARY KEY,
                 public_key_hex TEXT NOT NULL,
                 enc_public_key_hex TEXT,
+                pq_public_key_hex TEXT,
                 registered_unix_ms INTEGER NOT NULL,
                 active INTEGER NOT NULL DEFAULT 1
             )"#,
@@ -152,6 +153,7 @@ impl SqliteStorage {
         // ADD COLUMN IF NOT EXISTS, so ignore "duplicate column" failures.
         for alter in [
             "ALTER TABLE agent_keys ADD COLUMN enc_public_key_hex TEXT",
+            "ALTER TABLE agent_keys ADD COLUMN pq_public_key_hex TEXT",
             "ALTER TABLE a2a_envelopes ADD COLUMN transport_ref TEXT",
             "ALTER TABLE tokens ADD COLUMN granted_to TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE tokens ADD COLUMN parent_token_id TEXT",
@@ -613,12 +615,13 @@ impl Storage for SqliteStorage {
     async fn register_agent_key(&self, k: AgentKeyRecord) -> Result<(), StorageError> {
         sqlx::query(
             r#"INSERT OR REPLACE INTO agent_keys
-               (agent_id, public_key_hex, enc_public_key_hex, registered_unix_ms, active)
-               VALUES (?, ?, ?, ?, ?)"#,
+               (agent_id, public_key_hex, enc_public_key_hex, pq_public_key_hex, registered_unix_ms, active)
+               VALUES (?, ?, ?, ?, ?, ?)"#,
         )
         .bind(&k.agent_id)
         .bind(&k.public_key_hex)
         .bind(&k.enc_public_key_hex)
+        .bind(&k.pq_public_key_hex)
         .bind(k.registered_unix_ms)
         .bind(k.active)
         .execute(&self.pool)
@@ -636,6 +639,7 @@ impl Storage for SqliteStorage {
                 agent_id: r.get("agent_id"),
                 public_key_hex: r.get("public_key_hex"),
                 enc_public_key_hex: r.get("enc_public_key_hex"),
+                pq_public_key_hex: r.get("pq_public_key_hex"),
                 registered_unix_ms: r.get("registered_unix_ms"),
                 active: r.get::<i64, _>("active") != 0,
             })),

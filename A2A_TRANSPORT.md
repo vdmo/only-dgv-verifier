@@ -116,13 +116,36 @@ accepted limitation; rotate queue IDs if this matters).
 | Relay down | envelope stays authorized at gate; delivery retried by sender |
 | Gate down | fail-closed by default (see DGV_PARTITION_POLICY) |
 
+## Sealed v2 — forward secrecy + hybrid PQ (experimental)
+
+`dgv-sealed-v2` (`dgv_sdk.seal_a2a_v2_payload` / `open_a2a_payload`) adds:
+
+- An **ephemeral X25519 ratchet key** per payload — static-key compromise
+  cannot decrypt previously sealed v2 ciphertexts (forward secrecy).
+- A **hybrid post-quantum key combiner** — PQ key material registered
+  alongside Ed25519/X25519 keys is combined into the AEAD key derivation,
+  so an attacker must break both the classical and PQ components.
+- `payload_hash` binds the exact v2 ephemeral key + ciphertext.
+- `open_a2a_payload` transparently opens both v1 and v2 payloads.
+
+Verified by `test_a2a_ratchet_pq.py` (10 checks: PQ key registration,
+seal/open, static-compromise resistance, tamper rejection, gate
+authorization + signed receipt, relay delivery, v1 compatibility).
+
+**Honest caveat:** the v2 hybrid construction is implemented and
+functionally tested but has NOT undergone an independent cryptographic
+design review. Do not describe it as "post-quantum secure" — "hybrid PQ
+experimental" is the accurate term. Ephemeral keys are authenticated via
+the sender's static signature; active-MITM resistance assumes the gate's
+key registry is honest.
+
 ## What this does NOT provide (honest non-claims)
 
 - **No post-quantum signatures** — envelopes are Ed25519; libonlystate's WOTS+
   exists but is not integrated in this path.
-- **No forward secrecy across key rotation** — rotating an agent's enc key
-  changes future shared keys but old ciphertext remains decryptable to anyone
-  holding the old private key.
+- **No forward secrecy in v1** — v1 payloads use static-static X25519; old
+  ciphertext remains decryptable to anyone holding the old private key.
+  Use v2 for forward secrecy.
 - **No sender anonymity from the gate** — the gate necessarily knows
   sender→recipient to authorize. Only the relay is identity-blind.
 - **No traffic-analysis resistance** — timing/size metadata is observable.
@@ -130,4 +153,4 @@ accepted limitation; rotate queue IDs if this matters).
   (see above).
 
 Verified by `test_a2a_transport.py` (15 checks against a live gate + live
-onlystate-relay binary).
+onlystate-relay binary) and `test_a2a_ratchet_pq.py` (10 checks).

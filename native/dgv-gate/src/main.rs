@@ -2611,6 +2611,9 @@ struct RegisterAgentKeyRequest {
     /// optional hex-encoded X25519 public key — enables ECDH-sealed payloads
     #[serde(default)]
     enc_public_key_hex: Option<String>,
+    /// optional hex-encoded post-quantum public key (ML-KEM-768 / lattice)
+    #[serde(default)]
+    pq_public_key_hex: Option<String>,
 }
 
 async fn handle_register_agent_key(
@@ -2647,10 +2650,24 @@ async fn handle_register_agent_key(
         }
     }
 
+    // Post-quantum public keys (ML-KEM-768 or lattice)
+    if let Some(pq) = &req.pq_public_key_hex {
+        match hex::decode(pq) {
+            Ok(b) if (32..=4096).contains(&b.len()) => {}
+            _ => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error": "invalid_pq_public_key: expected valid hex key between 32 and 4096 bytes"})),
+                );
+            }
+        }
+    }
+
     let rec = AgentKeyRecord {
         agent_id: req.agent_id.clone(),
         public_key_hex: req.public_key_hex.clone(),
         enc_public_key_hex: req.enc_public_key_hex.clone(),
+        pq_public_key_hex: req.pq_public_key_hex.clone(),
         registered_unix_ms: now_unix_ms(),
         active: true,
     };
@@ -2680,6 +2697,7 @@ async fn handle_get_agent_key(
                 "agent_id": k.agent_id,
                 "public_key_hex": k.public_key_hex,
                 "enc_public_key_hex": k.enc_public_key_hex,
+                "pq_public_key_hex": k.pq_public_key_hex,
                 "registered_unix_ms": k.registered_unix_ms,
                 "active": k.active,
             })),

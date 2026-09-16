@@ -120,6 +120,8 @@ pub struct AgentKeyRecord {
     /// hex-encoded X25519 public key (32 bytes) for ECDH-sealed A2A payloads.
     /// Agents without one can still exchange signed/hash-verified envelopes.
     pub enc_public_key_hex: Option<String>,
+    /// hex-encoded post-quantum public key (ML-KEM-768 or lattice/WOTS)
+    pub pq_public_key_hex: Option<String>,
     pub registered_unix_ms: i64,
     pub active: bool,
 }
