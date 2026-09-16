@@ -3202,6 +3202,24 @@ async fn main() {
             }
         }
 
+        // An explicitly configured OIDC issuer whose discovery failed must not
+        // silently drop to unauthenticated mode — that turns a typo'd issuer
+        // into "JWT off" with only a warn-level log. Refuse to start unless a
+        // fallback mode (JWKS URL / pinned key / secret) is also set.
+        if std::env::var("DGV_OIDC_ISSUER").is_ok()
+            && jwks_url.is_none()
+            && public_key_pem.is_none()
+            && secret.is_none()
+        {
+            eprintln!(
+                "FATAL: DGV_OIDC_ISSUER is set but discovery failed and no \
+                 DGV_JWT_JWKS_URL / DGV_JWT_PUBLIC_KEY / DGV_JWT_SECRET fallback \
+                 is configured. The gate would run with identity verification \
+                 disabled. Fix the issuer, set a fallback, or unset DGV_OIDC_ISSUER."
+            );
+            std::process::exit(1);
+        }
+
         if secret.is_some() || public_key_pem.is_some() || jwks_url.is_some() {
             let mode = if jwks_url.is_some() { "JWKS" } else if public_key_pem.is_some() { "RS256" } else { "HS256" };
             log_event("info", "jwt_auth_enabled", json!({"mode": mode}));

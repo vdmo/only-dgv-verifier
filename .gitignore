@@ -33,3 +33,8 @@ native/dgv_*_key.hex
 
 dist/
 native/dgv_net_k*.hex
+
+# Deployment secrets — never commit
+.env
+dgv_signing_key.hex
+certs/

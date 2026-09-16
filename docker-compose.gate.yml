@@ -2,13 +2,19 @@ version: "3.8"
 
 # DGV Gate — docker-compose for production deployment
 # Includes gate + Postgres + optional reverse proxy (nginx for TLS termination)
+# Copy .env.example to .env and fill the REQUIRED values before `up`.
+#
+# Why env_file: optional gate variables (DGV_OIDC_ISSUER, DGV_JWT_*,
+# DGV_PEERS, ...) must be *absent* when not configured — the gate treats an
+# empty string as "set" and would e.g. enable HS256 with an empty secret.
+# env_file only carries variables that are actually set in .env.
 
 services:
   postgres:
     image: postgres:16-alpine
     container_name: dgv-postgres
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env — see .env.example}
       POSTGRES_DB: dgv_gate
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -19,32 +25,38 @@ services:
       retries: 5
     networks:
       - dgv-network
+    restart: unless-stopped
 
   gate:
     build:
       context: .
       dockerfile: Dockerfile.gate
     container_name: dgv-gate
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
     environment:
+      # Derived or required — always set, never empty.
       DGV_STORAGE: postgres
-      DGV_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/dgv_gate
+      DGV_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/dgv_gate
       DGV_SIGNING_KEY: /data/dgv_signing_key.hex
-      DGV_ADMIN_KEY: ${DGV_ADMIN_KEY:-}
+      DGV_ADMIN_KEY: ${DGV_ADMIN_KEY:?Set DGV_ADMIN_KEY in .env — see .env.example}
       DGV_LISTEN_ADDR: 0.0.0.0:7878
-      DGV_CORS_ORIGINS: ${DGV_CORS_ORIGINS:-*}
+      DGV_CORS_ORIGINS: ${DGV_CORS_ORIGINS:?Set DGV_CORS_ORIGINS in .env — "*" is not acceptable in production}
       DGV_RATE_LIMIT_MAX: ${DGV_RATE_LIMIT_MAX:-100}
       DGV_RATE_LIMIT_WINDOW_MS: ${DGV_RATE_LIMIT_WINDOW_MS:-60000}
-      # Phase 8: partition policy + signed gossip
+      DGV_LOG_FORMAT: ${DGV_LOG_FORMAT:-json}
       DGV_PARTITION_POLICY: ${DGV_PARTITION_POLICY:-fail_closed}
-      DGV_PEERS: ${DGV_PEERS:-}
-      DGV_GOSSIP_KEYS: ${DGV_GOSSIP_KEYS:-}
+      DGV_MAX_DELEGATION_DEPTH: ${DGV_MAX_DELEGATION_DEPTH:-3}
     volumes:
       - gate_data:/data
     ports:
-      - "7878:7878"
+      # localhost-only: the nginx TLS profile reaches the gate over the
+      # internal network and needs no published port at all. Widen this only
+      # for a deployment that terminates TLS elsewhere.
+      - "127.0.0.1:7878:7878"
     networks:
       - dgv-network
     restart: unless-stopped
@@ -55,25 +67,27 @@ services:
       context: .
       dockerfile: Dockerfile.gate
     container_name: dgv-gate-replica
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       DGV_STORAGE: postgres
-      DGV_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/dgv_gate
+      DGV_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD}@postgres:5432/dgv_gate
       DGV_SIGNING_KEY: /data/dgv_signing_key.hex
-      DGV_ADMIN_KEY: ${DGV_ADMIN_KEY:-}
+      DGV_ADMIN_KEY: ${DGV_ADMIN_KEY}
       DGV_LISTEN_ADDR: 0.0.0.0:7879
-      DGV_CORS_ORIGINS: ${DGV_CORS_ORIGINS:-*}
+      DGV_CORS_ORIGINS: ${DGV_CORS_ORIGINS}
       DGV_RATE_LIMIT_MAX: ${DGV_RATE_LIMIT_MAX:-100}
       DGV_RATE_LIMIT_WINDOW_MS: ${DGV_RATE_LIMIT_WINDOW_MS:-60000}
+      DGV_LOG_FORMAT: ${DGV_LOG_FORMAT:-json}
       DGV_PARTITION_POLICY: ${DGV_PARTITION_POLICY:-fail_closed}
-      DGV_PEERS: ${DGV_PEERS:-}
-      DGV_GOSSIP_KEYS: ${DGV_GOSSIP_KEYS:-}
+      DGV_MAX_DELEGATION_DEPTH: ${DGV_MAX_DELEGATION_DEPTH:-3}
     volumes:
       - gate_data_replica:/data
     ports:
-      - "7879:7879"
+      - "127.0.0.1:7879:7879"
     networks:
       - dgv-network
     restart: unless-stopped
@@ -81,6 +95,7 @@ services:
       - replica  # Only start with: docker-compose --profile replica up
 
   # Optional: nginx reverse proxy for TLS termination
+  # Requires ./nginx.conf and ./certs/{fullchain.pem,privkey.pem}
   nginx:
     image: nginx:alpine
     container_name: dgv-nginx
