@@ -518,13 +518,32 @@ Results from the current run:
 | Prefix Merkle tree | `GET /revocations/merkle` returns 16-bucket prefix tree; `GET /revocations/bucket/:p` returns records for that bucket |
 | Active Anti-Entropy | `POST /revocations/reconcile` compares bucket hashes, pinpoints differing buckets, pulls/pushes missing records; divergent nodes automatically converge byte-for-byte to identical `tree_root` and `/revocations/digest` |
 
+## 4i. Formal models — T₀/T₁ quorum invariant
+
+`formal/` contains two independent models of `check_revocation_with_quorum` (see `formal/README.md` for reproduction and scope):
+
+- **TLA+ / TLC (exhaustive):** `tla/DgvQuorum.tla`, three configurations.
+- **Alloy 6 (bounded SAT):** `alloy/DgvQuorum.als`.
+
+Results:
+
+| Property | TLC | Alloy |
+|---|---|---|
+| Execution requires ≥Q reachable clean voters (fail-closed) | Holds under all partition sequences (13,280 states) | UNSAT — valid |
+| No reachable node held the revocation at execution | Holds under all partition sequences | UNSAT — valid |
+| No node anywhere held the revocation at execution | Holds under full mesh (46,656 states); **counterexample under partitions** | UNSAT under bounds; **counterexample under partitions** |
+| Revocation convergence (liveness) | Holds under FullMesh + fair gossip | UNSAT — valid |
+
+The counterexample both tools produce is the documented residual boundary: a revocation held **only by partitioned-away nodes** is undiscoverable, and a clean quorum assembled from the remaining majority authorizes execution (5-step trace: `Revoke(g2)` → `Partition(g1,g2)` → `Grant(g1)` → `Execute(g1)`).
+
 ## 7. What this audit package does NOT claim
 
 - It does not claim the 89 real implementations are free of bugs (the auditor must review the code)
 - It does not claim the math core is correct (the auditor must verify)
 - It does not claim the test cards are comprehensive
 - It does not claim the Python experiments are production-ready
-- Quorum revocation (`dgv-quorum-v1`) provides linearizable read quorum ($R + W > N$) and partition fail-closed execution, and active anti-entropy (`dgv-merkle-v1`) resolves divergence between disconnected nodes; it does not claim multi-leader Byzantine consensus (BFT) or dynamic cluster reconfiguration (adding/removing quorum nodes requires environment configuration)
+- Quorum revocation (`dgv-quorum-v1`) provides linearizable read quorum ($R + W > N$) and partition fail-closed execution, and active anti-entropy (`dgv-merkle-v1`) resolves divergence between disconnected nodes; it does not claim multi-leader Byzantine consensus (BFT) or dynamic cluster reconfiguration (adding/removing quorum nodes requires environment configuration). Model checking (§4i) confirms the boundary: revocations known only to partitioned-away nodes do not block execution on the remaining clean quorum
+- The formal models in §4i are bounded/exhaustive checks of a manually derived abstraction, not proofs about the Rust binary; signatures, nonces, timestamps, and Byzantine peers are out of model scope, and bounds are small (N=3, A≤2)
 - It does not claim gossip delivery guarantees — broadcasts are fire-and-forget with a 3s timeout; a permanently unreachable peer misses revocations until shared storage or reconfiguration reconciles it
 - It does not claim network partition or production-scale behavior beyond what Phase 8 tests demonstrate
 - It does not constitute an audit — it is preparation for one
