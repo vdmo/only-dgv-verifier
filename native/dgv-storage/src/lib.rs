@@ -96,6 +96,9 @@ pub struct AgentKeyRecord {
     pub agent_id: String,
     /// hex-encoded Ed25519 public key (32 bytes)
     pub public_key_hex: String,
+    /// hex-encoded X25519 public key (32 bytes) for ECDH-sealed A2A payloads.
+    /// Agents without one can still exchange signed/hash-verified envelopes.
+    pub enc_public_key_hex: Option<String>,
     pub registered_unix_ms: i64,
     pub active: bool,
 }
@@ -118,6 +121,10 @@ pub struct A2aEnvelopeRecord {
     pub sender_signature: String,
     /// Gate's signature over the delivery receipt
     pub gate_receipt_signature: String,
+    /// Where the ciphertext lives — e.g. "relay:<relay_url>|<queue_id>" or
+    /// "direct:<url>". Opaque to the gate; set by the sender, read by the
+    /// recipient's SDK. None = legacy out-of-band delivery.
+    pub transport_ref: Option<String>,
     pub delivered: bool,
     pub delivered_unix_ms: Option<i64>,
 }

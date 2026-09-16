@@ -2082,6 +2082,9 @@ struct RegisterAgentKeyRequest {
     agent_id: String,
     /// hex-encoded Ed25519 public key (64 hex chars = 32 bytes)
     public_key_hex: String,
+    /// optional hex-encoded X25519 public key — enables ECDH-sealed payloads
+    #[serde(default)]
+    enc_public_key_hex: Option<String>,
 }
 
 async fn handle_register_agent_key(
@@ -2105,9 +2108,23 @@ async fn handle_register_agent_key(
         );
     }
 
+    // X25519 public keys are any 32-byte value; only hex/length needs checking.
+    if let Some(enc) = &req.enc_public_key_hex {
+        match hex::decode(enc) {
+            Ok(b) if b.len() == 32 => {}
+            _ => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error": "invalid_enc_public_key: expected 64 hex chars (32 bytes)"})),
+                );
+            }
+        }
+    }
+
     let rec = AgentKeyRecord {
         agent_id: req.agent_id.clone(),
         public_key_hex: req.public_key_hex.clone(),
+        enc_public_key_hex: req.enc_public_key_hex.clone(),
         registered_unix_ms: now_unix_ms(),
         active: true,
     };
@@ -2119,6 +2136,35 @@ async fn handle_register_agent_key(
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({"error": format!("store_failed: {}", e)})),
+        ),
+    }
+}
+
+/// GET /agents/keys/:agent_id — public key lookup so agents can fetch a
+/// peer's signing + encryption keys from the trusted registry rather than
+/// trusting keys delivered in-band with a message.
+async fn handle_get_agent_key(
+    State(app): State<AppState>,
+    Path(agent_id): Path<String>,
+) -> impl IntoResponse {
+    match app.storage.get_agent_key(&agent_id).await {
+        Ok(Some(k)) => (
+            StatusCode::OK,
+            Json(json!({
+                "agent_id": k.agent_id,
+                "public_key_hex": k.public_key_hex,
+                "enc_public_key_hex": k.enc_public_key_hex,
+                "registered_unix_ms": k.registered_unix_ms,
+                "active": k.active,
+            })),
+        ),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "agent_key_not_found", "agent_id": agent_id})),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
         ),
     }
 }
@@ -2164,6 +2210,10 @@ struct A2aSendRequest {
     expires_unix_ms: i64,
     /// Sender's Ed25519 signature (hex) over the canonical envelope string
     signature: String,
+    /// Where the ciphertext lives — "relay:<relay_url>|<queue_id>" or
+    /// "direct:<url>". Opaque to the gate; delivered to the recipient verbatim.
+    #[serde(default)]
+    transport_ref: Option<String>,
 }
 
 async fn handle_a2a_send(
@@ -2319,6 +2369,7 @@ async fn handle_a2a_send(
         expires_unix_ms: req.expires_unix_ms,
         sender_signature: req.signature.clone(),
         gate_receipt_signature: receipt_sig.clone(),
+        transport_ref: req.transport_ref.clone(),
         delivered: false,
         delivered_unix_ms: None,
     };
@@ -2821,6 +2872,7 @@ async fn main() {
         .route("/tool-health", get(handle_tool_health))
         .route("/a2a/send", post(handle_a2a_send))
         .route("/a2a/inbox/:agent_id", get(handle_a2a_inbox))
+        .route("/agents/keys/:agent_id", get(handle_get_agent_key))
         .route("/a2a/ack/:envelope_id", post(handle_a2a_ack))
         .route("/policies/:tool/:action/versions", get(handle_policy_versions))
         .route("/config/rate-limit", get(handle_get_rate_limit));

@@ -189,6 +189,7 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - **Semantic justification verification (pluggable)** — `DGV_SEMANTIC_VERIFIER_URL` delegates justification↔action semantic checks to an external verifier webhook; the gate performs no LLM analysis itself. `DGV_SEMANTIC_FAIL_CLOSED=1` denies when the verifier is unreachable (default fail-open with logged warning)
 - **Circuit breakers** — callers report tool outcomes via `POST /tool-health/report`; after `DGV_CIRCUIT_BREAKER_THRESHOLD` consecutive failures (default 5) the circuit opens and `/govern` denies new proposals for that tool; half-open probe after `DGV_CIRCUIT_BREAKER_COOLDOWN_MS` (default 30s); admin reset via `POST /tool-health/reset/:tool`
 - **A2A signed envelopes** — `POST /a2a/send` accepts Ed25519-signed envelopes between admin-registered agents (`POST/DELETE /agents/keys`); verifies sender signature over the canonical envelope string, expiry, clock skew, revocation of both parties; replay-protected via envelope_id PK and (sender_id, nonce) UNIQUE; gate-signed delivery receipt; `GET /a2a/inbox/:agent_id` + `POST /a2a/ack/:envelope_id` for delivery (JWT-verified when configured). Payloads never transit the gate — hash-only.
+- **A2A sealed transport (dgv-sealed-v1)** — optional data plane over `onlystate-relay`: agents register X25519 encryption keys (`enc_public_key_hex`), seal payloads via ECDH + SHA3-256 per-message KDF + ChaCha20-Poly1305 (mirroring `libonlystate`); the gate binds `payload_hash` to the *ciphertext*, and `transport_ref` tells the recipient where the ciphertext lives. Public `GET /agents/keys/:agent_id` resolves peer keys. See `A2A_TRANSPORT.md`.
 - CORS — configurable via `DGV_CORS_ORIGINS` (permissive `*` in dev, restrictive list in production)
 - Formal soundness proof — `FORMAL_SOUNDNESS_PROOF.md` proves receipt integrity, path compliance, null effect on deny, replayability, continuing authority, and distributed revocation
 
@@ -203,7 +204,7 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - JWKS responses are TTL-cached (`DGV_JWKS_CACHE_TTL_MS`, default 300s); an unknown `kid` triggers exactly one forced refetch to handle key rotation faster than TTL expiry
 - Circuit-breaker state is per-instance in memory — not shared across multi-instance deployments (unlike revocations, which live in shared storage)
 - Circuit breakers depend on callers honestly reporting tool outcomes — the gate cannot observe downstream failures itself
-- A2A payloads are hash-only at the gate — end-to-end payload encryption is the agents' responsibility
+- A2A payloads are hash-only at the gate — payload confidentiality now has a reference implementation (`dgv-sealed-v1` over onlystate-relay), but it is ECDH+ChaCha20-Poly1305, not post-quantum; WOTS+ signatures from libonlystate are not wired in; deterministic queue IDs are dictionary-guessable (see A2A_TRANSPORT.md non-claims)
 - Semantic verification quality depends entirely on the external verifier — the gate performs no semantic analysis itself
 - TLS termination is handled by reverse proxy (nginx profile in docker-compose; the gate itself is plain HTTP)
 - Policy signing verifies integrity but not provenance (no SLSA/dependency chain verification)
@@ -451,6 +452,28 @@ Phase 8 mechanisms, kept distinct:
   degraded (health 503, all checks fail closed) and self-heals via background
   migration retry when the database returns.
 
+## 4f. Sealed A2A transport test results
+
+Run `test_a2a_transport.py` to verify the dgv-sealed-v1 data plane — a live
+gate plus a live `onlystate-relay` binary:
+
+```bash
+python3 test_a2a_transport.py    # 15 checks
+```
+
+Results from the current run:
+- **15 PASS**
+- **0 FAIL**
+
+| Checks | What it verifies |
+|---|---|
+| Key registry | X25519 `enc_public_key_hex` registered via admin endpoint; `GET /agents/keys/:id` public lookup; missing → 404 |
+| Crypto | seal/open ECDH roundtrip; AEAD tamper → decrypt failure; wrong recipient key → AEAD failure |
+| Transport | full path — seal → gate authorize + receipt → relay queue → recipient fetch → hash check → open → ack (~70ms same host); transport_ref delivered verbatim |
+| Binding | gate payload_hash binds the ciphertext; swapped ciphertext → hash mismatch → refuse + no ack |
+| Control plane | forged sender signature → 403; revoked sender → 403 |
+| Compat | legacy unsealed hash-only envelopes still accepted; sealed wire format carries no plaintext metadata |
+
 ## 7. What this audit package does NOT claim
 
 - It does not claim the 89 real implementations are free of bugs (the auditor must review the code)
@@ -472,7 +495,7 @@ Phase 8 mechanisms, kept distinct:
 - It does not claim the gate's default governance script is suitable for production use (it is a demonstration script; custom policies can be stored via API or loaded from YAML files)
 - It does not claim the semantic verifier performs analysis inside the gate (the gate delegates to a configured webhook; verifier quality is external)
 - It does not claim circuit-breaker state is distributed (it is per-instance in memory; shared-state breakers are future work)
-- It does not claim A2A payloads are confidential (the gate stores hashes only; payload encryption is the agents' responsibility)
+- It does not claim A2A payloads are confidential *by the gate itself* (the gate stores hashes only) — dgv-sealed-v1 provides agent-side confidentiality via ECDH+ChaCha20-Poly1305 over onlystate-relay, which is not post-quantum and does not hide traffic metadata (see A2A_TRANSPORT.md)
 
 ## 8. Recommended audit scope
 

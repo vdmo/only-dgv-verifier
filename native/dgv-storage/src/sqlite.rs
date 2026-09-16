@@ -112,6 +112,7 @@ impl SqliteStorage {
             r#"CREATE TABLE IF NOT EXISTS agent_keys (
                 agent_id TEXT PRIMARY KEY,
                 public_key_hex TEXT NOT NULL,
+                enc_public_key_hex TEXT,
                 registered_unix_ms INTEGER NOT NULL,
                 active INTEGER NOT NULL DEFAULT 1
             )"#,
@@ -125,6 +126,7 @@ impl SqliteStorage {
                 expires_unix_ms INTEGER NOT NULL,
                 sender_signature TEXT NOT NULL,
                 gate_receipt_signature TEXT NOT NULL,
+                transport_ref TEXT,
                 delivered INTEGER NOT NULL DEFAULT 0,
                 delivered_unix_ms INTEGER
             )"#,
@@ -133,6 +135,14 @@ impl SqliteStorage {
         ];
         for stmt in statements {
             sqlx::query(stmt).execute(pool).await?;
+        }
+        // Backfill columns added after initial release — SQLite has no
+        // ADD COLUMN IF NOT EXISTS, so ignore "duplicate column" failures.
+        for alter in [
+            "ALTER TABLE agent_keys ADD COLUMN enc_public_key_hex TEXT",
+            "ALTER TABLE a2a_envelopes ADD COLUMN transport_ref TEXT",
+        ] {
+            let _ = sqlx::query(alter).execute(pool).await;
         }
         Ok(())
     }
@@ -525,11 +535,12 @@ impl Storage for SqliteStorage {
     async fn register_agent_key(&self, k: AgentKeyRecord) -> Result<(), StorageError> {
         sqlx::query(
             r#"INSERT OR REPLACE INTO agent_keys
-               (agent_id, public_key_hex, registered_unix_ms, active)
-               VALUES (?, ?, ?, ?)"#,
+               (agent_id, public_key_hex, enc_public_key_hex, registered_unix_ms, active)
+               VALUES (?, ?, ?, ?, ?)"#,
         )
         .bind(&k.agent_id)
         .bind(&k.public_key_hex)
+        .bind(&k.enc_public_key_hex)
         .bind(k.registered_unix_ms)
         .bind(k.active)
         .execute(&self.pool)
@@ -546,6 +557,7 @@ impl Storage for SqliteStorage {
             Some(r) => Ok(Some(AgentKeyRecord {
                 agent_id: r.get("agent_id"),
                 public_key_hex: r.get("public_key_hex"),
+                enc_public_key_hex: r.get("enc_public_key_hex"),
                 registered_unix_ms: r.get("registered_unix_ms"),
                 active: r.get::<i64, _>("active") != 0,
             })),
@@ -565,8 +577,9 @@ impl Storage for SqliteStorage {
         sqlx::query(
             r#"INSERT INTO a2a_envelopes
                (envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms,
-                expires_unix_ms, sender_signature, gate_receipt_signature, delivered, delivered_unix_ms)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+                expires_unix_ms, sender_signature, gate_receipt_signature, transport_ref,
+                delivered, delivered_unix_ms)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(&e.envelope_id)
         .bind(&e.sender_id)
@@ -577,6 +590,7 @@ impl Storage for SqliteStorage {
         .bind(e.expires_unix_ms)
         .bind(&e.sender_signature)
         .bind(&e.gate_receipt_signature)
+        .bind(&e.transport_ref)
         .bind(e.delivered)
         .bind(e.delivered_unix_ms)
         .execute(&self.pool)
@@ -603,6 +617,7 @@ impl Storage for SqliteStorage {
                 expires_unix_ms: r.get("expires_unix_ms"),
                 sender_signature: r.get("sender_signature"),
                 gate_receipt_signature: r.get("gate_receipt_signature"),
+                transport_ref: r.get("transport_ref"),
                 delivered: r.get::<i64, _>("delivered") != 0,
                 delivered_unix_ms: r.get("delivered_unix_ms"),
             })

@@ -127,6 +127,7 @@ impl PostgresStorage {
             r#"CREATE TABLE IF NOT EXISTS agent_keys (
                 agent_id TEXT PRIMARY KEY,
                 public_key_hex TEXT NOT NULL,
+                enc_public_key_hex TEXT,
                 registered_unix_ms BIGINT NOT NULL,
                 active BOOLEAN NOT NULL DEFAULT TRUE
             )"#,
@@ -140,11 +141,14 @@ impl PostgresStorage {
                 expires_unix_ms BIGINT NOT NULL,
                 sender_signature TEXT NOT NULL,
                 gate_receipt_signature TEXT NOT NULL,
+                transport_ref TEXT,
                 delivered BOOLEAN NOT NULL DEFAULT FALSE,
                 delivered_unix_ms BIGINT
             )"#,
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_a2a_nonce ON a2a_envelopes(sender_id, nonce)",
             "CREATE INDEX IF NOT EXISTS idx_a2a_inbox ON a2a_envelopes(recipient_id, delivered)",
+            "ALTER TABLE agent_keys ADD COLUMN IF NOT EXISTS enc_public_key_hex TEXT",
+            "ALTER TABLE a2a_envelopes ADD COLUMN IF NOT EXISTS transport_ref TEXT",
         ];
         for stmt in statements {
             sqlx::query(stmt).execute(pool).await?;
@@ -539,15 +543,17 @@ impl Storage for PostgresStorage {
 
     async fn register_agent_key(&self, k: AgentKeyRecord) -> Result<(), StorageError> {
         sqlx::query(
-            r#"INSERT INTO agent_keys (agent_id, public_key_hex, registered_unix_ms, active)
-               VALUES ($1, $2, $3, $4)
+            r#"INSERT INTO agent_keys (agent_id, public_key_hex, enc_public_key_hex, registered_unix_ms, active)
+               VALUES ($1, $2, $3, $4, $5)
                ON CONFLICT (agent_id) DO UPDATE SET
                  public_key_hex = EXCLUDED.public_key_hex,
+                 enc_public_key_hex = EXCLUDED.enc_public_key_hex,
                  registered_unix_ms = EXCLUDED.registered_unix_ms,
                  active = EXCLUDED.active"#,
         )
         .bind(&k.agent_id)
         .bind(&k.public_key_hex)
+        .bind(&k.enc_public_key_hex)
         .bind(k.registered_unix_ms)
         .bind(k.active)
         .execute(&self.pool)
@@ -564,6 +570,7 @@ impl Storage for PostgresStorage {
             Some(r) => Ok(Some(AgentKeyRecord {
                 agent_id: r.get("agent_id"),
                 public_key_hex: r.get("public_key_hex"),
+                enc_public_key_hex: r.get("enc_public_key_hex"),
                 registered_unix_ms: r.get("registered_unix_ms"),
                 active: r.get("active"),
             })),
@@ -583,8 +590,9 @@ impl Storage for PostgresStorage {
         sqlx::query(
             r#"INSERT INTO a2a_envelopes
                (envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms,
-                expires_unix_ms, sender_signature, gate_receipt_signature, delivered, delivered_unix_ms)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)"#,
+                expires_unix_ms, sender_signature, gate_receipt_signature, transport_ref,
+                delivered, delivered_unix_ms)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)"#,
         )
         .bind(&e.envelope_id)
         .bind(&e.sender_id)
@@ -595,6 +603,7 @@ impl Storage for PostgresStorage {
         .bind(e.expires_unix_ms)
         .bind(&e.sender_signature)
         .bind(&e.gate_receipt_signature)
+        .bind(&e.transport_ref)
         .bind(e.delivered)
         .bind(e.delivered_unix_ms)
         .execute(&self.pool)
@@ -621,6 +630,7 @@ impl Storage for PostgresStorage {
                 expires_unix_ms: r.get("expires_unix_ms"),
                 sender_signature: r.get("sender_signature"),
                 gate_receipt_signature: r.get("gate_receipt_signature"),
+                transport_ref: r.get("transport_ref"),
                 delivered: r.get("delivered"),
                 delivered_unix_ms: r.get("delivered_unix_ms"),
             })

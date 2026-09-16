@@ -32,3 +32,4 @@ native/target/
 native/dgv_*_key.hex
 
 dist/
+native/dgv_net_k*.hex

@@ -570,12 +570,41 @@ paths:
                 public_key_hex:
                   type: string
                   description: hex-encoded Ed25519 public key (32 bytes)
+                enc_public_key_hex:
+                  type: string
+                  description: optional hex-encoded X25519 public key (32 bytes) for ECDH-sealed A2A payloads (dgv-sealed-v1)
       responses:
         '200': {description: Key registered}
         '400': {description: Invalid public key}
         '401': {description: Admin auth required}
 
   /agents/keys/{agent_id}:
+    get:
+      tags: [A2A]
+      summary: Fetch an agent's registered public keys
+      description: |
+        Public key lookup — agents resolve peer signing + encryption keys from
+        this trusted registry rather than trusting keys carried in-band.
+      operationId: getAgentKey
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Registered key record
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agent_id: {type: string}
+                  public_key_hex: {type: string}
+                  enc_public_key_hex: {type: string, nullable: true}
+                  registered_unix_ms: {type: integer}
+                  active: {type: boolean}
+        '404': {description: Agent key not found}
     delete:
       tags: [A2A]
       summary: Deactivate an agent's key
@@ -1156,6 +1185,13 @@ components:
         signature:
           type: string
           description: Sender's Ed25519 signature (hex) over the canonical envelope string
+        transport_ref:
+          type: string
+          nullable: true
+          description: |
+            Where the ciphertext lives — "relay:<relay_url>|<queue_id>" or
+            "direct:<url>". Opaque to the gate; delivered to the recipient
+            verbatim. See A2A_TRANSPORT.md (dgv-sealed-v1).
 
     A2aEnvelopeRecord:
       allOf:
