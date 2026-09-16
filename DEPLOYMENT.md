@@ -73,6 +73,14 @@ In the logs you want to see: `jwt_auth_enabled` (with your mode) or
 `jwt_auth_disabled`, `oidc_discovery` with the resolved `jwks_uri`, and no
 `postgres` errors — migrations run at boot.
 
+Then run the posture check — it exits non-zero unless the deployment is
+actually production-shaped (JWT on, admin key enforced, fail-closed,
+reachable evidence endpoints):
+
+```bash
+./deploy-check.sh https://gate.example.com "$DGV_ADMIN_KEY"
+```
+
 ## 3. Provision agents
 
 Agent registration is admin-gated (`X-Admin-Key`):
