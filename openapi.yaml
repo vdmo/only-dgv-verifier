@@ -709,6 +709,66 @@ paths:
         '200': {description: Marked delivered}
         '409': {description: Already delivered or not found}
 
+  /delegate:
+    post:
+      tags: [Delegation]
+      summary: Mint a strictly-narrower child token
+      description: |
+        The holder of a live parent token delegates authority to another agent.
+        Monotonic decay is enforced: the child authorizes the same tool+action,
+        params must be a JSON subset of the parent's (keys may be omitted, never
+        added or changed; array elements must come from the parent's array),
+        expiry must not exceed the parent's, and min_approvals is inherited.
+        Depth is bounded by DGV_MAX_DELEGATION_DEPTH (default 3). The delegator
+        signs `dgv-delegate-v1|parent|delegator|delegatee|params_hash|expiry`
+        with its registered Ed25519 key. A DelegationRecord is stored as
+        receipt-chain evidence. Revoking any ancestor in the chain kills all
+        delegated tokens at /execute time.
+      operationId: delegate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parent_token_id, delegator_id, delegatee_id, signature]
+              properties:
+                parent_token_id: {type: string}
+                delegator_id:
+                  type: string
+                  description: must equal the parent token's grantee
+                delegatee_id: {type: string}
+                params:
+                  type: object
+                  nullable: true
+                  description: narrowed params — JSON subset of the parent's; absent = inherit
+                expires_unix_ms:
+                  type: integer
+                  nullable: true
+                  description: child expiry — must not exceed the parent's
+                signature:
+                  type: string
+                  description: delegator's Ed25519 signature (hex) over the canonical delegation string
+      responses:
+        '200': {description: Child token minted}
+        '403': {description: 'Narrowing violation, bad signature, or revoked party'}
+        '404': {description: Parent token not found}
+        '410': {description: Parent expired or child expiry in the past}
+
+  /delegations/{token_id}:
+    get:
+      tags: [Delegation]
+      summary: Fetch a token's delegation lineage
+      description: Walks the chain upward — returns delegations ordered root→leaf.
+      operationId: delegationChain
+      parameters:
+        - name: token_id
+          in: path
+          required: true
+          schema: {type: string}
+      responses:
+        '200': {description: Delegation chain (possibly empty)}
+
   /policies/{tool}/{action}/versions:
     get:
       tags: [Policies]

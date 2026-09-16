@@ -211,6 +211,9 @@ impl Gate {
                 signature: signature_hex.clone(),
                 created_unix_ms: now,
                 min_approvals: 0,
+                granted_to: agent_id.clone(),
+                parent_token_id: None,
+                delegation_depth: 0,
             };
             let _ = self.rt.block_on(self.storage.store_token(token_rec));
             Some(token_id)
@@ -311,6 +314,18 @@ impl Gate {
                 let result = PyDict::new_bound(py);
                 result.set_item("allowed", false).unwrap();
                 result.set_item("deny_reason", "token_expired").unwrap();
+                result.set_item("run_id", &run_id).unwrap();
+                Ok(result.into())
+            });
+        }
+
+        // Check grantee binding — token usable only by its grantee (skip for
+        // legacy rows with empty granted_to)
+        if !token.granted_to.is_empty() && token.granted_to != executor_id {
+            return Python::with_gil(|py| {
+                let result = PyDict::new_bound(py);
+                result.set_item("allowed", false).unwrap();
+                result.set_item("deny_reason", "token_grantee_mismatch").unwrap();
                 result.set_item("run_id", &run_id).unwrap();
                 Ok(result.into())
             });

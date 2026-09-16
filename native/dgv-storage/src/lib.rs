@@ -45,6 +45,27 @@ pub struct TokenRecord {
     pub created_unix_ms: i64,
     /// Minimum approvals required before this token can be used (0 = no approval needed)
     pub min_approvals: i64,
+    /// The agent this token was granted to (the /govern proposer, or the
+    /// delegatee for child tokens). Empty for legacy rows predating binding.
+    pub granted_to: String,
+    /// Delegation lineage: parent token this was derived from (None = root).
+    pub parent_token_id: Option<String>,
+    /// Delegation depth: 0 = root token issued by /govern; children increment.
+    pub delegation_depth: i64,
+}
+
+/// Signed delegation record — the receipt-chain evidence that a parent agent
+/// minted a strictly-narrower child token for a delegatee.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DelegationRecord {
+    pub delegation_id: String,
+    pub parent_token_id: String,
+    pub child_token_id: String,
+    pub delegator_id: String,
+    pub delegatee_id: String,
+    /// Delegator's Ed25519 signature over the canonical delegation string
+    pub signature: String,
+    pub created_unix_ms: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -136,11 +157,16 @@ pub trait Storage: Send + Sync {
     // Decisions
     async fn store_decision(&self, d: DecisionRecord) -> Result<(), StorageError>;
     async fn get_decision(&self, run_id: &str) -> Result<Option<DecisionRecord>, StorageError>;
+    async fn get_decision_by_request_id(&self, request_id: &str) -> Result<Option<DecisionRecord>, StorageError>;
 
     // Tokens
     async fn store_token(&self, t: TokenRecord) -> Result<(), StorageError>;
     async fn get_token(&self, token_id: &str) -> Result<Option<TokenRecord>, StorageError>;
     async fn mark_token_consumed(&self, token_id: &str, consumed_unix_ms: i64) -> Result<(), StorageError>;
+
+    // Delegations
+    async fn store_delegation(&self, d: DelegationRecord) -> Result<(), StorageError>;
+    async fn get_delegation(&self, child_token_id: &str) -> Result<Option<DelegationRecord>, StorageError>;
 
     // Policies
     async fn store_policy(&self, p: PolicyRecord) -> Result<(), StorageError>;

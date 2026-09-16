@@ -473,6 +473,59 @@ class GateClient:
         """Acknowledge delivery of an envelope."""
         return self._request("POST", f"/a2a/ack/{envelope_id}", {"agent_id": agent_id})
 
+    # ── Delegation ────────────────────────────────────────────────────────────
+
+    def delegate(
+        self,
+        parent_token_id: str,
+        delegator_id: str,
+        delegatee_id: str,
+        delegator_signing_key_hex: str,
+        parent_params: Dict[str, Any],
+        parent_expires_unix_ms: int,
+        params: Optional[Dict[str, Any]] = None,
+        expires_unix_ms: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Mint a strictly-narrower child token. `params` must be a JSON subset
+        of `parent_params` (omit keys to narrow; values never added/changed);
+        `expires_unix_ms` must not exceed the parent's. The delegator signs the
+        canonical string with its registered Ed25519 key."""
+        import hashlib
+        child_params = params if params is not None else parent_params
+        ph = hashlib.sha256(
+            json.dumps(child_params, separators=(",", ":"), sort_keys=True).encode()
+        ).hexdigest()
+        exp = expires_unix_ms if expires_unix_ms is not None else parent_expires_unix_ms
+        canonical = delegate_canonical_string(
+            parent_token_id, delegator_id, delegatee_id, ph, exp)
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+        sig = Ed25519PrivateKey.from_private_bytes(
+            bytes.fromhex(delegator_signing_key_hex)).sign(canonical.encode()).hex()
+        return self._request("POST", "/delegate", {
+            "parent_token_id": parent_token_id,
+            "delegator_id": delegator_id,
+            "delegatee_id": delegatee_id,
+            "params": params,
+            "expires_unix_ms": exp,
+            "signature": sig,
+        })
+
+    def delegation_chain(self, token_id: str) -> Dict[str, Any]:
+        """Fetch the delegation lineage (root → ... → this token)."""
+        return self._request("GET", f"/delegations/{token_id}")
+
+
+def delegate_canonical_string(
+    parent_token_id: str,
+    delegator_id: str,
+    delegatee_id: str,
+    params_hash: str,
+    expires_unix_ms: int,
+) -> str:
+    """Canonical string the delegator signs — binds the delegation request."""
+    return (f"dgv-delegate-v1|{parent_token_id}|{delegator_id}"
+            f"|{delegatee_id}|{params_hash}|{expires_unix_ms}")
+
 
 def a2a_canonical_string(
     envelope_id: str,

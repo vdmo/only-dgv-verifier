@@ -25,8 +25,9 @@ use axum::{
     Router,
 };
 use dgv_storage::{
-    A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, PolicyRecord,
-    PostgresStorage, RevocationRecord, SqliteStorage, Storage, StorageError, TokenRecord,
+    A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, DelegationRecord,
+    PolicyRecord, PostgresStorage, RevocationRecord, SqliteStorage, Storage, StorageError,
+    TokenRecord,
 };
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use jsonwebtoken::{decode, decode_header, DecodingKey, Validation, Algorithm};
@@ -115,6 +116,22 @@ fn compute_decision_hash(
 
 fn compute_params_hash(params: &Value) -> String {
     sha256_hex(&params.to_string())
+}
+
+/// Monotonic-narrowing check for delegation: every key in `child` must exist
+/// in `parent` with a recursively-narrowed-or-equal value; child arrays must
+/// contain only elements present in the parent array; scalars must be equal.
+/// The child can omit keys but can never add or change a value.
+fn json_subset(child: &Value, parent: &Value) -> bool {
+    match (child, parent) {
+        (Value::Object(c), Value::Object(p)) => c
+            .iter()
+            .all(|(k, cv)| p.get(k).map_or(false, |pv| json_subset(cv, pv))),
+        (Value::Array(c), Value::Array(p)) => {
+            c.iter().all(|cv| p.iter().any(|pv| json_subset(cv, pv)))
+        }
+        _ => child == parent,
+    }
 }
 
 // ── Signing keys ─────────────────────────────────────────────────────────────
@@ -211,6 +228,10 @@ struct AppState {
     /// verify against one of these keys is rejected — a forged gossip cannot
     /// revoke anyone.
     gossip_keys: Vec<VerifyingKey>,
+    /// Maximum delegation chain depth for /delegate (DGV_MAX_DELEGATION_DEPTH,
+    /// default 3). A token at depth N cannot mint a child if N+1 would exceed
+    /// this bound.
+    max_delegation_depth: i64,
 }
 
 /// Circuit breaker state for a single tool.
@@ -1022,6 +1043,9 @@ async fn handle_govern(
             signature: signature.clone(),
             created_unix_ms: now,
             min_approvals: policy_min_approvals,
+            granted_to: p.agent_id.clone(),
+            parent_token_id: None,
+            delegation_depth: 0,
         };
         let _ = app.storage.store_token(token_rec).await;
         {
@@ -1216,6 +1240,26 @@ async fn handle_execute(
         );
     }
 
+    // 3b. Grantee binding — a token is usable only by the agent it was granted
+    // to (the /govern proposer, or the delegatee for delegated tokens).
+    // Tokens predating this field (empty granted_to) skip the check.
+    if !token.granted_to.is_empty() && token.granted_to != req.executor_id {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(ExecuteResponse {
+                allowed: false,
+                deny_reason: Some("token_grantee_mismatch".to_string()),
+                receipt: json!({
+                    "run_id": run_id,
+                    "verified": false,
+                    "granted_to": token.granted_to,
+                    "executor_id": req.executor_id,
+                }),
+                run_id,
+            }),
+        );
+    }
+
     // 4. Verify token matches this action
     if token.tool != req.tool || token.action != req.action {
         return (
@@ -1291,6 +1335,56 @@ async fn handle_execute(
                 "revocation_check_failed_fail_open_t1",
                 json!({"executor_id": req.executor_id, "error": e.to_string()}),
             );
+        }
+    }
+
+    // 6a. Delegation chain revocation — a delegated token's authority flows
+    // from its ancestors; if any ancestor's grantee (i.e. delegator) is
+    // revoked, delegated authority dies with it. Bounded by depth.
+    {
+        let mut ancestor = token.parent_token_id.clone();
+        for _ in 0..8 {
+            let pid = match ancestor {
+                Some(ref p) => p.clone(),
+                None => break,
+            };
+            let ptok = match app.storage.get_token(&pid).await {
+                Ok(Some(t)) => t,
+                _ => break,
+            };
+            if !ptok.granted_to.is_empty() {
+                match app.storage.check_revocation(&ptok.granted_to).await {
+                    Ok(Some(rev)) => {
+                        return (
+                            StatusCode::FORBIDDEN,
+                            Json(ExecuteResponse {
+                                allowed: false,
+                                deny_reason: Some(format!(
+                                    "delegated_authority_revoked: ancestor {} revoked ({})",
+                                    ptok.granted_to, rev.reason
+                                )),
+                                receipt: json!({"run_id": run_id, "verified": false, "revoked_ancestor": ptok.granted_to}),
+                                run_id,
+                            }),
+                        );
+                    }
+                    Ok(None) => {}
+                    Err(e) => {
+                        if app.partition_fail_closed {
+                            return (
+                                StatusCode::SERVICE_UNAVAILABLE,
+                                Json(ExecuteResponse {
+                                    allowed: false,
+                                    deny_reason: Some(format!("ancestor_revocation_check_unavailable: {}", e)),
+                                    receipt: json!({"run_id": run_id, "verified": false, "partition": true}),
+                                    run_id,
+                                }),
+                            );
+                        }
+                    }
+                }
+            }
+            ancestor = ptok.parent_token_id;
         }
     }
 
@@ -2182,6 +2276,353 @@ async fn handle_deactivate_agent_key(
     }
 }
 
+/// Canonical string the delegator signs — binds the delegation request.
+fn delegate_canonical_string(
+    parent_token_id: &str,
+    delegator_id: &str,
+    delegatee_id: &str,
+    params_hash: &str,
+    expires_unix_ms: i64,
+) -> String {
+    format!(
+        "dgv-delegate-v1|{}|{}|{}|{}|{}",
+        parent_token_id, delegator_id, delegatee_id, params_hash, expires_unix_ms
+    )
+}
+
+#[derive(Deserialize)]
+struct DelegateRequest {
+    parent_token_id: String,
+    /// Must equal the parent token's granted_to — proven by signature, not claim.
+    delegator_id: String,
+    delegatee_id: String,
+    /// Narrowed params — must be a JSON subset of the parent's params
+    /// (omit keys to narrow; values may never be added or changed). Absent =
+    /// inherit unchanged.
+    params: Option<Value>,
+    /// Requested child expiry — must not exceed the parent's expiry.
+    expires_unix_ms: Option<i64>,
+    /// Delegator's Ed25519 signature (hex) over the canonical delegation string.
+    signature: String,
+}
+
+/// POST /delegate — mint a strictly-narrower child token from a live parent
+/// token. Authority can only decay: same tool+action, params ⊆ parent's,
+/// expiry ≤ parent's, approvals inherited, depth bounded. Every delegation is
+/// signed by the delegator's registered key and recorded as a receipt-chain
+/// DelegationRecord.
+async fn handle_delegate(
+    State(app): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<DelegateRequest>,
+) -> impl IntoResponse {
+    let now = now_unix_ms();
+
+    // 0. JWT — if configured, the verified sub must equal delegator_id
+    if app.jwt_config.is_some() {
+        match extract_agent_id(&headers, &app.jwt_config, &req.delegator_id).await {
+            Ok(v) if v == req.delegator_id => {}
+            Ok(_) => {
+                return (
+                    StatusCode::FORBIDDEN,
+                    Json(json!({"error": "delegator_mismatch: JWT sub != delegator_id"})),
+                );
+            }
+            Err(e) => {
+                return (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({"error": format!("identity_verification_failed: {}", e)})),
+                );
+            }
+        }
+    }
+
+    // 1. Parent token must exist, be unconsumed, and unexpired
+    let parent = match app.storage.get_token(&req.parent_token_id).await {
+        Ok(Some(t)) => t,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({"error": "parent_token_not_found"})),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            );
+        }
+    };
+    if parent.consumed {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "parent_token_consumed"})),
+        );
+    }
+    if parent.expires_unix_ms <= now {
+        return (
+            StatusCode::GONE,
+            Json(json!({"error": "parent_token_expired"})),
+        );
+    }
+
+    // 2. Delegator must be the parent token's grantee
+    if parent.granted_to.is_empty() || parent.granted_to != req.delegator_id {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "error": "delegator_mismatch",
+                "granted_to": parent.granted_to,
+            })),
+        );
+    }
+
+    // 3. Depth bound — authority decays with each hop
+    let child_depth = parent.delegation_depth + 1;
+    if child_depth > app.max_delegation_depth {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "error": "delegation_depth_exceeded",
+                "max": app.max_delegation_depth,
+                "parent_depth": parent.delegation_depth,
+            })),
+        );
+    }
+
+    // 4. Recover the parent's raw params for the subset check
+    let parent_decision = match app.storage.get_decision_by_request_id(&parent.request_id).await {
+        Ok(Some(d)) => d,
+        Ok(None) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": "parent_params_unavailable"})),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            );
+        }
+    };
+    let replay: Value = serde_json::from_str(&parent_decision.replay_inputs)
+        .unwrap_or(json!({}));
+    let parent_params = replay.get("params").cloned().unwrap_or(json!({}));
+
+    // 5. Child params must be a subset of the parent's — never wider
+    let child_params = req.params.clone().unwrap_or_else(|| parent_params.clone());
+    if !json_subset(&child_params, &parent_params) {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "params_not_narrower"})),
+        );
+    }
+    let child_params_hash = compute_params_hash(&child_params);
+
+    // 6. Child expiry can only tighten the parent's
+    let child_expiry = req.expires_unix_ms.unwrap_or(parent.expires_unix_ms);
+    if child_expiry > parent.expires_unix_ms {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "error": "expiry_exceeds_parent",
+                "parent_expires_unix_ms": parent.expires_unix_ms,
+            })),
+        );
+    }
+    if child_expiry <= now {
+        return (
+            StatusCode::GONE,
+            Json(json!({"error": "child_expiry_in_past"})),
+        );
+    }
+
+    // 7. Delegator must hold a registered, active key — verify the signature
+    let delegator_key = match app.storage.get_agent_key(&req.delegator_id).await {
+        Ok(Some(k)) if k.active => k,
+        Ok(_) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "unregistered_delegator", "delegator_id": req.delegator_id})),
+            );
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            );
+        }
+    };
+    let canonical = delegate_canonical_string(
+        &req.parent_token_id, &req.delegator_id, &req.delegatee_id,
+        &child_params_hash, child_expiry,
+    );
+    let sig_ok = hex::decode(&delegator_key.public_key_hex)
+        .ok()
+        .and_then(|b| <[u8; 32]>::try_from(b.as_slice()).ok())
+        .and_then(|b| ed25519_dalek::VerifyingKey::from_bytes(&b).ok())
+        .zip(hex::decode(&req.signature).ok()
+            .and_then(|b| <[u8; 64]>::try_from(b.as_slice()).ok())
+            .map(|b| ed25519_dalek::Signature::from_bytes(&b)))
+        .map_or(false, |(vk, sig)| {
+            vk.verify(canonical.as_bytes(), &sig).is_ok()
+        });
+    if !sig_ok {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "invalid_delegation_signature"})),
+        );
+    }
+
+    // 8. Revocation checks — delegator and delegatee (partition policy applies)
+    for (actor, kind) in [(&req.delegator_id, "delegator"), (&req.delegatee_id, "delegatee")] {
+        match app.storage.check_revocation(actor).await {
+            Ok(Some(_)) => {
+                return (
+                    StatusCode::FORBIDDEN,
+                    Json(json!({"error": format!("{}_revoked", kind), "actor_id": actor})),
+                );
+            }
+            Ok(None) => {}
+            Err(e) => {
+                if app.partition_fail_closed {
+                    return (
+                        StatusCode::SERVICE_UNAVAILABLE,
+                        Json(json!({"error": "revocation_check_unavailable", "detail": e.to_string()})),
+                    );
+                }
+                log_event("warn", "delegate_revocation_check_fail_open",
+                    json!({"actor": actor, "error": e.to_string()}));
+            }
+        }
+    }
+
+    // 9. Mint the child token — same tool+action, narrowed params/expiry,
+    //    approvals inherited (never reduced)
+    let delegation_id = format!("dlg_{}", &sha256_hex(&format!(
+        "{}{}{}", req.parent_token_id, req.delegatee_id, now))[..16]);
+    let child_token_id = format!("tok_{}", &sha256_hex(&format!(
+        "{}{}", delegation_id, child_params_hash))[..16]);
+    let child_request_id = format!("deleg:{}", parent.request_id);
+    let child_decision_hash = sha256_hex(&format!(
+        "dgv-delegation-v1|{}|{}|{}|{}|{}",
+        req.parent_token_id, child_token_id, parent.tool, parent.action, child_params_hash
+    ));
+    let child_sig = app.keys.sign_decision(&child_decision_hash);
+
+    let child = TokenRecord {
+        token_id: child_token_id.clone(),
+        request_id: child_request_id.clone(),
+        tool: parent.tool.clone(),
+        action: parent.action.clone(),
+        params_hash: child_params_hash.clone(),
+        expires_unix_ms: child_expiry,
+        consumed: false,
+        consumed_unix_ms: None,
+        decision_hash: child_decision_hash.clone(),
+        signature: child_sig.clone(),
+        created_unix_ms: now,
+        min_approvals: parent.min_approvals,
+        granted_to: req.delegatee_id.clone(),
+        parent_token_id: Some(req.parent_token_id.clone()),
+        delegation_depth: child_depth,
+    };
+    let drec = DelegationRecord {
+        delegation_id: delegation_id.clone(),
+        parent_token_id: req.parent_token_id.clone(),
+        child_token_id: child_token_id.clone(),
+        delegator_id: req.delegator_id.clone(),
+        delegatee_id: req.delegatee_id.clone(),
+        signature: req.signature.clone(),
+        created_unix_ms: now,
+    };
+    if let Err(e) = app.storage.store_token(child).await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("store_failed: {}", e)})),
+        );
+    }
+    // Persist a decision record for the delegated grant — makes the child
+    // token's params recoverable for further delegation and keeps the grant
+    // auditable as a governance event.
+    let child_run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let _ = app.storage.store_decision(DecisionRecord {
+        run_id: child_run_id,
+        request_id: child_request_id.clone(),
+        decision_hash: child_decision_hash.clone(),
+        gate_state: "ALLOW".to_string(),
+        reason_codes: "[\"delegated\"]".to_string(),
+        replay_inputs: json!({
+            "tool": parent.tool,
+            "action": parent.action,
+            "params": child_params,
+            "agent_id": req.delegatee_id,
+            "workflow": "delegation",
+            "delegated_from": req.parent_token_id,
+        }).to_string(),
+        signature: child_sig.clone(),
+        created_unix_ms: now,
+    }).await;
+    if let Err(e) = app.storage.store_delegation(drec).await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("store_failed: {}", e)})),
+        );
+    }
+    log_event("info", "delegation_issued", json!({
+        "delegation_id": delegation_id,
+        "delegator": req.delegator_id,
+        "delegatee": req.delegatee_id,
+        "depth": child_depth,
+    }));
+    (
+        StatusCode::OK,
+        Json(json!({
+            "delegated": true,
+            "delegation_id": delegation_id,
+            "parent_token_id": req.parent_token_id,
+            "child_token_id": child_token_id,
+            "delegation_depth": child_depth,
+            "tool": parent.tool,
+            "action": parent.action,
+            "expires_unix_ms": child_expiry,
+            "gate_signature": child_sig,
+            "verifying_key": hex::encode(app.keys.vk.to_bytes()),
+        })),
+    )
+}
+
+/// GET /delegations/:token_id — walk the delegation chain upward, returning
+/// the lineage root→...→this token. Audit endpoint.
+async fn handle_delegation_chain(
+    State(app): State<AppState>,
+    Path(token_id): Path<String>,
+) -> impl IntoResponse {
+    let mut chain = Vec::new();
+    let mut cursor = token_id.clone();
+    for _ in 0..8 {
+        match app.storage.get_delegation(&cursor).await {
+            Ok(Some(d)) => {
+                cursor = d.parent_token_id.clone();
+                chain.push(d);
+            }
+            Ok(None) => break,
+            Err(e) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": format!("storage_error: {}", e)})),
+                );
+            }
+        }
+    }
+    chain.reverse();
+    (
+        StatusCode::OK,
+        Json(json!({"token_id": token_id, "chain": chain, "depth": chain.len()})),
+    )
+}
+
 /// Canonical string that the sender signs — binds all envelope fields together.
 fn a2a_canonical_string(
     envelope_id: &str,
@@ -2840,6 +3281,11 @@ async fn main() {
         log_event("info", "gossip_config", json!({"peers": peers.len(), "trusted_keys": gossip_keys.len()}));
     }
 
+    let max_delegation_depth: i64 = std::env::var("DGV_MAX_DELEGATION_DEPTH")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(3);
+
     let app_state = AppState {
         storage,
         keys,
@@ -2853,6 +3299,7 @@ async fn main() {
         partition_fail_closed,
         peers,
         gossip_keys,
+        max_delegation_depth,
     };
 
     // Public routes (no auth required)
@@ -2873,6 +3320,8 @@ async fn main() {
         .route("/a2a/send", post(handle_a2a_send))
         .route("/a2a/inbox/:agent_id", get(handle_a2a_inbox))
         .route("/agents/keys/:agent_id", get(handle_get_agent_key))
+        .route("/delegate", post(handle_delegate))
+        .route("/delegations/:token_id", get(handle_delegation_chain))
         .route("/a2a/ack/:envelope_id", post(handle_a2a_ack))
         .route("/policies/:tool/:action/versions", get(handle_policy_versions))
         .route("/config/rate-limit", get(handle_get_rate_limit));

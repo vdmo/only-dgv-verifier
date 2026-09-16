@@ -9,8 +9,8 @@ use sqlx::Row;
 use std::str::FromStr;
 
 use crate::{
-    A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, PolicyRecord,
-    RevocationRecord, Storage, StorageError, TokenRecord,
+    A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, DelegationRecord,
+    PolicyRecord, RevocationRecord, Storage, StorageError, TokenRecord,
 };
 
 pub struct SqliteStorage {
@@ -58,7 +58,19 @@ impl SqliteStorage {
                 decision_hash TEXT NOT NULL,
                 signature TEXT NOT NULL,
                 created_unix_ms INTEGER NOT NULL,
-                min_approvals INTEGER NOT NULL DEFAULT 0
+                min_approvals INTEGER NOT NULL DEFAULT 0,
+                granted_to TEXT NOT NULL DEFAULT '',
+                parent_token_id TEXT,
+                delegation_depth INTEGER NOT NULL DEFAULT 0
+            )"#,
+            r#"CREATE TABLE IF NOT EXISTS delegations (
+                delegation_id TEXT PRIMARY KEY,
+                parent_token_id TEXT NOT NULL,
+                child_token_id TEXT NOT NULL UNIQUE,
+                delegator_id TEXT NOT NULL,
+                delegatee_id TEXT NOT NULL,
+                signature TEXT NOT NULL,
+                created_unix_ms INTEGER NOT NULL
             )"#,
             r#"CREATE TABLE IF NOT EXISTS policies (
                 policy_id TEXT PRIMARY KEY,
@@ -141,6 +153,9 @@ impl SqliteStorage {
         for alter in [
             "ALTER TABLE agent_keys ADD COLUMN enc_public_key_hex TEXT",
             "ALTER TABLE a2a_envelopes ADD COLUMN transport_ref TEXT",
+            "ALTER TABLE tokens ADD COLUMN granted_to TEXT NOT NULL DEFAULT ''",
+            "ALTER TABLE tokens ADD COLUMN parent_token_id TEXT",
+            "ALTER TABLE tokens ADD COLUMN delegation_depth INTEGER NOT NULL DEFAULT 0",
         ] {
             let _ = sqlx::query(alter).execute(pool).await;
         }
@@ -189,11 +204,31 @@ impl Storage for SqliteStorage {
         }
     }
 
+    async fn get_decision_by_request_id(&self, request_id: &str) -> Result<Option<DecisionRecord>, StorageError> {
+        let row = sqlx::query("SELECT * FROM decisions WHERE request_id = ? ORDER BY created_unix_ms DESC LIMIT 1")
+            .bind(request_id)
+            .fetch_optional(&self.pool)
+            .await?;
+        match row {
+            Some(r) => Ok(Some(DecisionRecord {
+                run_id: r.get("run_id"),
+                request_id: r.get("request_id"),
+                decision_hash: r.get("decision_hash"),
+                gate_state: r.get("gate_state"),
+                reason_codes: r.get("reason_codes"),
+                replay_inputs: r.get("replay_inputs"),
+                signature: r.get("signature"),
+                created_unix_ms: r.get("created_unix_ms"),
+            })),
+            None => Ok(None),
+        }
+    }
+
     async fn store_token(&self, t: TokenRecord) -> Result<(), StorageError> {
         sqlx::query(
             r#"INSERT INTO tokens
-               (token_id, request_id, tool, action, params_hash, expires_unix_ms, consumed, consumed_unix_ms, decision_hash, signature, created_unix_ms, min_approvals)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+               (token_id, request_id, tool, action, params_hash, expires_unix_ms, consumed, consumed_unix_ms, decision_hash, signature, created_unix_ms, min_approvals, granted_to, parent_token_id, delegation_depth)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(&t.token_id)
         .bind(&t.request_id)
@@ -207,6 +242,9 @@ impl Storage for SqliteStorage {
         .bind(&t.signature)
         .bind(t.created_unix_ms)
         .bind(t.min_approvals)
+        .bind(&t.granted_to)
+        .bind(&t.parent_token_id)
+        .bind(t.delegation_depth)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -231,6 +269,46 @@ impl Storage for SqliteStorage {
                 signature: r.get("signature"),
                 created_unix_ms: r.get("created_unix_ms"),
                 min_approvals: r.get("min_approvals"),
+                granted_to: r.get("granted_to"),
+                parent_token_id: r.get("parent_token_id"),
+                delegation_depth: r.get("delegation_depth"),
+            })),
+            None => Ok(None),
+        }
+    }
+
+    async fn store_delegation(&self, d: DelegationRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"INSERT INTO delegations
+               (delegation_id, parent_token_id, child_token_id, delegator_id, delegatee_id, signature, created_unix_ms)
+               VALUES (?, ?, ?, ?, ?, ?, ?)"#,
+        )
+        .bind(&d.delegation_id)
+        .bind(&d.parent_token_id)
+        .bind(&d.child_token_id)
+        .bind(&d.delegator_id)
+        .bind(&d.delegatee_id)
+        .bind(&d.signature)
+        .bind(d.created_unix_ms)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_delegation(&self, child_token_id: &str) -> Result<Option<DelegationRecord>, StorageError> {
+        let row = sqlx::query("SELECT * FROM delegations WHERE child_token_id = ?")
+            .bind(child_token_id)
+            .fetch_optional(&self.pool)
+            .await?;
+        match row {
+            Some(r) => Ok(Some(DelegationRecord {
+                delegation_id: r.get("delegation_id"),
+                parent_token_id: r.get("parent_token_id"),
+                child_token_id: r.get("child_token_id"),
+                delegator_id: r.get("delegator_id"),
+                delegatee_id: r.get("delegatee_id"),
+                signature: r.get("signature"),
+                created_unix_ms: r.get("created_unix_ms"),
             })),
             None => Ok(None),
         }

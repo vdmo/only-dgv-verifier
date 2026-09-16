@@ -190,6 +190,7 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - **Circuit breakers** — callers report tool outcomes via `POST /tool-health/report`; after `DGV_CIRCUIT_BREAKER_THRESHOLD` consecutive failures (default 5) the circuit opens and `/govern` denies new proposals for that tool; half-open probe after `DGV_CIRCUIT_BREAKER_COOLDOWN_MS` (default 30s); admin reset via `POST /tool-health/reset/:tool`
 - **A2A signed envelopes** — `POST /a2a/send` accepts Ed25519-signed envelopes between admin-registered agents (`POST/DELETE /agents/keys`); verifies sender signature over the canonical envelope string, expiry, clock skew, revocation of both parties; replay-protected via envelope_id PK and (sender_id, nonce) UNIQUE; gate-signed delivery receipt; `GET /a2a/inbox/:agent_id` + `POST /a2a/ack/:envelope_id` for delivery (JWT-verified when configured). Payloads never transit the gate — hash-only.
 - **A2A sealed transport (dgv-sealed-v1)** — optional data plane over `onlystate-relay`: agents register X25519 encryption keys (`enc_public_key_hex`), seal payloads via ECDH + SHA3-256 per-message KDF + ChaCha20-Poly1305 (mirroring `libonlystate`); the gate binds `payload_hash` to the *ciphertext*, and `transport_ref` tells the recipient where the ciphertext lives. Public `GET /agents/keys/:agent_id` resolves peer keys. See `A2A_TRANSPORT.md`.
+- **Token delegation (dgv-delegate-v1)** — `POST /delegate` mints a strictly-narrower child token from a live parent: same tool+action, params must be a JSON subset of the parent's (keys omittable, values never added/changed, array elements drawn from parent's), expiry ≤ parent's, `min_approvals` inherited, depth bounded by `DGV_MAX_DELEGATION_DEPTH` (default 3). The delegator signs the canonical delegation string with its registered Ed25519 key; a `DelegationRecord` is persisted (query lineage via `GET /delegations/:token_id`). Tokens are now **grantee-bound** — `executor_id` must equal `granted_to`; revoking any ancestor in the chain denies delegated execution at T₁.
 - CORS — configurable via `DGV_CORS_ORIGINS` (permissive `*` in dev, restrictive list in production)
 - Formal soundness proof — `FORMAL_SOUNDNESS_PROOF.md` proves receipt integrity, path compliance, null effect on deny, replayability, continuing authority, and distributed revocation
 
@@ -474,6 +475,27 @@ Results from the current run:
 | Control plane | forged sender signature → 403; revoked sender → 403 |
 | Compat | legacy unsealed hash-only envelopes still accepted; sealed wire format carries no plaintext metadata |
 
+## 4g. Delegation test results — monotonic authority decay
+
+Run `test_delegation.py` to verify `/delegate` and the receipt chain:
+
+```bash
+python3 test_delegation.py    # 17 checks
+```
+
+Results from the current run:
+- **17 PASS**
+- **0 FAIL**
+
+| Checks | What it verifies |
+|---|---|
+| Happy path | root token issued → child minted with subset params + tighter expiry → child executes; parent token still valid (attenuating copy, not handoff) |
+| Narrowing | changed param value → 403; added param key → 403; array element outside parent's list → 403; expiry beyond parent's → 403 |
+| Identity | forged delegator signature → 403; non-grantee delegator → 403; wrong executor on any token → `token_grantee_mismatch` |
+| Depth | orch→w1→w2→w3 chain (depth 3) minted; depth 4 → 403 |
+| Lineage | `GET /delegations/:token_id` returns the full root→leaf chain |
+| Lifecycle | consumed parent cannot delegate; revoking the orchestrator denies the depth-3 child at T₁ (`delegated_authority_revoked`); revoked delegator cannot govern |
+
 ## 7. What this audit package does NOT claim
 
 - It does not claim the 89 real implementations are free of bugs (the auditor must review the code)
@@ -496,6 +518,7 @@ Results from the current run:
 - It does not claim the semantic verifier performs analysis inside the gate (the gate delegates to a configured webhook; verifier quality is external)
 - It does not claim circuit-breaker state is distributed (it is per-instance in memory; shared-state breakers are future work)
 - It does not claim A2A payloads are confidential *by the gate itself* (the gate stores hashes only) — dgv-sealed-v1 provides agent-side confidentiality via ECDH+ChaCha20-Poly1305 over onlystate-relay, which is not post-quantum and does not hide traffic metadata (see A2A_TRANSPORT.md)
+- It does not claim delegation is a full capability system — child scope is confined to the parent's literal tool+action with a JSON-subset params check; there is no cross-tool scope composition or parametric value widening (e.g., "amount ≤ X") — those would need richer policy semantics
 
 ## 8. Recommended audit scope
 
