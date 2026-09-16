@@ -196,6 +196,21 @@ struct AppState {
     semantic_verifier_url: Option<String>,
     /// If true, deny when the semantic verifier is unreachable (default false).
     semantic_fail_closed: bool,
+    /// Partition policy — what a revocation check returning a storage *error*
+    /// means. `fail_closed` (default) denies: a gate that cannot verify
+    /// continuing authority must not assume it. `fail_open` restores the
+    /// previous behaviour for development only.
+    partition_fail_closed: bool,
+    /// Peer gate base URLs that receive signed revocation broadcasts
+    /// (DGV_PEERS, comma-separated). Only locally-originated revocations are
+    /// broadcast — gossiped revocations are never re-gossiped, which bounds
+    /// propagation and prevents message storms.
+    peers: Vec<String>,
+    /// Trusted Ed25519 verifying keys for inbound gossip
+    /// (DGV_GOSSIP_KEYS, comma-separated hex). A gossip message that does not
+    /// verify against one of these keys is rejected — a forged gossip cannot
+    /// revoke anyone.
+    gossip_keys: Vec<VerifyingKey>,
 }
 
 /// Circuit breaker state for a single tool.
@@ -717,7 +732,29 @@ async fn handle_govern(
     }
 
     // 1. Check revocation (from persistent storage)
-    let revocation = app.storage.check_revocation(&p.agent_id).await.ok().flatten();
+    // Partition policy: a storage error is not "not revoked". fail_closed
+    // denies — continuing authority cannot be verified, so it cannot be
+    // assumed. fail_open keeps the old behaviour for development.
+    let revocation = match app.storage.check_revocation(&p.agent_id).await {
+        Ok(r) => r,
+        Err(e) => {
+            if app.partition_fail_closed {
+                Some(RevocationRecord {
+                    actor_id: p.agent_id.clone(),
+                    reason: format!("revocation_check_unavailable: {}", e),
+                    revoked_unix_ms: now_unix_ms(),
+                    revoked_by: "partition_policy".to_string(),
+                })
+            } else {
+                log_event(
+                    "warn",
+                    "revocation_check_failed_fail_open",
+                    json!({"agent_id": p.agent_id, "error": e.to_string()}),
+                );
+                None
+            }
+        }
+    };
     let (gate_state, reason_codes, pass, policy_min_approvals) = if let Some(rev) = revocation {
         (
             "DENY".to_string(),
@@ -1219,16 +1256,42 @@ async fn handle_execute(
     }
 
     // 6. Check revocation (T₁ authority check)
-    if let Ok(Some(rev)) = app.storage.check_revocation(&req.executor_id).await {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(ExecuteResponse {
-                allowed: false,
-                deny_reason: Some(format!("authority_revoked_at_t1: {}", rev.reason)),
-                receipt: json!({"run_id": run_id, "verified": false, "revocation": rev.reason}),
-                run_id,
-            }),
-        );
+    // Partition policy applies here too: a storage error at T₁ means
+    // continuing authority cannot be verified.
+    match app.storage.check_revocation(&req.executor_id).await {
+        Ok(Some(rev)) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(ExecuteResponse {
+                    allowed: false,
+                    deny_reason: Some(format!("authority_revoked_at_t1: {}", rev.reason)),
+                    receipt: json!({"run_id": run_id, "verified": false, "revocation": rev.reason}),
+                    run_id,
+                }),
+            );
+        }
+        Ok(None) => {}
+        Err(e) => {
+            if app.partition_fail_closed {
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(ExecuteResponse {
+                        allowed: false,
+                        deny_reason: Some(format!(
+                            "revocation_check_unavailable_at_t1: {}",
+                            e
+                        )),
+                        receipt: json!({"run_id": run_id, "verified": false, "partition": true}),
+                        run_id,
+                    }),
+                );
+            }
+            log_event(
+                "warn",
+                "revocation_check_failed_fail_open_t1",
+                json!({"executor_id": req.executor_id, "error": e.to_string()}),
+            );
+        }
     }
 
     // 6b. Check approvals — if the policy required min_approvals, verify count
@@ -1440,9 +1503,170 @@ async fn handle_revoke(
         revoked_unix_ms: now_unix_ms(),
         revoked_by: req.revoked_by,
     };
-    match app.storage.store_revocation(rec).await {
-        Ok(()) => (StatusCode::OK, Json(json!({"revoked": true}))),
+    match app.storage.store_revocation(rec.clone()).await {
+        Ok(()) => {
+            broadcast_revocation(&app, &rec);
+            (StatusCode::OK, Json(json!({"revoked": true, "peers": app.peers.len()})))
+        }
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+// ── Revocation gossip ───────────────────────────────────────────────────────
+// Signed, one-hop broadcast of locally-originated revocations to peer gates.
+// This is authenticated *propagation*, not consensus: peers merge via
+// idempotent upsert, and received gossip is never re-gossiped.
+
+#[derive(Serialize, Deserialize, Clone)]
+struct GossipRevocation {
+    actor_id: String,
+    reason: String,
+    revoked_unix_ms: i64,
+    revoked_by: String,
+    /// Hex of the originating gate's verifying key — identifies the signer
+    /// and is bound into the signature.
+    origin: String,
+    signature: String,
+}
+
+fn gossip_canonical(g: &GossipRevocation) -> String {
+    format!(
+        "dgv-revocation-v1|{}|{}|{}|{}|{}",
+        g.actor_id, g.reason, g.revoked_unix_ms, g.revoked_by, g.origin
+    )
+}
+
+fn broadcast_revocation(app: &AppState, rec: &RevocationRecord) {
+    if app.peers.is_empty() {
+        return;
+    }
+    let origin = hex::encode(app.keys.vk.to_bytes());
+    let mut msg = GossipRevocation {
+        actor_id: rec.actor_id.clone(),
+        reason: rec.reason.clone(),
+        revoked_unix_ms: rec.revoked_unix_ms,
+        revoked_by: rec.revoked_by.clone(),
+        origin: origin.clone(),
+        signature: String::new(),
+    };
+    let sig = app.keys.sk.sign(gossip_canonical(&msg).as_bytes());
+    msg.signature = hex::encode(sig.to_bytes());
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(3))
+        .build()
+        .unwrap_or_default();
+    for peer in &app.peers {
+        let url = format!("{}/revocations/gossip", peer);
+        let body = msg.clone();
+        let c = client.clone();
+        tokio::spawn(async move {
+            match c.post(&url).json(&body).send().await {
+                Ok(r) if r.status().is_success() => {}
+                Ok(r) => log_event("warn", "gossip_rejected", json!({"peer": url, "status": r.status().as_u16()})),
+                Err(e) => log_event("warn", "gossip_unreachable", json!({"peer": url, "error": e.to_string()})),
+            }
+        });
+    }
+}
+
+/// POST /revocations/gossip — receive a signed revocation from a peer gate.
+/// The signature must verify against DGV_GOSSIP_KEYS; otherwise the message
+/// is forged and rejected. Received gossip is merged via idempotent upsert
+/// and is never re-broadcast (one-hop bound, no storms).
+async fn handle_gossip_revocation(
+    State(app): State<AppState>,
+    Json(msg): Json<GossipRevocation>,
+) -> impl IntoResponse {
+    if app.gossip_keys.is_empty() {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "gossip_not_configured"})),
+        );
+    }
+    let sig_bytes = match hex::decode(&msg.signature)
+        .ok()
+        .and_then(|b| <[u8; 64]>::try_from(b.as_slice()).ok())
+    {
+        Some(b) => b,
+        None => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "invalid_signature: malformed hex"})),
+            );
+        }
+    };
+    let sig = ed25519_dalek::Signature::from_bytes(&sig_bytes);
+    let canonical = gossip_canonical(&msg);
+    if !app.gossip_keys.iter().any(|vk| vk.verify(canonical.as_bytes(), &sig).is_ok()) {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "invalid_signature: untrusted signer"})),
+        );
+    }
+
+    // Merge with a monotonicity guard: an existing revocation with a newer
+    // timestamp wins, so stale gossip cannot weaken the recorded state.
+    match app.storage.check_revocation(&msg.actor_id).await {
+        Ok(Some(existing)) if existing.revoked_unix_ms >= msg.revoked_unix_ms => {
+            return (
+                StatusCode::OK,
+                Json(json!({"stored": false, "reason": "already_known_or_newer"})),
+            );
+        }
+        Ok(_) => {}
+        Err(e) => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            );
+        }
+    }
+    // Store byte-identically to the origin's record — digests only converge
+    // if every node holds the same canonical entries. The signer is already
+    // established by signature verification, so no provenance rewrite is
+    // needed in the record itself.
+    let rec = RevocationRecord {
+        actor_id: msg.actor_id,
+        reason: msg.reason,
+        revoked_unix_ms: msg.revoked_unix_ms,
+        revoked_by: msg.revoked_by,
+    };
+    match app.storage.store_revocation(rec).await {
+        Ok(()) => (StatusCode::OK, Json(json!({"stored": true}))),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": e.to_string()})),
+        ),
+    }
+}
+
+/// GET /revocations/digest — cheap divergence detector. Sorts revocations by
+/// actor_id, hashes a canonical line per entry; two nodes with identical
+/// revocation state produce identical digests.
+async fn handle_revocations_digest(State(app): State<AppState>) -> impl IntoResponse {
+    match app.storage.list_revocations().await {
+        Ok(mut list) => {
+            list.sort_by(|a, b| a.actor_id.cmp(&b.actor_id));
+            let canonical: String = list
+                .iter()
+                .map(|r| format!("{}|{}|{}|{}", r.actor_id, r.revoked_unix_ms, r.revoked_by, r.reason))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let max_ts = list.iter().map(|r| r.revoked_unix_ms).max().unwrap_or(0);
+            (
+                StatusCode::OK,
+                Json(json!({
+                    "count": list.len(),
+                    "max_revoked_unix_ms": max_ts,
+                    "sha256": sha256_hex(&canonical),
+                })),
+            )
+        }
+        Err(e) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"error": e.to_string()})),
+        ),
     }
 }
 
@@ -2022,18 +2246,43 @@ async fn handle_a2a_send(
         );
     }
 
-    // 4. Sender and recipient must not be revoked
-    if app.storage.check_revocation(&req.sender_id).await.ok().flatten().is_some() {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(json!({"error": "sender_revoked", "sender_id": req.sender_id})),
-        );
+    // 4. Sender and recipient must not be revoked — partition policy applies:
+    // a storage error is not "not revoked".
+    match app.storage.check_revocation(&req.sender_id).await {
+        Ok(Some(_)) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "sender_revoked", "sender_id": req.sender_id})),
+            );
+        }
+        Ok(None) => {}
+        Err(e) => {
+            if app.partition_fail_closed {
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(json!({"error": "revocation_check_unavailable", "detail": e.to_string()})),
+                );
+            }
+            log_event("warn", "a2a_sender_revocation_check_fail_open", json!({"sender_id": req.sender_id, "error": e.to_string()}));
+        }
     }
-    if app.storage.check_revocation(&req.recipient_id).await.ok().flatten().is_some() {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(json!({"error": "recipient_revoked", "recipient_id": req.recipient_id})),
-        );
+    match app.storage.check_revocation(&req.recipient_id).await {
+        Ok(Some(_)) => {
+            return (
+                StatusCode::FORBIDDEN,
+                Json(json!({"error": "recipient_revoked", "recipient_id": req.recipient_id})),
+            );
+        }
+        Ok(None) => {}
+        Err(e) => {
+            if app.partition_fail_closed {
+                return (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(json!({"error": "revocation_check_unavailable", "detail": e.to_string()})),
+                );
+            }
+            log_event("warn", "a2a_recipient_revocation_check_fail_open", json!({"recipient_id": req.recipient_id, "error": e.to_string()}));
+        }
     }
 
     // 5. Recipient must have a registered key (otherwise the envelope can't be
@@ -2245,6 +2494,9 @@ async fn handle_health(State(app): State<AppState>) -> impl IntoResponse {
             "signing_key_loaded": true,
             "jwt_mode": jwt_mode,
             "admin_auth": app.admin_key.is_some(),
+            "partition_policy": if app.partition_fail_closed { "fail_closed" } else { "fail_open" },
+            "gossip_peers": app.peers.len(),
+            "gossip_trusted_keys": app.gossip_keys.len(),
             "verifying_key": hex::encode(app.keys.vk.to_bytes()),
         })),
     )
@@ -2343,11 +2595,35 @@ async fn main() {
     log_event("info", "storage_config", json!({"backend": storage_backend, "url": database_url}));
 
     let storage: Arc<dyn Storage> = match storage_backend.as_str() {
-        "postgres" => Arc::new(
-            PostgresStorage::new(&database_url)
-                .await
-                .expect("failed to connect to postgres"),
-        ),
+        "postgres" => match PostgresStorage::new(&database_url).await {
+            Ok(s) => Arc::new(s) as Arc<dyn Storage>,
+            Err(e) => {
+                // Postgres unreachable at boot: come up degraded rather than
+                // crash-looping. Every storage call fails -> partition policy
+                // applies -> fail_closed denies. A background task retries the
+                // schema migration until Postgres returns (self-healing).
+                log_event("warn", "storage_initial_connect_failed", json!({"error": e.to_string(), "behavior": "degraded_boot_fail_closed"}));
+                let lazy = PostgresStorage::new_lazy(&database_url)
+                    .expect("failed to build lazy postgres pool");
+                let retry = Arc::new(lazy);
+                let retry_task = retry.clone();
+                tokio::spawn(async move {
+                    loop {
+                        match retry_task.migrate().await {
+                            Ok(()) => {
+                                log_event("info", "storage_recovered", json!({"backend": "postgres"}));
+                                break;
+                            }
+                            Err(e) => {
+                                log_event("warn", "storage_migrate_retry", json!({"error": e.to_string()}));
+                                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                            }
+                        }
+                    }
+                });
+                retry as Arc<dyn Storage>
+            }
+        },
         _ => Arc::new(
             SqliteStorage::new(&database_url)
                 .await
@@ -2460,6 +2736,59 @@ async fn main() {
         log_event("info", "semantic_verifier_enabled", json!({"fail_closed": semantic_fail_closed}));
     }
 
+    // Partition policy — what a revocation-check storage error means.
+    // fail_closed (default): deny — unverifiable continuing authority is not authority.
+    // fail_open: legacy behaviour, development only.
+    let partition_fail_closed = match std::env::var("DGV_PARTITION_POLICY")
+        .unwrap_or_else(|_| "fail_closed".to_string())
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "fail_closed" => true,
+        "fail_open" => {
+            log_event("warn", "partition_policy_fail_open", json!({"note": "revocation check failures will be treated as not-revoked — dev only"}));
+            false
+        }
+        other => {
+            eprintln!("FATAL: DGV_PARTITION_POLICY must be fail_closed or fail_open, got '{}'", other);
+            std::process::exit(2);
+        }
+    };
+    log_event("info", "partition_policy", json!({"mode": if partition_fail_closed { "fail_closed" } else { "fail_open" }}));
+
+    // Gossip peers — comma-separated base URLs receiving signed revocation
+    // broadcasts. Only locally-originated revocations are broadcast.
+    let peers: Vec<String> = std::env::var("DGV_PEERS")
+        .unwrap_or_default()
+        .split(',')
+        .map(|s| s.trim().trim_end_matches('/').to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    // Trusted Ed25519 verifying keys (hex) for inbound gossip verification.
+    let gossip_keys: Vec<VerifyingKey> = std::env::var("DGV_GOSSIP_KEYS")
+        .unwrap_or_default()
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .filter_map(|hex_key| {
+            match hex::decode(&hex_key)
+                .ok()
+                .and_then(|b| <[u8; 32]>::try_from(b.as_slice()).ok())
+                .and_then(|b| VerifyingKey::from_bytes(&b).ok())
+            {
+                Some(vk) => Some(vk),
+                None => {
+                    eprintln!("FATAL: DGV_GOSSIP_KEYS contains an invalid Ed25519 key: '{}'", hex_key);
+                    std::process::exit(2);
+                }
+            }
+        })
+        .collect();
+    if !peers.is_empty() || !gossip_keys.is_empty() {
+        log_event("info", "gossip_config", json!({"peers": peers.len(), "trusted_keys": gossip_keys.len()}));
+    }
+
     let app_state = AppState {
         storage,
         keys,
@@ -2470,6 +2799,9 @@ async fn main() {
         tool_health: Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
         semantic_verifier_url,
         semantic_fail_closed,
+        partition_fail_closed,
+        peers,
+        gossip_keys,
     };
 
     // Public routes (no auth required)
@@ -2482,6 +2814,8 @@ async fn main() {
         .route("/stats", get(handle_stats))
         .route("/policies/:tool/:action", get(handle_get_policy))
         .route("/revocations", get(list_revocations))
+        .route("/revocations/gossip", post(handle_gossip_revocation))
+        .route("/revocations/digest", get(handle_revocations_digest))
         .route("/approve/:token_id", post(handle_approve))
         .route("/tool-health/report", post(handle_tool_health_report))
         .route("/tool-health", get(handle_tool_health))

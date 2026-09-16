@@ -414,13 +414,52 @@ Coverage:
 | "Source is open" | `native/` directory | **True** — Rust source is published |
 | "Independent audit completed" | This document | **False** — this is preparation, not an audit |
 
+## 4e. Phase 8 test results — network-scale revocation
+
+Run `test_revocation_network.py` to verify partition handling, signed gossip,
+digest divergence detection, and propagation latency:
+
+```bash
+python3 test_revocation_network.py    # 20 checks across 3 suites
+```
+
+Results from the current run:
+- **20 PASS** — all Phase 8 checks pass
+- **0 FAIL**
+
+| Suite | Checks | What it verifies |
+|---|---|---|
+| Signed gossip | 9 | revocation broadcast between disconnected nodes (separate DBs), gossiped revocation enforced at /govern, digest convergence, forged signature → 403, malformed signature → 403, stale gossip rejected by monotonicity guard, gossip rejected when DGV_GOSSIP_KEYS unset, digest detects divergence |
+| Partition handling | 7 | gate boots degraded when Postgres unreachable at startup (lazy connect, no crash), /health 503 + storage=disconnected, /govern DENY with revocation_check_unavailable (fail_closed default), /execute cannot allow, /a2a/send cannot deliver, DGV_PARTITION_POLICY=fail_open restores legacy behavior explicitly, invalid policy value refused at startup |
+| Propagation latency | 2 | measured ms-to-visibility across two live gate instances (gossip path ~60ms, shared-storage path ~4ms same-host SQLite lower bound), digest equality under shared storage |
+
+Phase 8 mechanisms, kept distinct:
+
+- **Shared Postgres** — the normal consistency boundary; every node's
+  revocation check reads the same table. Idempotent upsert semantics.
+- **Fail-closed partition policy** — `DGV_PARTITION_POLICY=fail_closed`
+  (default): a revocation check that returns a storage *error* denies at T₀,
+  T₁, and A2A paths. `fail_open` restores pre-Phase-8 behavior as an
+  explicit, logged, dev-only opt-in.
+- **Signed gossip** — `DGV_PEERS` + `DGV_GOSSIP_KEYS`: Ed25519-signed
+  revocation records broadcast one hop to peer gates; merged via idempotent
+  upsert with a monotonicity guard (newer `revoked_unix_ms` wins). Received
+  gossip is never re-broadcast.
+- **Digest** — `GET /revocations/digest` returns count + max timestamp +
+  SHA-256 over sorted canonical entries; identical state ⇒ identical digest.
+- **Degraded boot** — a gate that cannot reach Postgres at startup now boots
+  degraded (health 503, all checks fail closed) and self-heals via background
+  migration retry when the database returns.
+
 ## 7. What this audit package does NOT claim
 
 - It does not claim the 89 real implementations are free of bugs (the auditor must review the code)
 - It does not claim the math core is correct (the auditor must verify)
 - It does not claim the test cards are comprehensive
 - It does not claim the Python experiments are production-ready
-- It does not claim consensus, network partition, or production-scale behavior
+- It does not claim **consensus or quorum** — Phase 8 provides authenticated one-hop gossip propagation and shared-database consistency, not a consensus protocol; two nodes partitioned from each other and the database can hold divergent revocation state (detectable via /revocations/digest, not resolved)
+- It does not claim gossip delivery guarantees — broadcasts are fire-and-forget with a 3s timeout; a permanently unreachable peer misses revocations until shared storage or reconfiguration reconciles it
+- It does not claim network partition or production-scale behavior beyond what Phase 8 tests demonstrate
 - It does not constitute an audit — it is preparation for one
 - It does not claim post-quantum security merely because ML-DSA and ML-KEM dependencies exist (the auditor must verify correct usage)
 - It does not claim the L8/L9 commands implement full production authority management (they implement the test-card semantics, not a production authority store)

@@ -19,12 +19,35 @@ pub struct PostgresStorage {
 
 impl PostgresStorage {
     pub async fn new(database_url: &str) -> Result<Self, StorageError> {
-        let pool = PgPool::connect(database_url).await?;
-        Self::migrate(&pool).await?;
+        // Short acquire timeout: a gate should surface an unreachable Postgres
+        // in seconds and fall back to degraded boot, not hang for 30s.
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .acquire_timeout(std::time::Duration::from_secs(3))
+            .connect(database_url)
+            .await?;
+        Self::run_migrations(&pool).await?;
         Ok(Self { pool })
     }
 
-    async fn migrate(pool: &PgPool) -> Result<(), StorageError> {
+    /// Build a storage whose pool connects lazily. The gate boots "degraded":
+    /// every query fails until Postgres is reachable, which the partition
+    /// policy turns into fail-closed denials. Call `migrate` in a retry loop
+    /// until it succeeds — the node self-heals when the database returns.
+    pub fn new_lazy(database_url: &str) -> Result<Self, StorageError> {
+        // Short acquire timeout: under partition every query must fail fast,
+        // not park a request for the 30s default.
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .acquire_timeout(std::time::Duration::from_secs(3))
+            .connect_lazy(database_url)?;
+        Ok(Self { pool })
+    }
+
+    /// Run schema migrations against the pool. Idempotent (IF NOT EXISTS).
+    pub async fn migrate(&self) -> Result<(), StorageError> {
+        Self::run_migrations(&self.pool).await
+    }
+
+    async fn run_migrations(pool: &PgPool) -> Result<(), StorageError> {
         // Postgres doesn't support multiple commands in a single prepared statement.
         // Execute each migration separately.
         let statements = [

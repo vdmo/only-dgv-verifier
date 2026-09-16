@@ -37,6 +37,10 @@ services:
       DGV_CORS_ORIGINS: ${DGV_CORS_ORIGINS:-*}
       DGV_RATE_LIMIT_MAX: ${DGV_RATE_LIMIT_MAX:-100}
       DGV_RATE_LIMIT_WINDOW_MS: ${DGV_RATE_LIMIT_WINDOW_MS:-60000}
+      # Phase 8: partition policy + signed gossip
+      DGV_PARTITION_POLICY: ${DGV_PARTITION_POLICY:-fail_closed}
+      DGV_PEERS: ${DGV_PEERS:-}
+      DGV_GOSSIP_KEYS: ${DGV_GOSSIP_KEYS:-}
     volumes:
       - gate_data:/data
     ports:
@@ -63,6 +67,9 @@ services:
       DGV_CORS_ORIGINS: ${DGV_CORS_ORIGINS:-*}
       DGV_RATE_LIMIT_MAX: ${DGV_RATE_LIMIT_MAX:-100}
       DGV_RATE_LIMIT_WINDOW_MS: ${DGV_RATE_LIMIT_WINDOW_MS:-60000}
+      DGV_PARTITION_POLICY: ${DGV_PARTITION_POLICY:-fail_closed}
+      DGV_PEERS: ${DGV_PEERS:-}
+      DGV_GOSSIP_KEYS: ${DGV_GOSSIP_KEYS:-}
     volumes:
       - gate_data_replica:/data
     ports:

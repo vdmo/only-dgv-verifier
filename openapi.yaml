@@ -263,7 +263,7 @@ paths:
     post:
       tags: [Revocations]
       summary: Revoke an actor
-      description: Revoke an agent's authority. Takes effect immediately. Requires admin key.
+      description: Revoke an agent's authority. Takes effect immediately. If DGV_PEERS is configured, a signed gossip broadcast is sent to each peer. Requires admin key.
       operationId: revoke
       security:
         - adminKey: []
@@ -283,6 +283,9 @@ paths:
                 properties:
                   revoked:
                     type: boolean
+                  peers:
+                    type: integer
+                    description: Number of gossip peers the revocation was broadcast to
         '401':
           description: Admin auth required
           content:
@@ -304,6 +307,79 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RevocationRecord'
+
+  /revocations/gossip:
+    post:
+      tags: [Revocations]
+      summary: Receive a signed revocation from a peer gate
+      description: >-
+        One-hop gossip ingress. The signature must verify against a key in
+        DGV_GOSSIP_KEYS; forged or unsigned messages are rejected. Records are
+        merged via idempotent upsert with a monotonicity guard — a record with
+        an older revoked_unix_ms than the stored one is ignored. Received
+        gossip is never re-broadcast. This is authenticated propagation, not
+        consensus.
+      operationId: gossipRevocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GossipRevocation'
+      responses:
+        '200':
+          description: Gossip processed (stored or deduplicated)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stored:
+                    type: boolean
+                  reason:
+                    type: string
+        '403':
+          description: Untrusted signer, malformed signature, or gossip not configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Storage unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /revocations/digest:
+    get:
+      tags: [Revocations]
+      summary: Divergence-detection digest
+      description: >-
+        Returns count, max revoked_unix_ms, and SHA-256 over canonically
+        sorted revocation entries. Two nodes holding identical revocation
+        state produce identical digests — a cheap check for divergence.
+      operationId: revocationsDigest
+      responses:
+        '200':
+          description: Revocation set digest
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  max_revoked_unix_ms:
+                    type: integer
+                  sha256:
+                    type: string
+        '503':
+          description: Storage unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /tenant/{tenant_id}/policies:
     post:
@@ -1004,6 +1080,29 @@ components:
           type: integer
         revoked_by:
           type: string
+
+    GossipRevocation:
+      type: object
+      required: [actor_id, reason, revoked_unix_ms, revoked_by, origin, signature]
+      description: >-
+        Signed revocation record broadcast between peer gates. The signature
+        is Ed25519 over the canonical string
+        "dgv-revocation-v1|{actor_id}|{reason}|{revoked_unix_ms}|{revoked_by}|{origin}".
+      properties:
+        actor_id:
+          type: string
+        reason:
+          type: string
+        revoked_unix_ms:
+          type: integer
+        revoked_by:
+          type: string
+        origin:
+          type: string
+          description: Hex-encoded Ed25519 verifying key of the originating gate
+        signature:
+          type: string
+          description: Hex-encoded Ed25519 signature over the canonical string
 
     RateLimitConfig:
       type: object
