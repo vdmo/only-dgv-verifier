@@ -147,3 +147,31 @@ do not read gossip as providing it.
   file refuses to start without it; do not bypass that guard.
 - **Receipt signature fails after redeploy**: the signing key did not
   persist — the `gate_data` volume was recreated. Restore from backup.
+
+## Going public — what remains
+
+Verified locally on a production-posture instance (real Postgres storage,
+RS256 JWT with a pinned public key, admin key, `fail_closed`):
+`deploy-check.sh` passes end to end, forged/missing/malformed tokens are
+denied with signed DENY receipts, and `/verify/:run_id` re-derives stored
+decision hashes. That is a posture proof on our machines — not a public
+deployment. The remaining work, in order:
+
+1. **Host.** A VM or container host with a public IP (GCP Compute Engine,
+   Hetzner, any provider). Nothing in the gate requires a specific cloud.
+2. **DNS.** An `A` record — e.g. `gate.<your-domain>` — pointing at the
+   host. Certificates and OIDC discovery both depend on this resolving.
+3. **TLS.** Real certificates — certbot/Let's Encrypt on the host, or the
+   provider's managed certs. `nginx.conf` terminates TLS in front of the
+   loopback-bound gate. Self-signed is a dev posture, not this.
+4. **OIDC issuer.** A real issuer for `DGV_OIDC_ISSUER` — an IdP tenant
+   (Auth0/Ory/Keycloak/Google) or a self-issued JWKS document hosted at
+   `https://<your-domain>/.well-known/jwks.json` with `DGV_JWT_JWKS_URL`
+   pinned at it. The CRM's `DGV_GATE_TOKEN` must be a token that issuer
+   actually signed — its `sub` becomes the verified caller.
+5. **Secrets.** Real values for `POSTGRES_PASSWORD`, `DGV_ADMIN_KEY`,
+   `DGV_CORS_ORIGINS`; the `gate_data` volume persists the signing key —
+   back it up with the database (receipts need both).
+6. **Prove it.** `deploy-check.sh https://gate.<your-domain> <admin-key>`
+   must exit 0. A deployment that fails it is not production, whatever
+   the runbook says.
