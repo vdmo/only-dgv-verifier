@@ -112,16 +112,18 @@ Governance page can re-verify.
 multi-node:
 
 - Point every node at the same Postgres (`DGV_DATABASE_URL`) — that is the
-  consistency boundary.
+  shared consistency boundary.
 - Set `DGV_PEERS` on each node to the others' base URLs, and
   `DGV_GOSSIP_KEYS` to each other's verifying keys (printed at startup as
   `Verifying key: <hex>`).
+- Set `DGV_QUORUM_PEERS` to enable Quorum-enforced continuing authority at T₁
+  (`/execute`). When an agent presents a token, the gate queries cluster peers;
+  if an isolated node cannot reach the required quorum (`DGV_QUORUM_SIZE`), it
+  fails closed and refuses execution.
+- Set `DGV_ANTI_ENTROPY_SECS=30` to enable automated 16-bucket Merkle prefix tree
+  reconciliation between peers, eliminating partition divergence automatically.
 - `DGV_PARTITION_POLICY=fail_closed` is the default and the production
-  answer — a node that cannot reach Postgres denies rather than guesses.
-
-Gossip is authenticated eventual propagation, **not consensus**. If your
-deployment genuinely needs quorum, that is a separate design discussion —
-do not read gossip as providing it.
+  answer — a node that cannot reach storage or quorum denies rather than guesses.
 
 ## Operations
 

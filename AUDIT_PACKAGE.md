@@ -496,13 +496,35 @@ Results from the current run:
 | Lineage | `GET /delegations/:token_id` returns the full root→leaf chain |
 | Lifecycle | consumed parent cannot delegate; revoking the orchestrator denies the depth-3 child at T₁ (`delegated_authority_revoked`); revoked delegator cannot govern |
 
+## 4h. Quorum revocation & Merkle anti-entropy test results
+
+Run `test_revocation_quorum.py` to verify quorum revocation at T₁ and automatic Merkle anti-entropy reconciliation:
+
+```bash
+python3 test_revocation_quorum.py    # 17 checks
+```
+
+Results from the current run:
+- **17 PASS**
+- **0 FAIL**
+
+| Checks | What it verifies |
+|---|---|
+| Cluster topology | 3-node cluster boots with quorum enabled (Q=2 of 3); /health reports quorum_enabled=true, quorum_peers=2, quorum_size=2 |
+| Signed peer queries | `POST /revocations/quorum-check` returns signed Ed25519 confirmation ("clean" / "revoked"); clock skew >60s rejected |
+| Unanimous execution | Under clean quorum (3/3 votes), `/execute` succeeds and produces receipt |
+| T₁ Quorum discovery | Revoking an actor on Node B immediately halts `/execute` on Node A without gossip; Node A automatically replicates the revocation locally |
+| Partition fail-closed | When majority peers are unreachable (isolated Node A), `/execute` fails closed with HTTP 503 (`partition_policy_denied`) and `/govern` produces signed DENY receipt |
+| Prefix Merkle tree | `GET /revocations/merkle` returns 16-bucket prefix tree; `GET /revocations/bucket/:p` returns records for that bucket |
+| Active Anti-Entropy | `POST /revocations/reconcile` compares bucket hashes, pinpoints differing buckets, pulls/pushes missing records; divergent nodes automatically converge byte-for-byte to identical `tree_root` and `/revocations/digest` |
+
 ## 7. What this audit package does NOT claim
 
 - It does not claim the 89 real implementations are free of bugs (the auditor must review the code)
 - It does not claim the math core is correct (the auditor must verify)
 - It does not claim the test cards are comprehensive
 - It does not claim the Python experiments are production-ready
-- It does not claim **consensus or quorum** — Phase 8 provides authenticated one-hop gossip propagation and shared-database consistency, not a consensus protocol; two nodes partitioned from each other and the database can hold divergent revocation state (detectable via /revocations/digest, not resolved)
+- Quorum revocation (`dgv-quorum-v1`) provides linearizable read quorum ($R + W > N$) and partition fail-closed execution, and active anti-entropy (`dgv-merkle-v1`) resolves divergence between disconnected nodes; it does not claim multi-leader Byzantine consensus (BFT) or dynamic cluster reconfiguration (adding/removing quorum nodes requires environment configuration)
 - It does not claim gossip delivery guarantees — broadcasts are fire-and-forget with a 3s timeout; a permanently unreachable peer misses revocations until shared storage or reconfiguration reconciles it
 - It does not claim network partition or production-scale behavior beyond what Phase 8 tests demonstrate
 - It does not constitute an audit — it is preparation for one

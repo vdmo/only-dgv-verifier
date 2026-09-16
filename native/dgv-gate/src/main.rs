@@ -232,6 +232,12 @@ struct AppState {
     /// default 3). A token at depth N cannot mint a child if N+1 would exceed
     /// this bound.
     max_delegation_depth: i64,
+    /// Quorum peer gate base URLs for distributed quorum revocation checks (DGV_QUORUM_PEERS, comma-separated)
+    quorum_peers: Vec<String>,
+    /// Required quorum size (default: (1 + quorum_peers.len()) / 2 + 1)
+    quorum_size: usize,
+    /// Quorum network timeout in milliseconds (DGV_QUORUM_TIMEOUT_MS, default 1500ms)
+    quorum_timeout_ms: u64,
 }
 
 /// Circuit breaker state for a single tool.
@@ -752,13 +758,14 @@ async fn handle_govern(
         }
     }
 
-    // 1. Check revocation (from persistent storage)
+    // 1. Check revocation (from persistent storage + quorum when configured)
     // Partition policy: a storage error is not "not revoked". fail_closed
     // denies — continuing authority cannot be verified, so it cannot be
     // assumed. fail_open keeps the old behaviour for development.
-    let revocation = match app.storage.check_revocation(&p.agent_id).await {
-        Ok(r) => r,
-        Err(e) => {
+    let revocation = match check_revocation_with_quorum(&app, &p.agent_id).await {
+        QuorumOutcome::Revoked(rev) => Some(rev),
+        QuorumOutcome::ConfirmedClean => None,
+        QuorumOutcome::PartitionFailure(e) => {
             if app.partition_fail_closed {
                 Some(RevocationRecord {
                     actor_id: p.agent_id.clone(),
@@ -770,7 +777,7 @@ async fn handle_govern(
                 log_event(
                     "warn",
                     "revocation_check_failed_fail_open",
-                    json!({"agent_id": p.agent_id, "error": e.to_string()}),
+                    json!({"agent_id": p.agent_id, "error": e}),
                 );
                 None
             }
@@ -1299,11 +1306,11 @@ async fn handle_execute(
         );
     }
 
-    // 6. Check revocation (T₁ authority check)
+    // 6. Check revocation (T₁ authority check with quorum when configured)
     // Partition policy applies here too: a storage error at T₁ means
     // continuing authority cannot be verified.
-    match app.storage.check_revocation(&req.executor_id).await {
-        Ok(Some(rev)) => {
+    match check_revocation_with_quorum(&app, &req.executor_id).await {
+        QuorumOutcome::Revoked(rev) => {
             return (
                 StatusCode::FORBIDDEN,
                 Json(ExecuteResponse {
@@ -1314,8 +1321,8 @@ async fn handle_execute(
                 }),
             );
         }
-        Ok(None) => {}
-        Err(e) => {
+        QuorumOutcome::ConfirmedClean => {}
+        QuorumOutcome::PartitionFailure(e) => {
             if app.partition_fail_closed {
                 return (
                     StatusCode::SERVICE_UNAVAILABLE,
@@ -1333,7 +1340,7 @@ async fn handle_execute(
             log_event(
                 "warn",
                 "revocation_check_failed_fail_open_t1",
-                json!({"executor_id": req.executor_id, "error": e.to_string()}),
+                json!({"executor_id": req.executor_id, "error": e}),
             );
         }
     }
@@ -1353,8 +1360,8 @@ async fn handle_execute(
                 _ => break,
             };
             if !ptok.granted_to.is_empty() {
-                match app.storage.check_revocation(&ptok.granted_to).await {
-                    Ok(Some(rev)) => {
+                match check_revocation_with_quorum(&app, &ptok.granted_to).await {
+                    QuorumOutcome::Revoked(rev) => {
                         return (
                             StatusCode::FORBIDDEN,
                             Json(ExecuteResponse {
@@ -1368,8 +1375,8 @@ async fn handle_execute(
                             }),
                         );
                     }
-                    Ok(None) => {}
-                    Err(e) => {
+                    QuorumOutcome::ConfirmedClean => {}
+                    QuorumOutcome::PartitionFailure(e) => {
                         if app.partition_fail_closed {
                             return (
                                 StatusCode::SERVICE_UNAVAILABLE,
@@ -1770,6 +1777,431 @@ async fn list_revocations(State(app): State<AppState>) -> impl IntoResponse {
     match app.storage.list_revocations().await {
         Ok(list) => (StatusCode::OK, Json(serde_json::to_value(list).unwrap_or_default())),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+// ── Quorum & Merkle Anti-Entropy ─────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct QuorumCheckRequest {
+    actor_id: String,
+    nonce: String,
+    timestamp_ms: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct QuorumCheckResponse {
+    actor_id: String,
+    status: String,
+    record: Option<RevocationRecord>,
+    responder_vk: String,
+    nonce: String,
+    timestamp_ms: i64,
+    signature: String,
+}
+
+fn quorum_canonical(
+    actor_id: &str,
+    status: &str,
+    nonce: &str,
+    timestamp_ms: i64,
+    responder_vk: &str,
+) -> String {
+    format!(
+        "dgv-quorum-v1|{}|{}|{}|{}|{}",
+        actor_id, status, nonce, timestamp_ms, responder_vk
+    )
+}
+
+/// POST /revocations/quorum-check — peer query for continuing authority check.
+async fn handle_quorum_check(
+    State(app): State<AppState>,
+    Json(req): Json<QuorumCheckRequest>,
+) -> impl IntoResponse {
+    let now = now_unix_ms();
+    if (now - req.timestamp_ms).abs() > 60_000 {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "clock_skew_exceeded"})),
+        );
+    }
+
+    let (status, record) = match app.storage.check_revocation(&req.actor_id).await {
+        Ok(Some(rev)) => ("revoked", Some(rev)),
+        Ok(None) => ("clean", None),
+        Err(e) => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            );
+        }
+    };
+
+    let responder_vk = hex::encode(app.keys.vk.to_bytes());
+    let canonical = quorum_canonical(&req.actor_id, status, &req.nonce, now, &responder_vk);
+    let sig = app.keys.sk.sign(canonical.as_bytes());
+
+    (
+        StatusCode::OK,
+        Json(json!(QuorumCheckResponse {
+            actor_id: req.actor_id,
+            status: status.to_string(),
+            record,
+            responder_vk,
+            nonce: req.nonce,
+            timestamp_ms: now,
+            signature: hex::encode(sig.to_bytes()),
+        })),
+    )
+}
+
+enum QuorumOutcome {
+    ConfirmedClean,
+    Revoked(RevocationRecord),
+    PartitionFailure(String),
+}
+
+async fn check_revocation_with_quorum(
+    app: &AppState,
+    actor_id: &str,
+) -> QuorumOutcome {
+    match app.storage.check_revocation(actor_id).await {
+        Ok(Some(rev)) => return QuorumOutcome::Revoked(rev),
+        Ok(None) => {}
+        Err(e) => {
+            return QuorumOutcome::PartitionFailure(format!("local storage error: {}", e));
+        }
+    }
+
+    if app.quorum_peers.is_empty() {
+        return QuorumOutcome::ConfirmedClean;
+    }
+
+    let nonce = hex::encode(rand::random::<[u8; 16]>());
+    let now_ms = now_unix_ms();
+    let req_body = QuorumCheckRequest {
+        actor_id: actor_id.to_string(),
+        nonce: nonce.clone(),
+        timestamp_ms: now_ms,
+    };
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_millis(app.quorum_timeout_ms))
+        .build()
+        .unwrap_or_default();
+
+    let mut tasks = Vec::new();
+    for peer in &app.quorum_peers {
+        let url = format!("{}/revocations/quorum-check", peer);
+        let c = client.clone();
+        let body = req_body.clone();
+        tasks.push(async move {
+            c.post(&url).json(&body).send().await
+        });
+    }
+
+    let results = futures::future::join_all(tasks).await;
+    let mut clean_votes = 1usize;
+
+    for res in results {
+        if let Ok(resp) = res {
+            if resp.status().is_success() {
+                if let Ok(qc) = resp.json::<QuorumCheckResponse>().await {
+                    if qc.nonce != nonce || qc.actor_id != actor_id {
+                        continue;
+                    }
+                    if (now_unix_ms() - qc.timestamp_ms).abs() > 60_000 {
+                        continue;
+                    }
+                    if let Ok(sig_bytes) = hex::decode(&qc.signature) {
+                        if sig_bytes.len() == 64 {
+                            if let Ok(sig) = ed25519_dalek::Signature::from_slice(&sig_bytes) {
+                                if let Ok(vk_bytes) = hex::decode(&qc.responder_vk) {
+                                    if vk_bytes.len() == 32 {
+                                        if let Ok(vk) = VerifyingKey::from_bytes(&vk_bytes.try_into().unwrap_or([0u8; 32])) {
+                                            let canonical = quorum_canonical(
+                                                &qc.actor_id,
+                                                &qc.status,
+                                                &qc.nonce,
+                                                qc.timestamp_ms,
+                                                &qc.responder_vk,
+                                            );
+                                            let is_trusted = app.gossip_keys.is_empty()
+                                                || app.gossip_keys.iter().any(|k| k == &vk);
+                                            if is_trusted && vk.verify(canonical.as_bytes(), &sig).is_ok() {
+                                                if qc.status == "revoked" {
+                                                    if let Some(rec) = qc.record {
+                                                        let _ = app.storage.store_revocation(rec.clone()).await;
+                                                        return QuorumOutcome::Revoked(rec);
+                                                    }
+                                                } else if qc.status == "clean" {
+                                                    clean_votes += 1;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if clean_votes >= app.quorum_size {
+        QuorumOutcome::ConfirmedClean
+    } else {
+        QuorumOutcome::PartitionFailure(format!(
+            "insufficient quorum: received {} clean votes out of {} required",
+            clean_votes, app.quorum_size
+        ))
+    }
+}
+
+// ── Merkle Anti-Entropy ──────────────────────────────────────────────────────
+
+fn merkle_bucket_char(actor_id: &str) -> char {
+    let h = sha256_hex(actor_id);
+    h.chars().next().unwrap_or('0')
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct MerkleBucketSummary {
+    count: usize,
+    hash: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct MerkleTreeSummary {
+    count: usize,
+    tree_root: String,
+    buckets: std::collections::BTreeMap<String, MerkleBucketSummary>,
+}
+
+fn compute_merkle_tree(mut list: Vec<RevocationRecord>) -> MerkleTreeSummary {
+    list.sort_by(|a, b| a.actor_id.cmp(&b.actor_id));
+    let mut bucket_records: std::collections::BTreeMap<char, Vec<RevocationRecord>> =
+        std::collections::BTreeMap::new();
+    for c in "0123456789abcdef".chars() {
+        bucket_records.insert(c, Vec::new());
+    }
+    for r in list {
+        let b = merkle_bucket_char(&r.actor_id);
+        bucket_records.entry(b).or_default().push(r);
+    }
+
+    let mut buckets = std::collections::BTreeMap::new();
+    let mut concatenated_hashes = String::new();
+
+    for (c, recs) in bucket_records {
+        let canonical: String = recs
+            .iter()
+            .map(|r| {
+                format!(
+                    "{}|{}|{}|{}",
+                    r.actor_id, r.revoked_unix_ms, r.revoked_by, r.reason
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let h = sha256_hex(&canonical);
+        concatenated_hashes.push_str(&h);
+        buckets.insert(
+            c.to_string(),
+            MerkleBucketSummary {
+                count: recs.len(),
+                hash: h,
+            },
+        );
+    }
+
+    let tree_root = sha256_hex(&concatenated_hashes);
+    let total_count = buckets.values().map(|b| b.count).sum();
+
+    MerkleTreeSummary {
+        count: total_count,
+        tree_root,
+        buckets,
+    }
+}
+
+/// GET /revocations/merkle — returns 16-bucket prefix Merkle tree of revocations.
+async fn handle_revocations_merkle(State(app): State<AppState>) -> impl IntoResponse {
+    match app.storage.list_revocations().await {
+        Ok(list) => {
+            let tree = compute_merkle_tree(list);
+            (StatusCode::OK, Json(json!(tree)))
+        }
+        Err(e) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"error": e.to_string()})),
+        ),
+    }
+}
+
+/// GET /revocations/bucket/:prefix — returns records in a specific 1-char prefix bucket ('0'..'f').
+async fn handle_revocations_bucket(
+    State(app): State<AppState>,
+    Path(prefix): Path<String>,
+) -> impl IntoResponse {
+    let p_char = match prefix.chars().next() {
+        Some(c) if c.is_ascii_hexdigit() => c.to_ascii_lowercase(),
+        _ => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "invalid_prefix: must be single hex char [0-9a-f]"})),
+            );
+        }
+    };
+
+    match app.storage.list_revocations().await {
+        Ok(list) => {
+            let filtered: Vec<RevocationRecord> = list
+                .into_iter()
+                .filter(|r| merkle_bucket_char(&r.actor_id) == p_char)
+                .collect();
+            (StatusCode::OK, Json(json!({
+                "prefix": p_char.to_string(),
+                "count": filtered.len(),
+                "records": filtered,
+            })))
+        }
+        Err(e) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"error": e.to_string()})),
+        ),
+    }
+}
+
+#[derive(Deserialize)]
+struct ReconcileRequest {
+    peer: String,
+}
+
+#[derive(Serialize)]
+struct ReconcileResponse {
+    reconciled: bool,
+    divergent: bool,
+    differing_buckets: Vec<String>,
+    pulled_count: usize,
+    pushed_count: usize,
+    tree_root: String,
+}
+
+async fn reconcile_with_peer(
+    app: &AppState,
+    peer_url: &str,
+) -> Result<ReconcileResponse, String> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let peer_merkle_url = format!("{}/revocations/merkle", peer_url.trim_end_matches('/'));
+    let resp = client.get(&peer_merkle_url).send().await.map_err(|e| format!("peer unreachable: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("peer returned HTTP {}", resp.status()));
+    }
+    let peer_tree = resp.json::<MerkleTreeSummary>().await.map_err(|e| format!("invalid peer response: {}", e))?;
+
+    let local_list = app.storage.list_revocations().await.map_err(|e| e.to_string())?;
+    let local_tree = compute_merkle_tree(local_list.clone());
+
+    if local_tree.tree_root == peer_tree.tree_root {
+        return Ok(ReconcileResponse {
+            reconciled: true,
+            divergent: false,
+            differing_buckets: Vec::new(),
+            pulled_count: 0,
+            pushed_count: 0,
+            tree_root: local_tree.tree_root,
+        });
+    }
+
+    let mut differing = Vec::new();
+    for c in "0123456789abcdef".chars() {
+        let key = c.to_string();
+        let local_hash = local_tree.buckets.get(&key).map(|b| &b.hash);
+        let peer_hash = peer_tree.buckets.get(&key).map(|b| &b.hash);
+        if local_hash != peer_hash {
+            differing.push(key);
+        }
+    }
+
+    let mut pulled_count = 0usize;
+    let mut pushed_count = 0usize;
+
+    for prefix in &differing {
+        let bucket_url = format!("{}/revocations/bucket/{}", peer_url.trim_end_matches('/'), prefix);
+        if let Ok(b_resp) = client.get(&bucket_url).send().await {
+            if b_resp.status().is_success() {
+                if let Ok(data) = b_resp.json::<serde_json::Value>().await {
+                    if let Some(records) = data.get("records").and_then(|v| v.as_array()) {
+                        for item in records {
+                            if let Ok(rec) = serde_json::from_value::<RevocationRecord>(item.clone()) {
+                                match app.storage.check_revocation(&rec.actor_id).await {
+                                    Ok(Some(existing)) if existing.revoked_unix_ms >= rec.revoked_unix_ms => {}
+                                    _ => {
+                                        if app.storage.store_revocation(rec).await.is_ok() {
+                                            pulled_count += 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let p_char = prefix.chars().next().unwrap_or('0');
+        for local_rec in &local_list {
+            if merkle_bucket_char(&local_rec.actor_id) == p_char {
+                let origin = hex::encode(app.keys.vk.to_bytes());
+                let mut msg = GossipRevocation {
+                    actor_id: local_rec.actor_id.clone(),
+                    reason: local_rec.reason.clone(),
+                    revoked_unix_ms: local_rec.revoked_unix_ms,
+                    revoked_by: local_rec.revoked_by.clone(),
+                    origin: origin.clone(),
+                    signature: String::new(),
+                };
+                let sig = app.keys.sk.sign(gossip_canonical(&msg).as_bytes());
+                msg.signature = hex::encode(sig.to_bytes());
+
+                let gossip_url = format!("{}/revocations/gossip", peer_url.trim_end_matches('/'));
+                if client.post(&gossip_url).json(&msg).send().await.is_ok() {
+                    pushed_count += 1;
+                }
+            }
+        }
+    }
+
+    let new_list = app.storage.list_revocations().await.map_err(|e| e.to_string())?;
+    let new_tree = compute_merkle_tree(new_list);
+
+    Ok(ReconcileResponse {
+        reconciled: true,
+        divergent: true,
+        differing_buckets: differing,
+        pulled_count,
+        pushed_count,
+        tree_root: new_tree.tree_root,
+    })
+}
+
+/// POST /revocations/reconcile — trigger divergence reconciliation against a peer.
+async fn handle_reconcile(
+    State(app): State<AppState>,
+    Json(req): Json<ReconcileRequest>,
+) -> impl IntoResponse {
+    match reconcile_with_peer(&app, &req.peer).await {
+        Ok(resp) => (StatusCode::OK, Json(json!(resp))),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            Json(json!({"error": e})),
+        ),
     }
 }
 
@@ -2477,23 +2909,23 @@ async fn handle_delegate(
 
     // 8. Revocation checks — delegator and delegatee (partition policy applies)
     for (actor, kind) in [(&req.delegator_id, "delegator"), (&req.delegatee_id, "delegatee")] {
-        match app.storage.check_revocation(actor).await {
-            Ok(Some(_)) => {
+        match check_revocation_with_quorum(&app, actor).await {
+            QuorumOutcome::Revoked(_) => {
                 return (
                     StatusCode::FORBIDDEN,
                     Json(json!({"error": format!("{}_revoked", kind), "actor_id": actor})),
                 );
             }
-            Ok(None) => {}
-            Err(e) => {
+            QuorumOutcome::ConfirmedClean => {}
+            QuorumOutcome::PartitionFailure(e) => {
                 if app.partition_fail_closed {
                     return (
                         StatusCode::SERVICE_UNAVAILABLE,
-                        Json(json!({"error": "revocation_check_unavailable", "detail": e.to_string()})),
+                        Json(json!({"error": "revocation_check_unavailable", "detail": e})),
                     );
                 }
                 log_event("warn", "delegate_revocation_check_fail_open",
-                    json!({"actor": actor, "error": e.to_string()}));
+                    json!({"actor": actor, "error": e}));
             }
         }
     }
@@ -2739,40 +3171,40 @@ async fn handle_a2a_send(
 
     // 4. Sender and recipient must not be revoked — partition policy applies:
     // a storage error is not "not revoked".
-    match app.storage.check_revocation(&req.sender_id).await {
-        Ok(Some(_)) => {
+    match check_revocation_with_quorum(&app, &req.sender_id).await {
+        QuorumOutcome::Revoked(_) => {
             return (
                 StatusCode::FORBIDDEN,
                 Json(json!({"error": "sender_revoked", "sender_id": req.sender_id})),
             );
         }
-        Ok(None) => {}
-        Err(e) => {
+        QuorumOutcome::ConfirmedClean => {}
+        QuorumOutcome::PartitionFailure(e) => {
             if app.partition_fail_closed {
                 return (
                     StatusCode::SERVICE_UNAVAILABLE,
-                    Json(json!({"error": "revocation_check_unavailable", "detail": e.to_string()})),
+                    Json(json!({"error": "revocation_check_unavailable", "detail": e})),
                 );
             }
-            log_event("warn", "a2a_sender_revocation_check_fail_open", json!({"sender_id": req.sender_id, "error": e.to_string()}));
+            log_event("warn", "a2a_sender_revocation_check_fail_open", json!({"sender_id": req.sender_id, "error": e}));
         }
     }
-    match app.storage.check_revocation(&req.recipient_id).await {
-        Ok(Some(_)) => {
+    match check_revocation_with_quorum(&app, &req.recipient_id).await {
+        QuorumOutcome::Revoked(_) => {
             return (
                 StatusCode::FORBIDDEN,
                 Json(json!({"error": "recipient_revoked", "recipient_id": req.recipient_id})),
             );
         }
-        Ok(None) => {}
-        Err(e) => {
+        QuorumOutcome::ConfirmedClean => {}
+        QuorumOutcome::PartitionFailure(e) => {
             if app.partition_fail_closed {
                 return (
                     StatusCode::SERVICE_UNAVAILABLE,
-                    Json(json!({"error": "revocation_check_unavailable", "detail": e.to_string()})),
+                    Json(json!({"error": "revocation_check_unavailable", "detail": e})),
                 );
             }
-            log_event("warn", "a2a_recipient_revocation_check_fail_open", json!({"recipient_id": req.recipient_id, "error": e.to_string()}));
+            log_event("warn", "a2a_recipient_revocation_check_fail_open", json!({"recipient_id": req.recipient_id, "error": e}));
         }
     }
 
@@ -2989,6 +3421,9 @@ async fn handle_health(State(app): State<AppState>) -> impl IntoResponse {
             "partition_policy": if app.partition_fail_closed { "fail_closed" } else { "fail_open" },
             "gossip_peers": app.peers.len(),
             "gossip_trusted_keys": app.gossip_keys.len(),
+            "quorum_enabled": !app.quorum_peers.is_empty(),
+            "quorum_peers": app.quorum_peers.len(),
+            "quorum_size": app.quorum_size,
             "verifying_key": hex::encode(app.keys.vk.to_bytes()),
         })),
     )
@@ -3304,6 +3739,39 @@ async fn main() {
         .and_then(|s| s.parse().ok())
         .unwrap_or(3);
 
+    // Quorum peers — comma-separated base URLs participating in quorum checks
+    let quorum_peers: Vec<String> = std::env::var("DGV_QUORUM_PEERS")
+        .unwrap_or_default()
+        .split(',')
+        .map(|s| s.trim().trim_end_matches('/').to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    let cluster_size = 1 + quorum_peers.len();
+    let default_quorum = (cluster_size / 2) + 1;
+    let quorum_size = std::env::var("DGV_QUORUM_SIZE")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(default_quorum);
+
+    let quorum_timeout_ms = std::env::var("DGV_QUORUM_TIMEOUT_MS")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .unwrap_or(1500);
+
+    if !quorum_peers.is_empty() {
+        log_event("info", "quorum_config", json!({
+            "quorum_peers": quorum_peers.len(),
+            "quorum_size": quorum_size,
+            "timeout_ms": quorum_timeout_ms
+        }));
+    }
+
+    let anti_entropy_secs: u64 = std::env::var("DGV_ANTI_ENTROPY_SECS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
+
     let app_state = AppState {
         storage,
         keys,
@@ -3318,7 +3786,34 @@ async fn main() {
         peers,
         gossip_keys,
         max_delegation_depth,
+        quorum_peers,
+        quorum_size,
+        quorum_timeout_ms,
     };
+
+    if anti_entropy_secs > 0 && !app_state.peers.is_empty() {
+        let bg_app = app_state.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(anti_entropy_secs));
+            loop {
+                interval.tick().await;
+                for peer in &bg_app.peers {
+                    match reconcile_with_peer(&bg_app, peer).await {
+                        Ok(res) if res.divergent => {
+                            log_event("info", "anti_entropy_reconciled", json!({
+                                "peer": peer,
+                                "pulled": res.pulled_count,
+                                "pushed": res.pushed_count,
+                                "differing_buckets": res.differing_buckets
+                            }));
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        });
+        log_event("info", "anti_entropy_enabled", json!({"interval_secs": anti_entropy_secs}));
+    }
 
     // Public routes (no auth required)
     let public_routes = Router::new()
@@ -3332,6 +3827,10 @@ async fn main() {
         .route("/revocations", get(list_revocations))
         .route("/revocations/gossip", post(handle_gossip_revocation))
         .route("/revocations/digest", get(handle_revocations_digest))
+        .route("/revocations/quorum-check", post(handle_quorum_check))
+        .route("/revocations/merkle", get(handle_revocations_merkle))
+        .route("/revocations/bucket/:prefix", get(handle_revocations_bucket))
+        .route("/revocations/reconcile", post(handle_reconcile))
         .route("/approve/:token_id", post(handle_approve))
         .route("/tool-health/report", post(handle_tool_health_report))
         .route("/tool-health", get(handle_tool_health))

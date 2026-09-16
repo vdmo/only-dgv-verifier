@@ -381,6 +381,147 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /revocations/quorum-check:
+    post:
+      tags: [Revocations]
+      summary: Peer continuing-authority quorum check
+      description: >-
+        Signed peer query for continuing authority check. Nodes query a quorum
+        of cluster peers at execution time T₁ to verify continuing authority.
+        Returns "clean" or "revoked" signed with the responder's Ed25519 key.
+      operationId: revocationsQuorumCheck
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [actor_id, nonce, timestamp_ms]
+              properties:
+                actor_id:
+                  type: string
+                nonce:
+                  type: string
+                timestamp_ms:
+                  type: integer
+      responses:
+        '200':
+          description: Signed quorum check response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  actor_id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [clean, revoked]
+                  record:
+                    $ref: '#/components/schemas/RevocationRecord'
+                  responder_vk:
+                    type: string
+                  nonce:
+                    type: string
+                  timestamp_ms:
+                    type: integer
+                  signature:
+                    type: string
+        '400':
+          description: Clock skew exceeded
+        '503':
+          description: Storage unavailable
+
+  /revocations/merkle:
+    get:
+      tags: [Revocations]
+      summary: 16-bucket Merkle prefix tree
+      description: >-
+        Returns a 16-bucket prefix Merkle tree over the entire revocation set.
+        Buckets partition keys by first hex char of SHA-256(actor_id). Nodes with
+        identical tree_root hold identical revocation state.
+      operationId: revocationsMerkle
+      responses:
+        '200':
+          description: Merkle prefix tree summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  tree_root:
+                    type: string
+                  buckets:
+                    type: object
+        '503':
+          description: Storage unavailable
+
+  /revocations/bucket/{prefix}:
+    get:
+      tags: [Revocations]
+      summary: Get revocations in a specific bucket prefix
+      description: Returns all revocation records falling into the given 1-char hex bucket prefix (0-f).
+      operationId: revocationsBucket
+      parameters:
+        - name: prefix
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Bucket revocation records
+        '400':
+          description: Invalid prefix
+        '503':
+          description: Storage unavailable
+
+  /revocations/reconcile:
+    post:
+      tags: [Revocations]
+      summary: Active anti-entropy reconciliation
+      description: >-
+        Compares local Merkle prefix tree with peer's tree, identifies differing buckets,
+        pulls missing records and pushes local records. Eliminates partition divergence automatically.
+      operationId: revocationsReconcile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [peer]
+              properties:
+                peer:
+                  type: string
+                  description: Base URL of peer gate (e.g. http://127.0.0.1:7892)
+      responses:
+        '200':
+          description: Reconciliation outcome
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reconciled:
+                    type: boolean
+                  divergent:
+                    type: boolean
+                  differing_buckets:
+                    type: array
+                    items:
+                      type: string
+                  pulled_count:
+                    type: integer
+                  pushed_count:
+                    type: integer
+                  tree_root:
+                    type: string
+        '502':
+          description: Peer unreachable or failed
+
   /tenant/{tenant_id}/policies:
     post:
       tags: [Tenants]
