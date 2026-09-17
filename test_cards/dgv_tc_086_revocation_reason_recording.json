@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-086",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-286: Revocation Reason",
+  "claim_name": "Revocation Reason Recording",
+  "claim_definition": "Verifies that every revocation records a reason (role_change, expired, terminated, policy_violation). The reason is included in the receipt so an auditor can understand why authority was revoked.",
+  "scope": "dgv-verifier CLI execution - revocation reason recording test",
+  "test_type": "revocation_reason",
+  "test_cases": [
+    {
+      "id": "TC-L8-086-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nrevoke_authority(\"officer-42\", \"terminated\")\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Every revocation must record a reason. The reason must be included in the receipt for audit purposes."
+    }
+  ],
+  "metrics": [
+    "reason_recorded",
+    "reason_in_receipt"
+  ],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z",
+  "negative_test": true
+}

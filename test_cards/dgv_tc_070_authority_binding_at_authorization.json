@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-070",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-270: Authority Binding",
+  "claim_name": "Authority Binding at Authorization",
+  "claim_definition": "Verifies that the gate records who authorized the agent, under what role, and with what scope at T0. The governance_root.actors array MUST be populated before the action is evaluated.",
+  "scope": "dgv-verifier CLI execution - authority binding test",
+  "test_type": "authority_binding",
+  "test_cases": [
+    {
+      "id": "TC-L8-070-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "The gate must record the authorizing actor, their role, and their authority scope at T0 before evaluating the action."
+    }
+  ],
+  "metrics": [
+    "actors_recorded",
+    "role_recorded",
+    "scope_recorded"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

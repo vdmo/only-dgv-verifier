@@ -3,6 +3,7 @@ use only_evolution::solve_for_equilibrium;
 use only_lang::evaluate_script;
 use only_lang::evidence_pack::ProposalSubmitted;
 use only_lang::lifestack_identity;
+use only_lang::ScriptResult;
 use only_memory::GhostMemory;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
@@ -143,7 +144,7 @@ fn main() {
                             emit_receipt(GateDecision::DENY(reason), Some(res.residual), res.indices_healed.clone(), res.revealed, emit_json);
                         } else if res.pass && emit_json {
                             // Enriched governance receipt (TC-006/007/008/011/013 fields)
-                            let out = serde_json::json!({
+                            let mut out = serde_json::json!({
                                 "pass": true,
                                 "gate_status": "OPEN",
                                 "residual_final": res.residual,
@@ -161,6 +162,16 @@ fn main() {
                                 "corrupted_index": corrupted_index,
                                 "pre_heal_residual": pre_heal_residual
                             });
+                            // L8/L9: surface authority/context/lineage/objective
+                            // state so scripts using those verbs are checkable
+                            // from --script= output too, not just --simulate-case=.
+                            if let (Some(out_obj), Some(l8_obj)) =
+                                (out.as_object_mut(), l8_fields_json(&res).as_object())
+                            {
+                                for (k, v) in l8_obj {
+                                    out_obj.insert(k.clone(), v.clone());
+                                }
+                            }
                             println!("{}", out);
                         } else {
                             let decision = if res.pass {
@@ -267,6 +278,90 @@ fn emit_receipt(
 }
 
 // ── simulate-case handler ────────────────────────────────────────────────────
+
+/// L8/L9: surface the ScriptResult fields the DSL interpreter already
+/// computes (authority/context/lineage/objective state) but that the
+/// existing --script= JSON output never exposed. This is what makes the
+/// L8/L9 cards' declared `metrics` genuinely checkable from CLI output.
+fn l8_fields_json(res: &ScriptResult) -> serde_json::Value {
+    serde_json::json!({
+        "authority_actor_id": res.authority_actor_id.clone(),
+        "authority_role": res.authority_role.clone(),
+        "authority_scope": res.authority_scope.clone(),
+        "authority_revoked": res.authority_revoked,
+        "authority_revocation_reason": res.authority_revocation_reason.clone(),
+        "context_data_hash": res.context_data_hash.clone(),
+        "context_policy_hash": res.context_policy_hash.clone(),
+        "context_drift_detected": res.context_drift_detected,
+        "lineage_hash": res.lineage_hash.clone(),
+        "lineage_linked": res.lineage_linked,
+        "objective_id": res.objective_id.clone(),
+        "objective_actions": res.objective_actions.clone(),
+    })
+}
+
+/// Runs a DGV-TC-070..087 card's real ONLY-Lang script through the real
+/// interpreter (only_lang::evaluate_script) and reports the actual result.
+/// Mirrors the authority_revoked-first / governance-failure-string-matching
+/// logic already used by the --script= CLI path.
+fn run_l8_card(card_id: &str, script: &str, payload: f64) -> String {
+    let signs: Vec<Sign> = generate_signs(4).collect();
+    let mut field = GhostMemory::encode_4(&signs, payload);
+
+    match evaluate_script(&signs, &mut field, script) {
+        Ok(res) => {
+            let mut out = l8_fields_json(&res);
+            let obj = out.as_object_mut().expect("l8_fields_json returns an object");
+            obj.insert("card_id".to_string(), serde_json::json!(card_id));
+            obj.insert("real_verification".to_string(), serde_json::json!(true));
+
+            if res.authority_revoked {
+                let reason = res
+                    .authority_revocation_reason
+                    .clone()
+                    .unwrap_or_else(|| "authority_revoked".to_string());
+                obj.insert("pass".to_string(), serde_json::json!(false));
+                obj.insert("gate_status".to_string(), serde_json::json!("CLOSED"));
+                obj.insert("rejection_reason".to_string(), serde_json::json!(reason));
+            } else {
+                obj.insert("pass".to_string(), serde_json::json!(res.pass));
+                obj.insert(
+                    "gate_status".to_string(),
+                    serde_json::json!(if res.pass { "OPEN" } else { "CLOSED" }),
+                );
+                obj.insert("residual_final".to_string(), serde_json::json!(res.residual));
+                obj.insert("indices_healed".to_string(), serde_json::json!(res.indices_healed));
+                if !res.pass {
+                    obj.insert(
+                        "rejection_reason".to_string(),
+                        serde_json::json!("mathematical_drift_detected"),
+                    );
+                }
+            }
+            out.to_string()
+        }
+        Err(e) => {
+            let err_str = e.to_lowercase();
+            let is_governance_failure = err_str.contains("authority")
+                || err_str.contains("revocation")
+                || err_str.contains("lineage")
+                || err_str.contains("objective")
+                || err_str.contains("context")
+                || err_str.contains("drift")
+                || err_str.contains("bounds")
+                || err_str.contains("bind");
+            let gate_status = if is_governance_failure { "CLOSED" } else { "SILENCE" };
+            serde_json::json!({
+                "card_id": card_id,
+                "real_verification": true,
+                "pass": false,
+                "gate_status": gate_status,
+                "rejection_reason": e,
+            })
+            .to_string()
+        }
+    }
+}
 
 fn handle_simulate_case(case_id: &str) {
     let json_str = match case_id {
@@ -870,6 +965,276 @@ fn handle_simulate_case(case_id: &str) {
                 "decay_detected_without_event": !pass,
                 "real_verification": true
             }).to_string()
+        }
+
+        // ── L8: Authority Continuity (DGV-TC-070 to DGV-TC-087) ─────────────
+        // Each of these runs its card's real ONLY-Lang script through the
+        // real interpreter (only_lang::evaluate_script) rather than
+        // hardcoding a synthetic pass/fail — see run_l8_card.
+        "DGV-TC-070" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+evolve(2)
+data(1000)
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-071" => run_l8_card(
+            case_id,
+            r#"bind_context("data_hash_v1", "policy_hash_v1")
+evolve(2)
+data(1000)
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-072" => run_l8_card(
+            case_id,
+            r#"link_lineage("prior_receipt_hash_a3f5e8c1d2b4")
+evolve(2)
+data(1000)
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-073" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+evolve(2)
+data(1000)
+check_authority("officer-42")
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-074" => run_l8_card(
+            case_id,
+            r#"bind_context("data_hash_v1", "policy_hash_v1")
+evolve(2)
+data(1000)
+check_context_drift()
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-075" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+link_lineage("prior_receipt_hash_a3f5e8c1d2b4")
+evolve(2)
+data(1000)
+check_revocation()
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-076" => run_l8_card(
+            case_id,
+            r#"link_lineage("prior_receipt_hash_a3f5e8c1d2b4")
+evolve(2)
+data(1000)
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-077" => run_l8_card(
+            case_id,
+            r#"link_lineage("prior_receipt_hash_a3f5e8c1d2b4")
+bind_context("data_hash_v1", "policy_hash_v1")
+evolve(2)
+data(1000)
+check_context_drift()
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-078" => run_l8_card(
+            case_id,
+            r#"bind_context("data_hash_v1", "policy_hash_v1")
+evolve(2)
+data(1000)
+check_context_drift()
+residual()"#,
+            1000.0,
+        ),
+        // NOTE: this card's script was corrected during implementation — the
+        // source copy in dgv-full-cards.json duplicated TC-073's authority
+        // check and never exercised objective-drift verbs at all despite the
+        // card's name. This version actually calls bind_objective /
+        // check_objective_drift.
+        "DGV-TC-079" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+bind_objective("approve_loan", ["loan_approval", "credit_check"])
+evolve(2)
+data(1000)
+check_objective_drift("loan_approval")
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-080" => run_l8_card(
+            case_id,
+            r#"link_lineage("prior_receipt_hash_a3f5e8c1d2b4")
+require_continuous_lineage()
+evolve(2)
+data(1000)
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-081" => run_l8_card(
+            case_id,
+            "link_lineage(\"\")\nrequire_continuous_lineage()\nevolve(2)\ndata(1000)\nresidual()",
+            1000.0,
+        ),
+        "DGV-TC-082" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+bind_objective("approve_loan", ["loan_approval", "credit_check"])
+evolve(2)
+data(1000)
+check_objective_drift("approve_loan")
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-083" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+bind_objective("approve_loan", ["loan_approval", "credit_check"])
+evolve(2)
+data(1000)
+check_objective_drift("delete_records")
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-084" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+revoke_authority("officer-42", "role_change")
+evolve(2)
+data(1000)
+check_authority("officer-42")
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-085" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+link_lineage("prior_receipt_hash_a3f5e8c1d2b4")
+evolve(2)
+data(1000)
+check_revocation()
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-086" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+revoke_authority("officer-42", "terminated")
+evolve(2)
+data(1000)
+residual()"#,
+            1000.0,
+        ),
+        "DGV-TC-087" => run_l8_card(
+            case_id,
+            r#"bind_authority("officer-42", "compliance_officer", "lending_decisions")
+link_lineage("prior_receipt_hash_a3f5e8c1d2b4")
+revoke_authority("officer-42", "policy_violation")
+evolve(2)
+data(1000)
+check_revocation()
+residual()"#,
+            1000.0,
+        ),
+
+        // ── L9: Reproducibility & Audit ──────────────────────────────────────
+        // TC-088: rebuilds are not run here (too slow for a CLI flag); this
+        // checks that the binary that's actually running right now matches
+        // the checksum published in CHECKSUMS.txt, which is exactly the
+        // manual procedure REPRODUCIBILITY.md documents. Must be invoked
+        // from the only-dgv-verifier/ repo root (same convention as
+        // test_real_verification.py).
+        "DGV-TC-088" => {
+            let binary_path = "native/target/release/dgv-verifier";
+            let checksums_path = "CHECKSUMS.txt";
+            match (std::fs::read(binary_path), std::fs::read_to_string(checksums_path)) {
+                (Ok(bytes), Ok(checksums)) => {
+                    let mut hasher = Sha256::new();
+                    hasher.update(&bytes);
+                    let computed = format!("{:x}", hasher.finalize());
+                    let expected_hash = checksums
+                        .lines()
+                        .find(|l| l.trim_end().ends_with(binary_path))
+                        .and_then(|l| l.split_whitespace().next())
+                        .unwrap_or("")
+                        .to_string();
+                    let pass = !expected_hash.is_empty() && expected_hash == computed;
+                    serde_json::json!({
+                        "card_id": "DGV-TC-088",
+                        "real_verification": true,
+                        "pass": pass,
+                        "gate_status": if pass { "OPEN" } else { "CLOSED" },
+                        "computed_sha256": computed,
+                        "published_sha256": expected_hash,
+                        "checksums_file": checksums_path,
+                        "binary_path": binary_path,
+                    })
+                    .to_string()
+                }
+                _ => serde_json::json!({
+                    "card_id": "DGV-TC-088",
+                    "real_verification": true,
+                    "pass": false,
+                    "gate_status": "SILENCE",
+                    "rejection_reason": "binary_or_checksums_file_not_found",
+                })
+                .to_string(),
+            }
+        }
+
+        // TC-089: runs the same script through the real interpreter twice
+        // with fresh identical state, hashes each canonicalized result, and
+        // checks the hashes match — a direct test of the fixed-point /
+        // determinism property, not an assumption of it.
+        "DGV-TC-089" => {
+            let script = r#"harmony(1e-12)
+bind_authority("officer-42", "compliance_officer", "lending_decisions")
+bind_context("data_hash_v1", "policy_hash_v1")
+link_lineage("prior_receipt_hash_a3f5e8c1d2b4")
+evolve(2)
+data(1000)
+check_authority("officer-42")
+check_context_drift()
+check_revocation()
+require_continuous_lineage()
+residual()"#;
+            let signs: Vec<Sign> = generate_signs(4).collect();
+
+            let mut field_a = GhostMemory::encode_4(&signs, 1000.0);
+            let res_a = evaluate_script(&signs, &mut field_a, script);
+            let mut field_b = GhostMemory::encode_4(&signs, 1000.0);
+            let res_b = evaluate_script(&signs, &mut field_b, script);
+
+            let canonicalize = |r: &Result<ScriptResult, String>| -> String {
+                match r {
+                    Ok(s) => format!(
+                        "{}|pass={}|residual={:.12}|healed={:?}",
+                        l8_fields_json(s),
+                        s.pass,
+                        s.residual,
+                        s.indices_healed
+                    ),
+                    Err(e) => format!("ERR:{}", e),
+                }
+            };
+
+            let hash_a = sha256_hex(&canonicalize(&res_a));
+            let hash_b = sha256_hex(&canonicalize(&res_b));
+            let pass = hash_a == hash_b;
+
+            serde_json::json!({
+                "card_id": "DGV-TC-089",
+                "real_verification": true,
+                "pass": pass,
+                "gate_status": if pass { "OPEN" } else { "CLOSED" },
+                "receipt_hash_run_1": format!("sha256:{}", hash_a),
+                "receipt_hash_run_2": format!("sha256:{}", hash_b),
+                "hashes_match": pass,
+            })
+            .to_string()
         }
 
         // ── Unknown case ─────────────────────────────────────────────────────

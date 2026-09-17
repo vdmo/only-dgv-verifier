@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-084",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-284: Revocation Recording",
+  "claim_name": "Authority Revocation Recording",
+  "claim_definition": "Verifies that the gate records authority revocation in a revocation registry. When revoke_authority is called, the actor is added to the registry and all downstream receipts in the lineage chain are invalidated.",
+  "scope": "dgv-verifier CLI execution - revocation recording test",
+  "test_type": "revocation_recording",
+  "test_cases": [
+    {
+      "id": "TC-L8-084-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nrevoke_authority(\"officer-42\", \"role_change\")\nevolve(2)\ndata(1000)\ncheck_authority(\"officer-42\")\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "The gate must record authority revocation in a revocation registry. The revoked actor must be detectable by check_authority."
+    }
+  ],
+  "metrics": [
+    "revocation_recorded",
+    "actor_in_registry"
+  ],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z",
+  "negative_test": true
+}

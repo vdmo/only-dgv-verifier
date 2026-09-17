@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-081",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-281: Lineage Gap Detection",
+  "claim_name": "Lineage Gap Detection",
+  "claim_definition": "Negative test: verifies that the gate detects a gap in the lineage chain (a missing receipt hash between T0 and T1) and DENIES the action. A broken chain is a governance failure, not a warning.",
+  "scope": "dgv-verifier CLI execution - lineage gap detection negative test",
+  "test_type": "lineage_gap_negative",
+  "test_cases": [
+    {
+      "id": "TC-L8-081-01",
+      "input": {
+        "script": "harmony(1e-12)\nlink_lineage(\"\")\nrequire_continuous_lineage()\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Negative test: the gate must detect a gap in the lineage chain (empty prior receipt hash) and DENY the action."
+    }
+  ],
+  "metrics": [
+    "gap_detected",
+    "gate_denied"
+  ],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z",
+  "negative_test": true
+}

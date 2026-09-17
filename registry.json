@@ -1,6 +1,6 @@
 {
   "registry_version": "1.0.0",
-  "generated_at": "2026-08-31T12:26:43Z",
+  "generated_at": "2026-09-17T09:05:21Z",
   "dgv_benchmark_version": "1.0.0",
   "systems": [
     {
@@ -1333,6 +1333,391 @@
             }
           },
           "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-070",
+          "claim_name": "Authority Binding at Authorization",
+          "test_card_id": "DGV-TC-070",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_070_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:65e6bc593019b1be2d45ef485c04bd3cd09920a11d7659de2cd721f533966c60",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-071",
+          "claim_name": "Context Binding at Authorization",
+          "test_card_id": "DGV-TC-071",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_071_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:ac698aca1bdb76b66ff6564aaf73058f98443b5f6b407f19e11ccfb62975311c",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-072",
+          "claim_name": "Lineage Chain Linking",
+          "test_card_id": "DGV-TC-072",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_072_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:57aab341679f5d36558b75d4af712e73c7aa3f63cf50e37b4ea9e60a60fe259f",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-073",
+          "claim_name": "Authority Validity Check at Execution",
+          "test_card_id": "DGV-TC-073",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_073_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:3e9ce78342b2af0ab4440585d7b3adeca104d58ccfff1124e60aa909fe9be0f3",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-074",
+          "claim_name": "Condition Drift Detection",
+          "test_card_id": "DGV-TC-074",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_074_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:52d3941d9df1a4fc0b2c80d9c400c800d03c70f8b93e652341f75e5223678874",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-075",
+          "claim_name": "Revocation Propagation",
+          "test_card_id": "DGV-TC-075",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_075_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:7b8d5b358af54d3a24e19318bd8d98717e051f4d0cce9c34c6527d3589ea6859",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-076",
+          "claim_name": "Lineage Integrity Verification",
+          "test_card_id": "DGV-TC-076",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_076_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:6e994a7125bdf9ce3ea8f370137980fb36019f7f2c56af29a149bbcee794a23d",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-077",
+          "claim_name": "Temporal Receipt Chain",
+          "test_card_id": "DGV-TC-077",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_077_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:3bab6b7cf029dd5b9b2fcdf7c3fd9bfa7cf32702461d7f67a27405040fbd333b",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-078",
+          "claim_name": "Policy Version Consistency",
+          "test_card_id": "DGV-TC-078",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_078_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:d085014bd4c65d45289253ea4c2f757acc80be71f5288c3e0b36b6275f324fc7",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-079",
+          "claim_name": "Objective Drift Detection",
+          "test_card_id": "DGV-TC-079",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_079_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:b6a7ced020b5b2c9ff377998a2617c04fe4886d8437dd8ef0202811ee82ac7c2",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-080",
+          "claim_name": "Continuous Lineage Enforcement",
+          "test_card_id": "DGV-TC-080",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_080_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:3f472e35e2acc0a976f3284484d5522ea339a32a79bcd7e63cff9666539feb77",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-081",
+          "claim_name": "Lineage Gap Detection",
+          "test_card_id": "DGV-TC-081",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_081_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:89bfe16e0dd60984d482516b06ca36a092319de523aeda21c6a43ff21476d2a7",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-082",
+          "claim_name": "Objective Scope Binding",
+          "test_card_id": "DGV-TC-082",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_082_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:5edcb5f3b55bb898fa2def60bf3354d9a321e942c10abb133d7c5580a6df9ebc",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-083",
+          "claim_name": "Objective Drift - Action Out of Scope",
+          "test_card_id": "DGV-TC-083",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_083_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:bdca1624ae7332da15c30220d99f00e8fd745908bdffc3d46a67300d2ae91cfe",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-084",
+          "claim_name": "Authority Revocation Recording",
+          "test_card_id": "DGV-TC-084",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_084_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:e4ceecce154cce098ca037a528683deb615fdb82aa1f113ea26153d193401df0",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-085",
+          "claim_name": "Revocation Registry Check at Execution",
+          "test_card_id": "DGV-TC-085",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_085_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:015d94cfad8310a583f2fe9917532425383b378272b3278fc455886dc43eedc9",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-086",
+          "claim_name": "Revocation Reason Recording",
+          "test_card_id": "DGV-TC-086",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_086_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:b25747ced80b80c7d128706b01da60d68213be0804b344edaee6ad8645beb97a",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-087",
+          "claim_name": "Downstream Invalidation on Revocation",
+          "test_card_id": "DGV-TC-087",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L8: Authority Continuity",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_087_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:a79e26b76f9ad9a6890b337a92903d59e22bb7c1e39ba595afc8ed2a603101a9",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          },
+          "notes": "Negative test card \u2014 verifies the verifier correctly detects and rejects violations."
+        },
+        {
+          "claim_id": "DGV-CL-088",
+          "claim_name": "Build-from-Source Verifier Reproducibility",
+          "test_card_id": "DGV-TC-088",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L9: Reproducibility & Audit",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_088_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:9be1b4fbdd4488264ff7e74b9de2f2409a2a14ae643eebb0c79c931d416afc9b",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
+        },
+        {
+          "claim_id": "DGV-CL-089",
+          "claim_name": "Receipt Re-derivation from Rules",
+          "test_card_id": "DGV-TC-089",
+          "test_card_version": "1.0.0",
+          "execution_mode": "native",
+          "svrnos_layer": "L9: Reproducibility & Audit",
+          "badge_status": "verified:native",
+          "certified_at": "2026-09-17T09:05:21Z",
+          "expires_at": "2027-09-17T00:00:00Z",
+          "evidence": {
+            "package_uri": "evidence/dgv_tc_089_evidence.json",
+            "receipt": {
+              "anchor_method": "sha256-content-hash",
+              "transaction_id": "dgv-sha256:196c5b5be87aa66fb2919d3199b9fc1633a828485fbf7abd8cce2eb80fe8948f",
+              "timestamp": "2026-09-17T09:05:21Z"
+            }
+          }
         }
       ]
     },

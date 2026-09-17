@@ -1,0 +1,64 @@
+{
+  "test_card_id": "DGV-TC-076",
+  "claim_name": "Lineage Integrity Verification",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-276: Lineage Integrity",
+  "enforcement_layer": null,
+  "required_preconditions": null,
+  "compliance_refs": null,
+  "threat_model_tie_in": null,
+  "benchmark_version": "1.0.0",
+  "execution_mode": "native",
+  "binary_checksum": {
+    "dgv_verifier_sha256": "43947f0625bb6e31edc321d74156915b07dc80faaed7d2a52851ec8996d80f0c",
+    "only_gate_sha256": "dee34b456efb21582bb10d23ac9977ed1e8d80fd6421db70fd1abf75ba5db2d0"
+  },
+  "build_provenance": {
+    "build_doc": "BUILD_PROVENANCE.md",
+    "checksums_file": "CHECKSUMS.txt",
+    "slsa_level": 2,
+    "toolchain": "rust-stable",
+    "target": "x86_64-unknown-linux-gnu",
+    "optimization": "release (opt-level=3, lto=true)"
+  },
+  "verified_timestamp": "2026-09-17T09:05:08Z",
+  "status": "passed",
+  "results": [
+    {
+      "case_id": "TC-L8-076-01",
+      "passed": true,
+      "runs_count": 2,
+      "runs_identical": true,
+      "output_sample": {
+        "authority_actor_id": null,
+        "authority_revocation_reason": null,
+        "authority_revoked": false,
+        "authority_role": null,
+        "authority_scope": null,
+        "card_id": "DGV-TC-076",
+        "context_data_hash": null,
+        "context_drift_detected": false,
+        "context_policy_hash": null,
+        "gate_status": "OPEN",
+        "indices_healed": [
+          2
+        ],
+        "lineage_hash": "prior_receipt_hash_a3f5e8c1d2b4",
+        "lineage_linked": true,
+        "objective_actions": [],
+        "objective_id": null,
+        "pass": true,
+        "real_verification": true,
+        "residual_final": 0.0
+      }
+    }
+  ],
+  "settlement_receipt": {
+    "layer": "GitOps Cryptographic Registry",
+    "anchor_method": "sha256-content-hash",
+    "transaction_id": "dgv-sha256:6e994a7125bdf9ce3ea8f370137980fb36019f7f2c56af29a149bbcee794a23d",
+    "signature": "dgv-sha256:6e994a7125bdf9ce3ea8f370137980fb36019f7f2c56af29a149bbcee794a23d",
+    "verification_procedure": "https://github.com/only-engine/dgv/blob/main/RECEIPT_VERIFICATION.md",
+    "timestamp": "2026-09-17T09:05:08Z"
+  }
+}

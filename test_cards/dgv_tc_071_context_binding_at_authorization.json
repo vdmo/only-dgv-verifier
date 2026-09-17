@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-071",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-271: Context Binding",
+  "claim_name": "Context Binding at Authorization",
+  "claim_definition": "Verifies that the gate records the execution context (data hash, policy hash) at T0. The governance_root.context_t0 MUST be populated to enable condition drift detection at T1.",
+  "scope": "dgv-verifier CLI execution - context binding test",
+  "test_type": "context_binding",
+  "test_cases": [
+    {
+      "id": "TC-L8-071-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_context(\"data_hash_v1\", \"policy_hash_v1\")\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "The gate must record the data hash and policy hash at T0 to enable condition drift detection at T1."
+    }
+  ],
+  "metrics": [
+    "context_t0_recorded",
+    "data_hash_recorded",
+    "policy_hash_recorded"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

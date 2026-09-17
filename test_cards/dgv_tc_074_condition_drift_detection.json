@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-074",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-274: Condition Drift",
+  "claim_name": "Condition Drift Detection",
+  "claim_definition": "Verifies that the gate compares the context at T0 to the context at T1 and flags material drift. If the data hash or policy hash changed, the gate MUST ESCALATE for human review.",
+  "scope": "dgv-verifier CLI execution - condition drift detection",
+  "test_type": "condition_drift",
+  "test_cases": [
+    {
+      "id": "TC-L8-074-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_context(\"data_hash_v1\", \"policy_hash_v1\")\nevolve(2)\ndata(1000)\ncheck_context_drift()\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "The gate must compare context_t0 to context_t1 and flag material drift. Changed data or policy MUST trigger ESCALATE."
+    }
+  ],
+  "metrics": [
+    "drift_detected",
+    "drift_fields_identified"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

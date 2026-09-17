@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-089",
+  "svrnos_layer": "L9: Reproducibility & Audit",
+  "ger_mapping": "GER-289: Receipt Re-derivation",
+  "claim_name": "Receipt Re-derivation from Rules",
+  "claim_definition": "Verifies that an auditor can re-derive the gate decision from the ONLY Lang rules and the recorded inputs, producing the same receipt hash. This is the fixed-point property: the decision is a deterministic function of the rules and the inputs.",
+  "scope": "dgv-verifier CLI execution - receipt re-derivation test",
+  "test_type": "receipt_rederivation",
+  "test_cases": [
+    {
+      "id": "TC-L8-089-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nbind_context(\"data_hash_v1\", \"policy_hash_v1\")\nlink_lineage(\"prior_receipt_hash_a3f5e8c1d2b4\")\nevolve(2)\ndata(1000)\ncheck_authority(\"officer-42\")\ncheck_context_drift()\ncheck_revocation()\nrequire_continuous_lineage()\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "An auditor must be able to re-derive the gate decision from the ONLY Lang rules and recorded inputs. The resulting receipt hash must match the original."
+    }
+  ],
+  "metrics": [
+    "receipt_rederivable",
+    "hash_matches"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

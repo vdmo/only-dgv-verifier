@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-077",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-277: Temporal Chain",
+  "claim_name": "Temporal Receipt Chain",
+  "claim_definition": "Verifies that consecutive receipts form a hash-linked temporal chain. Each receipt's governance_root.lineage MUST reference the prior receipt's hash, creating an unbroken sequence from T0 to T1.",
+  "scope": "dgv-verifier CLI execution - temporal chain test",
+  "test_type": "temporal_chain",
+  "test_cases": [
+    {
+      "id": "TC-L8-077-01",
+      "input": {
+        "script": "harmony(1e-12)\nlink_lineage(\"prior_receipt_hash_a3f5e8c1d2b4\")\nbind_context(\"data_hash_v1\", \"policy_hash_v1\")\nevolve(2)\ndata(1000)\ncheck_context_drift()\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "Consecutive receipts must form a hash-linked temporal chain via governance_root.lineage, creating an unbroken sequence."
+    }
+  ],
+  "metrics": [
+    "chain_linked",
+    "sequence_unbroken"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

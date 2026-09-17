@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-076",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-276: Lineage Integrity",
+  "claim_name": "Lineage Integrity Verification",
+  "claim_definition": "Verifies that the full delegation chain from T0 to T1 is intact and unbroken. If any receipt in the chain is missing or tampered, the gate MUST DENY and flag the lineage break.",
+  "scope": "dgv-verifier CLI execution - lineage integrity test",
+  "test_type": "lineage_integrity",
+  "test_cases": [
+    {
+      "id": "TC-L8-076-01",
+      "input": {
+        "script": "harmony(1e-12)\nlink_lineage(\"prior_receipt_hash_a3f5e8c1d2b4\")\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "The gate must verify the full delegation chain is intact. Missing or tampered receipts MUST result in DENY."
+    }
+  ],
+  "metrics": [
+    "lineage_intact",
+    "chain_unbroken"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

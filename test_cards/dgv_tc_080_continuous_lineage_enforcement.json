@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-080",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-280: Continuous Lineage",
+  "claim_name": "Continuous Lineage Enforcement",
+  "claim_definition": "Verifies that the gate enforces a receipt at every intermediate step between T0 and T1. If the lineage chain has a gap (a missing receipt hash), the gate MUST DENY. The chain is not optional - it is required.",
+  "scope": "dgv-verifier CLI execution - continuous lineage enforcement test",
+  "test_type": "continuous_lineage",
+  "test_cases": [
+    {
+      "id": "TC-L8-080-01",
+      "input": {
+        "script": "harmony(1e-12)\nlink_lineage(\"prior_receipt_hash_a3f5e8c1d2b4\")\nrequire_continuous_lineage()\nevolve(2)\ndata(1000)\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "The gate must enforce a receipt at every intermediate step. A gap in the lineage chain MUST result in DENY."
+    }
+  ],
+  "metrics": [
+    "lineage_enforced",
+    "gap_detected"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

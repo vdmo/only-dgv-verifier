@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-083",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-283: Objective Drift Negative",
+  "claim_name": "Objective Drift - Action Out of Scope",
+  "claim_definition": "Negative test: verifies that the gate detects when the proposed action type is not in the authorized objective scope and DENIES. An action that is correct but outside the authorized objective is a governance failure.",
+  "scope": "dgv-verifier CLI execution - objective drift negative test",
+  "test_type": "objective_drift_negative",
+  "test_cases": [
+    {
+      "id": "TC-L8-083-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nbind_objective(\"approve_loan\", [\"loan_approval\", \"credit_check\"])\nevolve(2)\ndata(1000)\ncheck_objective_drift(\"delete_records\")\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "Negative test: the gate must detect that the proposed action (delete_records) is not in the authorized objective scope ([loan_approval, credit_check]) and DENY."
+    }
+  ],
+  "metrics": [
+    "drift_detected",
+    "gate_denied"
+  ],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z",
+  "negative_test": true
+}

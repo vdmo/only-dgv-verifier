@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-085",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-285: Revocation Registry Check",
+  "claim_name": "Revocation Registry Check at Execution",
+  "claim_definition": "Verifies that the gate checks the revocation registry at T1 before allowing execution. If the authorizing actor is in the registry, the gate MUST DENY regardless of action compliance.",
+  "scope": "dgv-verifier CLI execution - revocation registry check test",
+  "test_type": "revocation_check",
+  "test_cases": [
+    {
+      "id": "TC-L8-085-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nlink_lineage(\"prior_receipt_hash_a3f5e8c1d2b4\")\nevolve(2)\ndata(1000)\ncheck_revocation()\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "The gate must check the revocation registry at T1. If the authorizing actor is in the registry, the gate MUST DENY."
+    }
+  ],
+  "metrics": [
+    "registry_checked",
+    "revocation_detected"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

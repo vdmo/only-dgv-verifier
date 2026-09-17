@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-082",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-282: Objective Scope Binding",
+  "claim_name": "Objective Scope Binding",
+  "claim_definition": "Verifies that the gate records the authorized objective scope at T0 (what actions the agent is permitted to take) and checks the proposed action against it at T1. The objective scope is a structured set of permitted action types, not free text.",
+  "scope": "dgv-verifier CLI execution - objective scope binding test",
+  "test_type": "objective_scope",
+  "test_cases": [
+    {
+      "id": "TC-L8-082-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nbind_objective(\"approve_loan\", [\"loan_approval\", \"credit_check\"])\nevolve(2)\ndata(1000)\ncheck_objective_drift(\"approve_loan\")\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "The gate must record the authorized objective scope at T0 and check the proposed action type against it at T1."
+    }
+  ],
+  "metrics": [
+    "objective_scope_bound",
+    "action_type_checked"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}

@@ -1,0 +1,33 @@
+{
+  "id": "DGV-TC-087",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-287: Downstream Invalidation",
+  "claim_name": "Downstream Invalidation on Revocation",
+  "claim_definition": "Verifies that when an actor in the lineage chain is revoked, all downstream receipts that depend on that actor's authority are invalidated. The gate MUST DENY any action whose lineage includes a revoked actor.",
+  "scope": "dgv-verifier CLI execution - downstream invalidation test",
+  "test_type": "downstream_invalidation",
+  "test_cases": [
+    {
+      "id": "TC-L8-087-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nlink_lineage(\"prior_receipt_hash_a3f5e8c1d2b4\")\nrevoke_authority(\"officer-42\", \"policy_violation\")\nevolve(2)\ndata(1000)\ncheck_revocation()\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": false
+      },
+      "mandatory": true,
+      "description": "When an actor in the lineage chain is revoked, all downstream receipts must be invalidated. The gate MUST DENY any action whose lineage includes a revoked actor."
+    }
+  ],
+  "metrics": [
+    "downstream_invalidated",
+    "lineage_blocked"
+  ],
+  "pass_threshold": {
+    "must_fail": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z",
+  "negative_test": true
+}

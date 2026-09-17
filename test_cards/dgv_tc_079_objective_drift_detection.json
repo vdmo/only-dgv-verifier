@@ -1,0 +1,32 @@
+{
+  "id": "DGV-TC-079",
+  "svrnos_layer": "L8: Authority Continuity",
+  "ger_mapping": "GER-279: Objective Drift",
+  "claim_name": "Objective Drift Detection",
+  "claim_definition": "Verifies that the gate checks whether the action at T1 still serves the objective stated in the justification at T0. If the action has drifted from the authorized objective, the gate MUST ESCALATE.",
+  "scope": "dgv-verifier CLI execution - objective drift test",
+  "test_type": "objective_drift",
+  "test_cases": [
+    {
+      "id": "TC-L8-079-01",
+      "input": {
+        "script": "harmony(1e-12)\nbind_authority(\"officer-42\", \"compliance_officer\", \"lending_decisions\")\nbind_objective(\"approve_loan\", [\"loan_approval\", \"credit_check\"])\nevolve(2)\ndata(1000)\ncheck_objective_drift(\"loan_approval\")\nresidual()",
+        "payload": 1000
+      },
+      "expected": {
+        "pass": true
+      },
+      "mandatory": true,
+      "description": "The gate must check whether the action at T1 still serves the objective from T0. Drift MUST trigger ESCALATE."
+    }
+  ],
+  "metrics": [
+    "objective_compared",
+    "drift_detected"
+  ],
+  "pass_threshold": {
+    "must_pass": true
+  },
+  "version": "1.0.0",
+  "expiry": "2027-09-17T00:00:00Z"
+}
