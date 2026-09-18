@@ -105,6 +105,10 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./certs:/etc/nginx/certs:ro
+      # Shared with the host's certbot for webroot-mode HTTP-01 renewal —
+      # see docs/deploy/dgv-gate-hetzner.md. certbot writes challenge files
+      # here on the host; nginx serves them from the same path in-container.
+      - ./certbot-webroot:/var/www/certbot
     depends_on:
       - gate
     networks:
