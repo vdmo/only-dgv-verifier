@@ -17,7 +17,7 @@
 //!   POST /tenant/:tenant_id/policies — store tenant-specific policy
 
 use axum::{
-    extract::{Json, Path, State},
+    extract::{Json, Path, Query, State},
     http::{HeaderMap, StatusCode},
     middleware::{self, Next},
     response::IntoResponse,
@@ -1192,6 +1192,7 @@ async fn evaluate_and_finalize(
         replay_inputs: replay_inputs.to_string(),
         signature: signature.clone(),
         created_unix_ms: now,
+        parent_decision_hash: None, // set authoritatively by store_decision itself
     };
     let _ = app.storage.store_decision(dec_rec).await;
 
@@ -1836,6 +1837,65 @@ async fn handle_verify(
                 created_unix_ms: None,
             }),
         ),
+    }
+}
+
+/// GET /decisions/export — a flat, hash-chained batch of past decisions for
+/// offline audit. Each record's `parent_decision_hash` links to the previous
+/// record's `decision_hash` (set authoritatively by `store_decision`, never
+/// by a caller), so a verifier holding only this exported JSON — no network
+/// access, no running gate — can confirm: (1) each record's own hash is a
+/// correct RFC-8785-canonical re-derivation of its fields, (2) each record's
+/// Ed25519 signature over that hash is genuine, and (3) the chain of
+/// `parent_decision_hash` links is unbroken across the whole batch, so no
+/// record could have been silently inserted, deleted, or reordered.
+#[derive(Deserialize)]
+struct ExportDecisionsQuery {
+    after: Option<i64>,
+    limit: Option<i64>,
+}
+
+async fn handle_export_decisions(
+    State(app): State<AppState>,
+    Query(q): Query<ExportDecisionsQuery>,
+) -> impl IntoResponse {
+    let after = q.after.unwrap_or(0);
+    let limit = q.limit.unwrap_or(500).clamp(1, 2000);
+    match app.storage.list_decisions_chained(after, limit).await {
+        Ok(decisions) => {
+            let next_after = decisions.last().map(|d| d.created_unix_ms);
+            let items: Vec<Value> = decisions
+                .into_iter()
+                .map(|d| {
+                    json!({
+                        "run_id": d.run_id,
+                        "request_id": d.request_id,
+                        "decision_hash": d.decision_hash,
+                        "parent_decision_hash": d.parent_decision_hash,
+                        "gate_state": d.gate_state,
+                        "reason_codes": serde_json::from_str::<Value>(&d.reason_codes).unwrap_or(json!([])),
+                        "replay_inputs": serde_json::from_str::<Value>(&d.replay_inputs).unwrap_or(json!({})),
+                        "signature": d.signature,
+                        "created_unix_ms": d.created_unix_ms,
+                    })
+                })
+                .collect();
+            (
+                StatusCode::OK,
+                Json(json!({
+                    "decisions": items,
+                    "count": items.len(),
+                    "verifying_key": hex::encode(app.keys.vk.to_bytes()),
+                    "next_after": next_after,
+                })),
+            )
+                .into_response()
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        )
+            .into_response(),
     }
 }
 
@@ -3341,6 +3401,7 @@ async fn handle_delegate(
         }).to_string(),
         signature: child_sig.clone(),
         created_unix_ms: now,
+        parent_decision_hash: None, // set authoritatively by store_decision itself
     }).await;
     if let Err(e) = app.storage.store_delegation(drec).await {
         return (
@@ -4163,6 +4224,60 @@ async fn handle_get_evidence(
     }
 }
 
+/// GET /evidence/artifacts/:artifact_id/slsa — the same registered evidence,
+/// reshaped as a SLSA v1.0 provenance predicate (in-toto Statement) so
+/// existing supply-chain tooling (`slsa-verifier`, `in-toto`) can consume a
+/// DGV evidence artifact without any DGV-specific integration. Reflects the
+/// artifact's actual `verified` state honestly — this describes what was
+/// recorded, not a certification that it's trustworthy.
+async fn handle_evidence_slsa_provenance(
+    State(app): State<AppState>,
+    Path(artifact_id): Path<String>,
+) -> impl IntoResponse {
+    match app.storage.get_evidence_artifact(&artifact_id).await {
+        Ok(Some(a)) => {
+            let started_on = chrono::DateTime::from_timestamp_millis(a.registered_unix_ms)
+                .map(|dt| dt.to_rfc3339())
+                .unwrap_or_default();
+            let statement = json!({
+                "_type": "https://in-toto.io/Statement/v1",
+                "subject": [{
+                    "name": format!("pkg:dgv/evidence/{}", a.artifact_id),
+                    "digest": { "sha256": a.sha256 },
+                }],
+                "predicateType": "https://slsa.dev/provenance/v1",
+                "predicate": {
+                    "buildDefinition": {
+                        "buildType": "https://dgv.gate/schema/evidence-artifact/v1",
+                        "externalParameters": {
+                            "artifact_id": a.artifact_id,
+                            "content_ref": a.content_ref,
+                            "size_bytes": a.size_bytes,
+                            "verified": a.verified,
+                            "registered_by": a.registered_by,
+                        },
+                    },
+                    "runDetails": {
+                        "builder": { "id": "dgv-gate", "version": "0.4.0" },
+                        "metadata": { "startedOn": started_on },
+                    },
+                },
+            });
+            (StatusCode::OK, Json(statement)).into_response()
+        }
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "artifact_not_found", "artifact_id": artifact_id})),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        )
+            .into_response(),
+    }
+}
+
 async fn handle_list_evidence(State(app): State<AppState>) -> impl IntoResponse {
     match app.storage.list_evidence_artifacts(200).await {
         Ok(items) => {
@@ -4610,6 +4725,7 @@ async fn main() {
         .route("/govern", post(handle_govern))
         .route("/execute", post(handle_execute))
         .route("/verify/:run_id", get(handle_verify))
+        .route("/decisions/export", get(handle_export_decisions))
         .route("/health", get(handle_health))
         .route("/metrics", get(handle_metrics))
         .route("/stats", get(handle_stats))
@@ -4639,7 +4755,8 @@ async fn main() {
         .route("/evidence/artifacts", post(handle_register_evidence))
         .route("/evidence/artifacts", get(handle_list_evidence))
         .route("/evidence/artifacts/:artifact_id", get(handle_get_evidence))
-        .route("/evidence/artifacts/:artifact_id/verify", post(handle_verify_evidence));
+        .route("/evidence/artifacts/:artifact_id/verify", post(handle_verify_evidence))
+        .route("/evidence/artifacts/:artifact_id/slsa", get(handle_evidence_slsa_provenance));
 
     // Admin routes (require X-Admin-Key when DGV_ADMIN_KEY is set)
     let admin_routes = Router::new()

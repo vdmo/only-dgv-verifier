@@ -167,6 +167,10 @@ impl SqliteStorage {
                 created_unix_ms INTEGER NOT NULL
             )"#,
             "CREATE INDEX IF NOT EXISTS idx_session_actions_agent ON session_actions(agent_id, created_unix_ms DESC)",
+            r#"CREATE TABLE IF NOT EXISTS decision_chain_tail (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                latest_decision_hash TEXT
+            )"#,
             r#"CREATE TABLE IF NOT EXISTS pending_decisions (
                 pending_token TEXT PRIMARY KEY,
                 request_id TEXT NOT NULL,
@@ -198,9 +202,14 @@ impl SqliteStorage {
             "ALTER TABLE tokens ADD COLUMN granted_to TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE tokens ADD COLUMN parent_token_id TEXT",
             "ALTER TABLE tokens ADD COLUMN delegation_depth INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE decisions ADD COLUMN parent_decision_hash TEXT",
         ] {
             let _ = sqlx::query(alter).execute(pool).await;
         }
+        // Seed the chain tail row once. Ignored if it already exists.
+        let _ = sqlx::query("INSERT OR IGNORE INTO decision_chain_tail (id, latest_decision_hash) VALUES (1, NULL)")
+            .execute(pool)
+            .await;
         Ok(())
     }
 }
@@ -208,10 +217,20 @@ impl SqliteStorage {
 #[async_trait]
 impl Storage for SqliteStorage {
     async fn store_decision(&self, d: DecisionRecord) -> Result<(), StorageError> {
+        // Chained under one transaction: read the current tail, insert this
+        // decision pointing at it, advance the tail — all serialized by
+        // SQLite's writer lock, so two concurrent decisions can't both link
+        // to the same parent and fork the chain.
+        let mut tx = self.pool.begin().await?;
+        let parent_decision_hash: Option<String> =
+            sqlx::query("SELECT latest_decision_hash FROM decision_chain_tail WHERE id = 1")
+                .fetch_one(&mut *tx)
+                .await?
+                .get("latest_decision_hash");
         sqlx::query(
             r#"INSERT INTO decisions
-               (run_id, request_id, decision_hash, gate_state, reason_codes, replay_inputs, signature, created_unix_ms)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
+               (run_id, request_id, decision_hash, gate_state, reason_codes, replay_inputs, signature, created_unix_ms, parent_decision_hash)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(&d.run_id)
         .bind(&d.request_id)
@@ -221,8 +240,14 @@ impl Storage for SqliteStorage {
         .bind(&d.replay_inputs)
         .bind(&d.signature)
         .bind(d.created_unix_ms)
-        .execute(&self.pool)
+        .bind(&parent_decision_hash)
+        .execute(&mut *tx)
         .await?;
+        sqlx::query("UPDATE decision_chain_tail SET latest_decision_hash = ? WHERE id = 1")
+            .bind(&d.decision_hash)
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
         Ok(())
     }
 
@@ -241,6 +266,7 @@ impl Storage for SqliteStorage {
                 replay_inputs: r.get("replay_inputs"),
                 signature: r.get("signature"),
                 created_unix_ms: r.get("created_unix_ms"),
+                parent_decision_hash: r.get("parent_decision_hash"),
             })),
             None => Ok(None),
         }
@@ -261,9 +287,34 @@ impl Storage for SqliteStorage {
                 replay_inputs: r.get("replay_inputs"),
                 signature: r.get("signature"),
                 created_unix_ms: r.get("created_unix_ms"),
+                parent_decision_hash: r.get("parent_decision_hash"),
             })),
             None => Ok(None),
         }
+    }
+
+    async fn list_decisions_chained(&self, after_unix_ms: i64, limit: i64) -> Result<Vec<DecisionRecord>, StorageError> {
+        let rows = sqlx::query(
+            "SELECT * FROM decisions WHERE created_unix_ms > ? ORDER BY created_unix_ms ASC, rowid ASC LIMIT ?",
+        )
+        .bind(after_unix_ms)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|r| DecisionRecord {
+                run_id: r.get("run_id"),
+                request_id: r.get("request_id"),
+                decision_hash: r.get("decision_hash"),
+                gate_state: r.get("gate_state"),
+                reason_codes: r.get("reason_codes"),
+                replay_inputs: r.get("replay_inputs"),
+                signature: r.get("signature"),
+                created_unix_ms: r.get("created_unix_ms"),
+                parent_decision_hash: r.get("parent_decision_hash"),
+            })
+            .collect())
     }
 
     async fn store_token(&self, t: TokenRecord) -> Result<(), StorageError> {

@@ -167,6 +167,12 @@ impl PostgresStorage {
             "ALTER TABLE tokens ADD COLUMN IF NOT EXISTS granted_to TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE tokens ADD COLUMN IF NOT EXISTS parent_token_id TEXT",
             "ALTER TABLE tokens ADD COLUMN IF NOT EXISTS delegation_depth BIGINT NOT NULL DEFAULT 0",
+            "ALTER TABLE decisions ADD COLUMN IF NOT EXISTS parent_decision_hash TEXT",
+            r#"CREATE TABLE IF NOT EXISTS decision_chain_tail (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                latest_decision_hash TEXT
+            )"#,
+            "INSERT INTO decision_chain_tail (id, latest_decision_hash) VALUES (1, NULL) ON CONFLICT (id) DO NOTHING",
             r#"CREATE TABLE IF NOT EXISTS evidence_artifacts (
                 artifact_id TEXT PRIMARY KEY,
                 sha256 TEXT NOT NULL,
@@ -217,10 +223,21 @@ impl PostgresStorage {
 #[async_trait]
 impl Storage for PostgresStorage {
     async fn store_decision(&self, d: DecisionRecord) -> Result<(), StorageError> {
+        // Chained under one transaction: lock the tail row, insert this
+        // decision pointing at its current value, advance it, commit. The
+        // row lock (SELECT ... FOR UPDATE) is what prevents two concurrent
+        // decisions from both linking to the same parent and forking the
+        // chain under real Postgres concurrency.
+        let mut tx = self.pool.begin().await?;
+        let parent_decision_hash: Option<String> =
+            sqlx::query("SELECT latest_decision_hash FROM decision_chain_tail WHERE id = 1 FOR UPDATE")
+                .fetch_one(&mut *tx)
+                .await?
+                .get("latest_decision_hash");
         sqlx::query(
             r#"INSERT INTO decisions
-               (run_id, request_id, decision_hash, gate_state, reason_codes, replay_inputs, signature, created_unix_ms)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"#,
+               (run_id, request_id, decision_hash, gate_state, reason_codes, replay_inputs, signature, created_unix_ms, parent_decision_hash)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)"#,
         )
         .bind(&d.run_id)
         .bind(&d.request_id)
@@ -230,8 +247,14 @@ impl Storage for PostgresStorage {
         .bind(&d.replay_inputs)
         .bind(&d.signature)
         .bind(d.created_unix_ms)
-        .execute(&self.pool)
+        .bind(&parent_decision_hash)
+        .execute(&mut *tx)
         .await?;
+        sqlx::query("UPDATE decision_chain_tail SET latest_decision_hash = $1 WHERE id = 1")
+            .bind(&d.decision_hash)
+            .execute(&mut *tx)
+            .await?;
+        tx.commit().await?;
         Ok(())
     }
 
@@ -250,6 +273,7 @@ impl Storage for PostgresStorage {
                 replay_inputs: r.get("replay_inputs"),
                 signature: r.get("signature"),
                 created_unix_ms: r.get("created_unix_ms"),
+                parent_decision_hash: r.get("parent_decision_hash"),
             })),
             None => Ok(None),
         }
@@ -270,9 +294,34 @@ impl Storage for PostgresStorage {
                 replay_inputs: r.get("replay_inputs"),
                 signature: r.get("signature"),
                 created_unix_ms: r.get("created_unix_ms"),
+                parent_decision_hash: r.get("parent_decision_hash"),
             })),
             None => Ok(None),
         }
+    }
+
+    async fn list_decisions_chained(&self, after_unix_ms: i64, limit: i64) -> Result<Vec<DecisionRecord>, StorageError> {
+        let rows = sqlx::query(
+            "SELECT * FROM decisions WHERE created_unix_ms > $1 ORDER BY created_unix_ms ASC LIMIT $2",
+        )
+        .bind(after_unix_ms)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|r| DecisionRecord {
+                run_id: r.get("run_id"),
+                request_id: r.get("request_id"),
+                decision_hash: r.get("decision_hash"),
+                gate_state: r.get("gate_state"),
+                reason_codes: r.get("reason_codes"),
+                replay_inputs: r.get("replay_inputs"),
+                signature: r.get("signature"),
+                created_unix_ms: r.get("created_unix_ms"),
+                parent_decision_hash: r.get("parent_decision_hash"),
+            })
+            .collect())
     }
 
     async fn store_token(&self, t: TokenRecord) -> Result<(), StorageError> {

@@ -238,6 +238,7 @@ impl Gate {
             }).to_string(),
             signature: signature_hex.clone(),
             created_unix_ms: now,
+            parent_decision_hash: None, // set authoritatively by store_decision itself
         };
         let _ = self.rt.block_on(self.storage.store_decision(dec_rec));
 

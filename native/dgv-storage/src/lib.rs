@@ -28,6 +28,12 @@ pub struct DecisionRecord {
     pub replay_inputs: String, // JSON object
     pub signature: String,
     pub created_unix_ms: i64,
+    /// `decision_hash` of the immediately-preceding stored decision, forming
+    /// a hash chain across the whole gate — None only for the very first
+    /// decision ever stored. Set by the storage layer itself (inside
+    /// `store_decision`, under a lock on the chain tail), never by the
+    /// caller, so it can't be forged by passing a stale or chosen value in.
+    pub parent_decision_hash: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -223,6 +229,9 @@ pub trait Storage: Send + Sync {
     async fn store_decision(&self, d: DecisionRecord) -> Result<(), StorageError>;
     async fn get_decision(&self, run_id: &str) -> Result<Option<DecisionRecord>, StorageError>;
     async fn get_decision_by_request_id(&self, request_id: &str) -> Result<Option<DecisionRecord>, StorageError>;
+    /// Decisions in chain order (oldest first), for offline export/verification.
+    /// `after_unix_ms` paginates by `created_unix_ms` strictly greater-than.
+    async fn list_decisions_chained(&self, after_unix_ms: i64, limit: i64) -> Result<Vec<DecisionRecord>, StorageError>;
 
     // Tokens
     async fn store_token(&self, t: TokenRecord) -> Result<(), StorageError>;
