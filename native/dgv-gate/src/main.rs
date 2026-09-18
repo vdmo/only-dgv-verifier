@@ -3948,6 +3948,187 @@ async fn handle_register_evidence(
     }
 }
 
+/// Referenced evidence (`content_ref` set, no inline bytes) is registered on
+/// trust alone — the declared sha256/size are never checked against real
+/// content. This endpoint closes that gap for the one case the gate can
+/// safely verify itself: an https:// reference it can fetch directly. The
+/// gate deliberately never receives or stores the bytes — it streams them
+/// once, hashes them, and keeps only the verdict — so this stays cheap and
+/// doesn't turn the gate into an artifact store.
+const MAX_VERIFY_FETCH_BYTES: usize = 50 * 1024 * 1024;
+
+#[derive(Serialize)]
+struct EvidenceVerifyResult {
+    artifact_id: String,
+    verified: bool,
+    declared_sha256: String,
+    actual_sha256: String,
+    declared_size_bytes: i64,
+    actual_size_bytes: i64,
+}
+
+async fn handle_verify_evidence(
+    State(app): State<AppState>,
+    headers: HeaderMap,
+    Path(artifact_id): Path<String>,
+) -> impl IntoResponse {
+    if app.jwt_config.is_some() {
+        if let Err(e) = extract_agent_id(&headers, &app.jwt_config, "").await {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": format!("identity_verification_failed: {}", e)})),
+            )
+                .into_response();
+        }
+    }
+
+    let mut record = match app.storage.get_evidence_artifact(&artifact_id).await {
+        Ok(Some(r)) => r,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({"error": "artifact_not_found", "artifact_id": artifact_id})),
+            )
+                .into_response();
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            )
+                .into_response();
+        }
+    };
+
+    let content_ref = match &record.content_ref {
+        Some(r) if r == "inline" => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "already_verified_at_registration", "hint": "inline artifacts are hashed against their content_b64 when registered"})),
+            )
+                .into_response();
+        }
+        Some(r) => r.clone(),
+        None => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "no_content_ref_to_verify"})),
+            )
+                .into_response();
+        }
+    };
+
+    if !content_ref.starts_with("https://") {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({
+                "error": "unsupported_content_ref_scheme",
+                "hint": "the gate can only fetch and verify https:// references directly; other schemes (s3://, file://, …) need out-of-band verification",
+            })),
+        )
+            .into_response();
+    }
+
+    let declared_sha256 = record.sha256.to_lowercase();
+    let declared_size_bytes = record.size_bytes;
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .unwrap_or_default();
+
+    let resp = match client.get(&content_ref).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            return (
+                StatusCode::BAD_GATEWAY,
+                Json(json!({"error": format!("fetch_failed: {}", e)})),
+            )
+                .into_response();
+        }
+    };
+    if !resp.status().is_success() {
+        return (
+            StatusCode::BAD_GATEWAY,
+            Json(json!({"error": format!("fetch_failed: upstream returned http {}", resp.status())})),
+        )
+            .into_response();
+    }
+    if let Some(len) = resp.content_length() {
+        if len as usize > MAX_VERIFY_FETCH_BYTES {
+            return (
+                StatusCode::PAYLOAD_TOO_LARGE,
+                Json(json!({"error": "content_too_large_to_verify", "max_bytes": MAX_VERIFY_FETCH_BYTES})),
+            )
+                .into_response();
+        }
+    }
+
+    use futures::StreamExt;
+    let mut hasher = Sha256::new();
+    let mut total: usize = 0;
+    let mut stream = resp.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        let chunk = match chunk {
+            Ok(c) => c,
+            Err(e) => {
+                return (
+                    StatusCode::BAD_GATEWAY,
+                    Json(json!({"error": format!("fetch_failed: {}", e)})),
+                )
+                    .into_response();
+            }
+        };
+        total += chunk.len();
+        if total > MAX_VERIFY_FETCH_BYTES {
+            return (
+                StatusCode::PAYLOAD_TOO_LARGE,
+                Json(json!({"error": "content_too_large_to_verify", "max_bytes": MAX_VERIFY_FETCH_BYTES})),
+            )
+                .into_response();
+        }
+        hasher.update(&chunk);
+    }
+
+    let actual_sha256 = hex::encode(hasher.finalize());
+    let actual_size_bytes = total as i64;
+    let matched = actual_sha256 == declared_sha256;
+
+    if matched {
+        log_event("info", "evidence_verified", json!({"artifact_id": artifact_id, "size_bytes": actual_size_bytes}));
+    } else {
+        log_event("warn", "evidence_verify_mismatch", json!({
+            "artifact_id": artifact_id,
+            "declared_sha256": declared_sha256,
+            "actual_sha256": actual_sha256,
+        }));
+    }
+
+    record.verified = matched;
+    record.size_bytes = actual_size_bytes;
+    if let Err(e) = app.storage.store_evidence_artifact(record).await {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        )
+            .into_response();
+    }
+
+    let status = if matched { StatusCode::OK } else { StatusCode::CONFLICT };
+    (
+        status,
+        Json(json!(EvidenceVerifyResult {
+            artifact_id,
+            verified: matched,
+            declared_sha256,
+            actual_sha256,
+            declared_size_bytes,
+            actual_size_bytes,
+        })),
+    )
+        .into_response()
+}
+
 async fn handle_get_evidence(
     State(app): State<AppState>,
     Path(artifact_id): Path<String>,
@@ -4446,7 +4627,8 @@ async fn main() {
         .route("/governance/revision", get(handle_governance_revision))
         .route("/evidence/artifacts", post(handle_register_evidence))
         .route("/evidence/artifacts", get(handle_list_evidence))
-        .route("/evidence/artifacts/:artifact_id", get(handle_get_evidence));
+        .route("/evidence/artifacts/:artifact_id", get(handle_get_evidence))
+        .route("/evidence/artifacts/:artifact_id/verify", post(handle_verify_evidence));
 
     // Admin routes (require X-Admin-Key when DGV_ADMIN_KEY is set)
     let admin_routes = Router::new()
