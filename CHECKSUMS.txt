@@ -1,2 +1,2 @@
-43947f0625bb6e31edc321d74156915b07dc80faaed7d2a52851ec8996d80f0c  native/target/release/dgv-verifier
+d20f08575bb71f2203e032f1472da2e549a23660f2cb2c4abe862844be653e54  native/target/release/dgv-verifier
 dee34b456efb21582bb10d23ac9977ed1e8d80fd6421db70fd1abf75ba5db2d0  native/target/release/only-gate

@@ -85,6 +85,13 @@ pub struct DecisionReturned {
     pub decision_hash: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub counterfactual: Option<String>,
+    /// AARM R4 DEFER: present only when gate_state == "DEFER". Poll
+    /// POST /resolve/:pending_token after ~retry_after_ms to get the
+    /// finalized decision once quorum confirmation completes or expires.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pending_token: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub retry_after_ms: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

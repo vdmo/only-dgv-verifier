@@ -10,7 +10,8 @@ use std::str::FromStr;
 
 use crate::{
     A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, DelegationRecord,
-    PolicyRecord, RevocationRecord, Storage, StorageError, TokenRecord,
+    EvidenceArtifactRecord, PendingDecisionRecord, PolicyRecord, RevocationRecord,
+    SessionActionRecord, Storage, StorageError, TokenRecord,
 };
 
 pub struct SqliteStorage {
@@ -145,6 +146,45 @@ impl SqliteStorage {
             )"#,
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_a2a_nonce ON a2a_envelopes(sender_id, nonce)",
             "CREATE INDEX IF NOT EXISTS idx_a2a_inbox ON a2a_envelopes(recipient_id, delivered)",
+            r#"CREATE TABLE IF NOT EXISTS evidence_artifacts (
+                artifact_id TEXT PRIMARY KEY,
+                sha256 TEXT NOT NULL,
+                size_bytes INTEGER NOT NULL,
+                content_ref TEXT,
+                content_b64 TEXT,
+                verified INTEGER NOT NULL DEFAULT 0,
+                metadata TEXT,
+                registered_by TEXT NOT NULL,
+                registered_unix_ms INTEGER NOT NULL
+            )"#,
+            r#"CREATE TABLE IF NOT EXISTS session_actions (
+                agent_id TEXT NOT NULL,
+                request_id TEXT NOT NULL,
+                tool TEXT NOT NULL,
+                action TEXT NOT NULL,
+                risk_level TEXT,
+                gate_state TEXT NOT NULL,
+                created_unix_ms INTEGER NOT NULL
+            )"#,
+            "CREATE INDEX IF NOT EXISTS idx_session_actions_agent ON session_actions(agent_id, created_unix_ms DESC)",
+            r#"CREATE TABLE IF NOT EXISTS pending_decisions (
+                pending_token TEXT PRIMARY KEY,
+                request_id TEXT NOT NULL,
+                agent_id TEXT NOT NULL,
+                workflow TEXT NOT NULL,
+                tool TEXT NOT NULL,
+                action TEXT NOT NULL,
+                params_json TEXT NOT NULL,
+                justification TEXT NOT NULL,
+                risk_level TEXT NOT NULL,
+                identity_json TEXT NOT NULL,
+                tenant_id TEXT,
+                context_hash TEXT,
+                reason TEXT NOT NULL,
+                created_unix_ms INTEGER NOT NULL,
+                expires_unix_ms INTEGER NOT NULL,
+                resolved INTEGER NOT NULL DEFAULT 0
+            )"#,
         ];
         for stmt in statements {
             sqlx::query(stmt).execute(pool).await?;
@@ -434,6 +474,27 @@ impl Storage for SqliteStorage {
         Ok(())
     }
 
+    async fn list_active_policies(&self) -> Result<Vec<PolicyRecord>, StorageError> {
+        let rows = sqlx::query("SELECT * FROM policies WHERE active = 1 ORDER BY tool, action")
+            .fetch_all(&self.pool)
+            .await?;
+        Ok(rows
+            .into_iter()
+            .map(|r| PolicyRecord {
+                policy_id: r.get("policy_id"),
+                tool: r.get("tool"),
+                action: r.get("action"),
+                script: r.get("script"),
+                policy_version: r.get("policy_version"),
+                created_unix_ms: r.get("created_unix_ms"),
+                active: r.get::<i64, _>("active") != 0,
+                signature: r.get("signature"),
+                min_approvals: r.get("min_approvals"),
+                min_justification_length: r.get("min_justification_length"),
+            })
+            .collect())
+    }
+
     async fn store_revocation(&self, r: RevocationRecord) -> Result<(), StorageError> {
         sqlx::query(
             r#"INSERT OR REPLACE INTO revocations (actor_id, reason, revoked_unix_ms, revoked_by)
@@ -717,6 +778,167 @@ impl Storage for SqliteStorage {
         if result.rows_affected() == 0 {
             return Err(StorageError::Conflict); // already delivered or not found
         }
+        Ok(())
+    }
+
+    async fn store_evidence_artifact(&self, a: EvidenceArtifactRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"INSERT OR REPLACE INTO evidence_artifacts
+               (artifact_id, sha256, size_bytes, content_ref, content_b64, verified, metadata, registered_by, registered_unix_ms)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+        )
+        .bind(&a.artifact_id)
+        .bind(&a.sha256)
+        .bind(a.size_bytes)
+        .bind(&a.content_ref)
+        .bind(&a.content_b64)
+        .bind(a.verified as i64)
+        .bind(&a.metadata)
+        .bind(&a.registered_by)
+        .bind(a.registered_unix_ms)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_evidence_artifact(&self, artifact_id: &str) -> Result<Option<EvidenceArtifactRecord>, StorageError> {
+        let row = sqlx::query("SELECT * FROM evidence_artifacts WHERE artifact_id = ?")
+            .bind(artifact_id)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(row.map(|r| EvidenceArtifactRecord {
+            artifact_id: r.get("artifact_id"),
+            sha256: r.get("sha256"),
+            size_bytes: r.get("size_bytes"),
+            content_ref: r.get("content_ref"),
+            content_b64: r.get("content_b64"),
+            verified: r.get::<i64, _>("verified") != 0,
+            metadata: r.get("metadata"),
+            registered_by: r.get("registered_by"),
+            registered_unix_ms: r.get("registered_unix_ms"),
+        }))
+    }
+
+    async fn list_evidence_artifacts(&self, limit: i64) -> Result<Vec<EvidenceArtifactRecord>, StorageError> {
+        let rows = sqlx::query("SELECT * FROM evidence_artifacts ORDER BY registered_unix_ms DESC LIMIT ?")
+            .bind(limit)
+            .fetch_all(&self.pool)
+            .await?;
+        Ok(rows
+            .into_iter()
+            .map(|r| EvidenceArtifactRecord {
+                artifact_id: r.get("artifact_id"),
+                sha256: r.get("sha256"),
+                size_bytes: r.get("size_bytes"),
+                content_ref: r.get("content_ref"),
+                content_b64: r.get("content_b64"),
+                verified: r.get::<i64, _>("verified") != 0,
+                metadata: r.get("metadata"),
+                registered_by: r.get("registered_by"),
+                registered_unix_ms: r.get("registered_unix_ms"),
+            })
+            .collect())
+    }
+
+    async fn record_session_action(&self, s: SessionActionRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"INSERT INTO session_actions
+               (agent_id, request_id, tool, action, risk_level, gate_state, created_unix_ms)
+               VALUES (?, ?, ?, ?, ?, ?, ?)"#,
+        )
+        .bind(&s.agent_id)
+        .bind(&s.request_id)
+        .bind(&s.tool)
+        .bind(&s.action)
+        .bind(&s.risk_level)
+        .bind(&s.gate_state)
+        .bind(s.created_unix_ms)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_session_context(&self, agent_id: &str, limit: i64) -> Result<Vec<SessionActionRecord>, StorageError> {
+        let rows = sqlx::query(
+            "SELECT * FROM session_actions WHERE agent_id = ? ORDER BY created_unix_ms DESC LIMIT ?",
+        )
+        .bind(agent_id)
+        .bind(limit)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(rows
+            .into_iter()
+            .map(|r| SessionActionRecord {
+                agent_id: r.get("agent_id"),
+                request_id: r.get("request_id"),
+                tool: r.get("tool"),
+                action: r.get("action"),
+                risk_level: r.get("risk_level"),
+                gate_state: r.get("gate_state"),
+                created_unix_ms: r.get("created_unix_ms"),
+            })
+            .collect())
+    }
+
+    async fn store_pending_decision(&self, p: PendingDecisionRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            r#"INSERT INTO pending_decisions
+               (pending_token, request_id, agent_id, workflow, tool, action, params_json,
+                justification, risk_level, identity_json, tenant_id, context_hash, reason,
+                created_unix_ms, expires_unix_ms, resolved)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+        )
+        .bind(&p.pending_token)
+        .bind(&p.request_id)
+        .bind(&p.agent_id)
+        .bind(&p.workflow)
+        .bind(&p.tool)
+        .bind(&p.action)
+        .bind(&p.params_json)
+        .bind(&p.justification)
+        .bind(&p.risk_level)
+        .bind(&p.identity_json)
+        .bind(&p.tenant_id)
+        .bind(&p.context_hash)
+        .bind(&p.reason)
+        .bind(p.created_unix_ms)
+        .bind(p.expires_unix_ms)
+        .bind(p.resolved)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn get_pending_decision(&self, pending_token: &str) -> Result<Option<PendingDecisionRecord>, StorageError> {
+        let row = sqlx::query("SELECT * FROM pending_decisions WHERE pending_token = ?")
+            .bind(pending_token)
+            .fetch_optional(&self.pool)
+            .await?;
+        Ok(row.map(|r| PendingDecisionRecord {
+            pending_token: r.get("pending_token"),
+            request_id: r.get("request_id"),
+            agent_id: r.get("agent_id"),
+            workflow: r.get("workflow"),
+            tool: r.get("tool"),
+            action: r.get("action"),
+            params_json: r.get("params_json"),
+            justification: r.get("justification"),
+            risk_level: r.get("risk_level"),
+            identity_json: r.get("identity_json"),
+            tenant_id: r.get("tenant_id"),
+            context_hash: r.get("context_hash"),
+            reason: r.get("reason"),
+            created_unix_ms: r.get("created_unix_ms"),
+            expires_unix_ms: r.get("expires_unix_ms"),
+            resolved: r.get::<i64, _>("resolved") != 0,
+        }))
+    }
+
+    async fn mark_pending_resolved(&self, pending_token: &str) -> Result<(), StorageError> {
+        sqlx::query("UPDATE pending_decisions SET resolved = 1 WHERE pending_token = ?")
+            .bind(pending_token)
+            .execute(&self.pool)
+            .await?;
         Ok(())
     }
 

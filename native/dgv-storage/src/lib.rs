@@ -152,6 +152,69 @@ pub struct A2aEnvelopeRecord {
     pub delivered_unix_ms: Option<i64>,
 }
 
+/// Registered evidence artifact — a content-addressed record of a governance
+/// artifact (transcript, policy bundle, config snapshot) stored externally.
+/// The gate keeps the hash + reference, not the blob, matching the
+/// presigned-upload pattern: clients store bytes in their own object storage
+/// and register the digest here for verification.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EvidenceArtifactRecord {
+    pub artifact_id: String,
+    /// Declared SHA-256 (hex) of the artifact content
+    pub sha256: String,
+    pub size_bytes: i64,
+    /// Where the bytes live — "s3://…", "file://…", "inline" when content_b64 set
+    pub content_ref: Option<String>,
+    /// Optional inline payload (base64) for small artifacts
+    pub content_b64: Option<String>,
+    /// true when the gate verified sha256 against submitted bytes
+    pub verified: bool,
+    /// Free-form JSON metadata (launch id, run ids, policy revision, …)
+    pub metadata: Option<String>,
+    pub registered_by: String,
+    pub registered_unix_ms: i64,
+}
+
+/// R2 (AARM): one action evaluated for an agent, recorded so the gate can
+/// accumulate context about what this agent has done earlier in the same
+/// session. Keyed by agent_id — the same stable identity already used for
+/// revocations and rate limiting.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SessionActionRecord {
+    pub agent_id: String,
+    pub request_id: String,
+    pub tool: String,
+    pub action: String,
+    pub risk_level: Option<String>,
+    pub gate_state: String,
+    pub created_unix_ms: i64,
+}
+
+/// AARM R4 DEFER: a /govern decision that couldn't be finalized because real
+/// quorum confirmation (multiple peers configured, `quorum_size > 1`) didn't
+/// complete within the timeout — genuinely "pending more information," not a
+/// confirmed revocation. Resolved later via POST /resolve/:pending_token
+/// once quorum clears, or expires to a fail-closed DENY.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PendingDecisionRecord {
+    pub pending_token: String,
+    pub request_id: String,
+    pub agent_id: String,
+    pub workflow: String,
+    pub tool: String,
+    pub action: String,
+    pub params_json: String,
+    pub justification: String,
+    pub risk_level: String,
+    pub identity_json: String,
+    pub tenant_id: Option<String>,
+    pub context_hash: Option<String>,
+    pub reason: String,
+    pub created_unix_ms: i64,
+    pub expires_unix_ms: i64,
+    pub resolved: bool,
+}
+
 // ── Storage trait ────────────────────────────────────────────────────────────
 
 #[async_trait]
@@ -179,6 +242,8 @@ pub trait Storage: Send + Sync {
     /// Reactivate a specific policy version: sets it active and deactivates all
     /// other versions for the same tool+action.
     async fn reactivate_policy(&self, policy_id: &str) -> Result<(), StorageError>;
+    /// Every currently-active policy — feeds the governance revision digest.
+    async fn list_active_policies(&self) -> Result<Vec<PolicyRecord>, StorageError>;
 
     // Revocations
     async fn store_revocation(&self, r: RevocationRecord) -> Result<(), StorageError>;
@@ -205,6 +270,21 @@ pub trait Storage: Send + Sync {
     async fn store_a2a_envelope(&self, e: A2aEnvelopeRecord) -> Result<(), StorageError>;
     async fn get_a2a_inbox(&self, recipient_id: &str) -> Result<Vec<A2aEnvelopeRecord>, StorageError>;
     async fn mark_a2a_delivered(&self, envelope_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError>;
+
+    // Evidence artifacts
+    async fn store_evidence_artifact(&self, a: EvidenceArtifactRecord) -> Result<(), StorageError>;
+    async fn get_evidence_artifact(&self, artifact_id: &str) -> Result<Option<EvidenceArtifactRecord>, StorageError>;
+    async fn list_evidence_artifacts(&self, limit: i64) -> Result<Vec<EvidenceArtifactRecord>, StorageError>;
+
+    // Session context (R2: accumulated context of prior actions in a session)
+    async fn record_session_action(&self, s: SessionActionRecord) -> Result<(), StorageError>;
+    /// Most recent `limit` actions for this agent, newest first.
+    async fn get_session_context(&self, agent_id: &str, limit: i64) -> Result<Vec<SessionActionRecord>, StorageError>;
+
+    // Pending decisions (R4: DEFER)
+    async fn store_pending_decision(&self, p: PendingDecisionRecord) -> Result<(), StorageError>;
+    async fn get_pending_decision(&self, pending_token: &str) -> Result<Option<PendingDecisionRecord>, StorageError>;
+    async fn mark_pending_resolved(&self, pending_token: &str) -> Result<(), StorageError>;
 
     // Health
     async fn ping(&self) -> Result<(), StorageError>;

@@ -26,8 +26,8 @@ use axum::{
 };
 use dgv_storage::{
     A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, DelegationRecord,
-    PolicyRecord, PostgresStorage, RevocationRecord, SqliteStorage, Storage, StorageError,
-    TokenRecord,
+    EvidenceArtifactRecord, PendingDecisionRecord, PolicyRecord, PostgresStorage,
+    RevocationRecord, SessionActionRecord, SqliteStorage, Storage, StorageError, TokenRecord,
 };
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use jsonwebtoken::{decode, decode_header, DecodingKey, Validation, Algorithm};
@@ -643,6 +643,8 @@ async fn handle_govern(
                     run_id: run_id.clone(),
                     decision_hash: compute_decision_hash(&p.request_id, "DENY", &["identity_verification_failed".to_string()], &p.tool, &p.action, &p.params),
                     counterfactual: None,
+                    pending_token: None,
+                    retry_after_ms: None,
                 };
                 let signature = app.keys.sign_decision(&decision.decision_hash);
                 return (
@@ -680,6 +682,8 @@ async fn handle_govern(
                     run_id: run_id.clone(),
                     decision_hash: compute_decision_hash(&request_id, "DENY", &["rate_limit_exceeded".to_string()], &p.tool, &p.action, &p.params),
                     counterfactual: None,
+                    pending_token: None,
+                    retry_after_ms: None,
                 };
                 let signature = app.keys.sign_decision(&decision.decision_hash);
                 {
@@ -737,6 +741,8 @@ async fn handle_govern(
                         run_id: run_id.clone(),
                         decision_hash: compute_decision_hash(&request_id, "DENY", &["circuit_breaker_open".to_string()], &p.tool, &p.action, &p.params),
                         counterfactual: None,
+                    pending_token: None,
+                    retry_after_ms: None,
                     };
                     let signature = app.keys.sign_decision(&decision.decision_hash);
                     {
@@ -766,6 +772,16 @@ async fn handle_govern(
         QuorumOutcome::Revoked(rev) => Some(rev),
         QuorumOutcome::ConfirmedClean => None,
         QuorumOutcome::PartitionFailure(e) => {
+            // AARM R4 DEFER: when real multi-peer quorum is configured and
+            // simply hasn't confirmed within the timeout yet, that's
+            // genuinely "pending more information" — not a confirmed
+            // revocation. Only takes this path when quorum_size > 1 (a
+            // trivial single-vote quorum has no "waiting for more votes"
+            // case) and it's specifically an insufficient-votes failure,
+            // not a local storage outage (which stays fail-closed DENY).
+            if e.starts_with("insufficient quorum") && !app.quorum_peers.is_empty() && app.quorum_size > 1 {
+                return build_defer_response(&app, &p, req.tenant_id.as_deref(), req.context_hash.as_deref(), &request_id, &run_id, now, &e).await;
+            }
             if app.partition_fail_closed {
                 Some(RevocationRecord {
                     actor_id: p.agent_id.clone(),
@@ -783,6 +799,35 @@ async fn handle_govern(
             }
         }
     };
+    return evaluate_and_finalize(
+        &app,
+        &p,
+        req.tenant_id.as_deref(),
+        req.context_hash.as_deref(),
+        request_id,
+        run_id,
+        now,
+        revocation,
+    )
+    .await;
+}
+
+/// Steps 2-7 of /govern: policy load, script evaluation, token issuance,
+/// and persistence. Takes an already-determined revocation outcome rather
+/// than re-checking it, so both the normal handle_govern path and the
+/// DEFER-resolution path (POST /resolve/:token_id, once quorum confirms or
+/// the pending window expires) share exactly the same finalization logic —
+/// no separate, drifting copy of the policy/script evaluation.
+async fn evaluate_and_finalize(
+    app: &AppState,
+    p: &ProposalSubmitted,
+    tenant_id: Option<&str>,
+    context_hash: Option<&str>,
+    request_id: String,
+    run_id: String,
+    now: i64,
+    revocation: Option<RevocationRecord>,
+) -> (StatusCode, Json<GovernResponse>) {
     let (gate_state, reason_codes, pass, policy_min_approvals) = if let Some(rev) = revocation {
         (
             "DENY".to_string(),
@@ -792,7 +837,7 @@ async fn handle_govern(
         )
     } else {
         // 2. Load policy from storage (tenant-specific or global)
-        let policy = if let Some(ref tenant) = req.tenant_id {
+        let policy = if let Some(tenant) = tenant_id {
             app.storage
                 .get_tenant_active_policy(tenant, &p.tool, &p.action)
                 .await
@@ -828,6 +873,8 @@ async fn handle_govern(
                         run_id: run_id.clone(),
                         decision_hash: compute_decision_hash(&request_id, "DENY", &["policy_signature_invalid".to_string()], &p.tool, &p.action, &p.params),
                         counterfactual: None,
+                    pending_token: None,
+                    retry_after_ms: None,
                     };
                     let signature = app.keys.sign_decision(&decision.decision_hash);
                     {
@@ -872,6 +919,8 @@ async fn handle_govern(
                     run_id: run_id.clone(),
                     decision_hash: compute_decision_hash(&request_id, "DENY", &["justification_too_short".to_string()], &p.tool, &p.action, &p.params),
                     counterfactual: None,
+                    pending_token: None,
+                    retry_after_ms: None,
                 };
                 let signature = app.keys.sign_decision(&decision.decision_hash);
                 {
@@ -955,6 +1004,8 @@ async fn handle_govern(
                 run_id: run_id.clone(),
                 decision_hash: compute_decision_hash(&request_id, "DENY", &reasons, &p.tool, &p.action, &p.params),
                 counterfactual: None,
+                pending_token: None,
+                retry_after_ms: None,
             };
             let signature = app.keys.sign_decision(&decision.decision_hash);
             {
@@ -974,7 +1025,7 @@ async fn handle_govern(
         }
 
         // Use context_hash if provided (full context hashing), otherwise hash tool+params
-        let context_binding = req.context_hash.as_deref()
+        let context_binding = context_hash
             .map(|s| s.to_string())
             .unwrap_or_else(|| {
                 sha256_hex(&format!("{}{}", p.tool, p.params))
@@ -985,13 +1036,27 @@ async fn handle_govern(
             .map(|p| p.script.clone())
             .unwrap_or_else(|| default_governance_script(&p.agent_id, &p.tool, &p.action, &p.params, p.risk_level.parse::<f64>().unwrap_or(1000.0), &context_binding));
 
+        // 2b. R2: pull accumulated session context for this agent (most recent
+        // actions in the same session, newest first) so the script has access
+        // to it via bind()/bind_all() — not just a decorative log.
+        let session_history = app.storage.get_session_context(&p.agent_id, 10).await.unwrap_or_default();
+        let session_ctx_json = json!({
+            "session_action_count": session_history.len(),
+            "session_actions": session_history.iter().map(|s| json!({
+                "tool": s.tool,
+                "action": s.action,
+                "gate_state": s.gate_state,
+                "created_unix_ms": s.created_unix_ms,
+            })).collect::<Vec<_>>(),
+        });
+
         // 3. Evaluate the script
         let n = 4;
         let signs: Vec<Sign> = generate_signs(n).collect();
         let payload = p.risk_level.parse::<f64>().unwrap_or(1000.0);
         let mut field = GhostMemory::encode_4(&signs, payload);
 
-        match only_lang::evaluate_script(&signs, &mut field, &script) {
+        match only_lang::evaluate_script_with_context(&signs, &mut field, Some(&session_ctx_json), &script, 100_000) {
             Ok(res) => {
                 if res.authority_revoked {
                     let reason = res.authority_revocation_reason
@@ -1086,6 +1151,8 @@ async fn handle_govern(
         run_id: run_id.clone(),
         decision_hash: decision_hash.clone(),
         counterfactual: None,
+        pending_token: None,
+        retry_after_ms: None,
     };
 
     // 7. Persist decision
@@ -1109,6 +1176,18 @@ async fn handle_govern(
     };
     let _ = app.storage.store_decision(dec_rec).await;
 
+    // R2: record this action so it's part of this agent's accumulated
+    // session context for the next /govern call.
+    let _ = app.storage.record_session_action(SessionActionRecord {
+        agent_id: p.agent_id.clone(),
+        request_id: request_id.clone(),
+        tool: p.tool.clone(),
+        action: p.action.clone(),
+        risk_level: Some(p.risk_level.clone()),
+        gate_state: gate_state.clone(),
+        created_unix_ms: now,
+    }).await;
+
     {
         let mut c = app.counters.lock().unwrap();
         c.decisions_made += 1;
@@ -1125,6 +1204,221 @@ async fn handle_govern(
     };
 
     (StatusCode::OK, Json(response))
+}
+
+/// AARM R4 DEFER: persists the proposal so it can be re-evaluated later
+/// (POST /resolve/:pending_token) once real multi-peer quorum confirms —
+/// or the pending window expires, at which point it fails closed to DENY.
+async fn build_defer_response(
+    app: &AppState,
+    p: &ProposalSubmitted,
+    tenant_id: Option<&str>,
+    context_hash: Option<&str>,
+    request_id: &str,
+    run_id: &str,
+    now: i64,
+    reason: &str,
+) -> (StatusCode, Json<GovernResponse>) {
+    let defer_window_ms: i64 = std::env::var("DGV_DEFER_WINDOW_MS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(120_000);
+    let retry_after_ms = app.quorum_timeout_ms.max(2_000) as i64;
+
+    let pending_token = format!(
+        "defer_{}",
+        &sha256_hex(&format!("{}{}{}", request_id, run_id, now))[..16]
+    );
+
+    let pending_rec = PendingDecisionRecord {
+        pending_token: pending_token.clone(),
+        request_id: request_id.to_string(),
+        agent_id: p.agent_id.clone(),
+        workflow: p.workflow.clone(),
+        tool: p.tool.clone(),
+        action: p.action.clone(),
+        params_json: p.params.to_string(),
+        justification: p.justification.clone(),
+        risk_level: p.risk_level.clone(),
+        identity_json: p.identity.to_string(),
+        tenant_id: tenant_id.map(|s| s.to_string()),
+        context_hash: context_hash.map(|s| s.to_string()),
+        reason: reason.to_string(),
+        created_unix_ms: now,
+        expires_unix_ms: now + defer_window_ms,
+        resolved: false,
+    };
+    let _ = app.storage.store_pending_decision(pending_rec).await;
+
+    let reason_codes = vec![format!("quorum_pending: {}", reason)];
+    let decision_hash = compute_decision_hash(request_id, "DEFER", &reason_codes, &p.tool, &p.action, &p.params);
+    let signature = app.keys.sign_decision(&decision_hash);
+
+    let decision = DecisionReturned {
+        request_id: request_id.to_string(),
+        gate_state: "DEFER".to_string(),
+        reason_codes,
+        approvals_required: 0,
+        approvals_received: 0,
+        auth_token: None,
+        run_id: run_id.to_string(),
+        decision_hash,
+        counterfactual: None,
+        pending_token: Some(pending_token),
+        retry_after_ms: Some(retry_after_ms),
+    };
+
+    {
+        let mut c = app.counters.lock().unwrap();
+        c.decisions_made += 1;
+    }
+
+    (
+        StatusCode::OK,
+        Json(GovernResponse {
+            decision,
+            evidence_pack_id: run_id.to_string(),
+            signature,
+            verifying_key: hex::encode(app.keys.vk.to_bytes()),
+        }),
+    )
+}
+
+/// POST /resolve/:pending_token — re-checks quorum for a DEFER'd proposal.
+/// Still pending → returns DEFER again. Quorum now clean/revoked → runs the
+/// exact same evaluate_and_finalize path a normal /govern call would have
+/// used. Expired without resolving → fails closed to DENY, same as the
+/// existing partition_fail_closed default elsewhere in this gate.
+async fn handle_resolve(
+    State(app): State<AppState>,
+    Path(pending_token): Path<String>,
+) -> impl IntoResponse {
+    let pending = match app.storage.get_pending_decision(&pending_token).await {
+        Ok(Some(p)) => p,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(json!({"error": "unknown_pending_token"})),
+            )
+                .into_response();
+        }
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"error": e.to_string()})),
+            )
+                .into_response();
+        }
+    };
+
+    if pending.resolved {
+        return (
+            StatusCode::CONFLICT,
+            Json(json!({"error": "already_resolved"})),
+        )
+            .into_response();
+    }
+
+    let now = now_unix_ms();
+    let params: Value = serde_json::from_str(&pending.params_json).unwrap_or(Value::Null);
+    let identity: Value = serde_json::from_str(&pending.identity_json).unwrap_or(Value::Null);
+    let p = ProposalSubmitted {
+        request_id: pending.request_id.clone(),
+        agent_id: pending.agent_id.clone(),
+        workflow: pending.workflow.clone(),
+        tool: pending.tool.clone(),
+        action: pending.action.clone(),
+        params,
+        justification: pending.justification.clone(),
+        llm_trace: None,
+        risk_level: pending.risk_level.clone(),
+        identity,
+        proposer_identity: None,
+        target_system: None,
+        intended_action: None,
+        intended_consequence: None,
+        requested_authority: None,
+        scope: None,
+        evidence_references: None,
+        risk_class: None,
+        current_policy_version: None,
+        expected_state_transition: None,
+        boundary_conditions: None,
+        proposed_replay_context: None,
+    };
+
+    if now > pending.expires_unix_ms {
+        let _ = app.storage.mark_pending_resolved(&pending_token).await;
+        let expired_reason = format!("defer_window_expired: {}", pending.reason);
+        let revocation = Some(RevocationRecord {
+            actor_id: pending.agent_id.clone(),
+            reason: expired_reason,
+            revoked_unix_ms: now,
+            revoked_by: "defer_policy".to_string(),
+        });
+        let (status, body) = evaluate_and_finalize(
+            &app,
+            &p,
+            pending.tenant_id.as_deref(),
+            pending.context_hash.as_deref(),
+            pending.request_id.clone(),
+            pending.request_id.clone(),
+            now,
+            revocation,
+        )
+        .await;
+        return (status, body).into_response();
+    }
+
+    let revocation = match check_revocation_with_quorum(&app, &pending.agent_id).await {
+        QuorumOutcome::Revoked(rev) => Some(rev),
+        QuorumOutcome::ConfirmedClean => None,
+        QuorumOutcome::PartitionFailure(e) => {
+            // Still can't confirm — remains DEFER, same pending_token, until
+            // it either resolves or expires above.
+            let retry_after_ms = app.quorum_timeout_ms.max(2_000) as i64;
+            let reason_codes = vec![format!("quorum_pending: {}", e)];
+            let decision_hash = compute_decision_hash(&pending.request_id, "DEFER", &reason_codes, &pending.tool, &pending.action, &p.params);
+            let signature = app.keys.sign_decision(&decision_hash);
+            let decision = DecisionReturned {
+                request_id: pending.request_id.clone(),
+                gate_state: "DEFER".to_string(),
+                reason_codes,
+                approvals_required: 0,
+                approvals_received: 0,
+                auth_token: None,
+                run_id: pending.request_id.clone(),
+                decision_hash,
+                counterfactual: None,
+                pending_token: Some(pending_token.clone()),
+                retry_after_ms: Some(retry_after_ms),
+            };
+            return (
+                StatusCode::OK,
+                Json(GovernResponse {
+                    decision,
+                    evidence_pack_id: pending.request_id.clone(),
+                    signature,
+                    verifying_key: hex::encode(app.keys.vk.to_bytes()),
+                }),
+            )
+                .into_response();
+        }
+    };
+
+    let _ = app.storage.mark_pending_resolved(&pending_token).await;
+    let (status, body) = evaluate_and_finalize(
+        &app,
+        &p,
+        pending.tenant_id.as_deref(),
+        pending.context_hash.as_deref(),
+        pending.request_id.clone(),
+        pending.request_id.clone(),
+        now,
+        revocation,
+    )
+    .await;
+    (status, body).into_response()
 }
 
 // ── POST /execute ───────────────────────────────────────────────────────────
@@ -1776,6 +2070,21 @@ async fn handle_revocations_digest(State(app): State<AppState>) -> impl IntoResp
 async fn list_revocations(State(app): State<AppState>) -> impl IntoResponse {
     match app.storage.list_revocations().await {
         Ok(list) => (StatusCode::OK, Json(serde_json::to_value(list).unwrap_or_default())),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+// ── GET /session/:agent_id — R2 accumulated context, inspectable ───────────
+
+async fn handle_get_session_context(
+    State(app): State<AppState>,
+    Path(agent_id): Path<String>,
+) -> impl IntoResponse {
+    match app.storage.get_session_context(&agent_id, 10).await {
+        Ok(list) => (
+            StatusCode::OK,
+            Json(json!({ "agent_id": agent_id, "action_count": list.len(), "actions": list })),
+        ),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     }
 }
@@ -3415,6 +3724,269 @@ async fn handle_policy_rollback(
     }
 }
 
+// ── GET /.well-known/dgv — public discovery document ────────────────────────
+// Versioned bootstrap metadata for CLI/agent enrollment: what this gate
+// speaks, where the endpoints are, which auth modes are live. No credentials,
+// no policy content — safe to serve unauthenticated (like Blue's
+// /.well-known/metaharness).
+
+async fn handle_well_known(State(app): State<AppState>) -> impl IntoResponse {
+    let jwt_mode = match &app.jwt_config {
+        Some(c) if c.jwks_url.is_some() => "jwks",
+        Some(c) if c.public_key_pem.is_some() => "rs256",
+        Some(_) => "hs256",
+        None => "disabled",
+    };
+    Json(json!({
+        "service": "dgv-gate",
+        "contract_version": 1,
+        "gate_version": "0.4.0",
+        "auth": {
+            "jwt_mode": jwt_mode,
+            "admin_key_required": app.admin_key.is_some(),
+        },
+        "endpoints": {
+            "govern": "/govern",
+            "execute": "/execute",
+            "verify": "/verify/:run_id",
+            "governance_revision": "/governance/revision",
+            "evidence_artifacts": "/evidence/artifacts",
+            "health": "/health",
+            "metrics": "/metrics",
+        },
+        "capabilities": {
+            "sealed_payload_versions": ["dgv-sealed-v1", "dgv-sealed-v2"],
+            "delegation": "dgv-delegate-v1",
+            "quorum": !app.quorum_peers.is_empty(),
+            "quorum_size": app.quorum_size,
+            "merkle_anti_entropy": true,
+            "partition_policy": if app.partition_fail_closed { "fail_closed" } else { "fail_open" },
+            "evidence_registry": true,
+        },
+        "generated_unix_ms": now_unix_ms(),
+    }))
+}
+
+// ── GET /governance/revision — desired-state digest for drift detection ─────
+// Canonical digest over every active policy (tool|action|version|signature)
+// combined with the revocation set digest. Clients cache the applied revision
+// and compare — `dgv verify` exits non-zero on drift.
+
+async fn handle_governance_revision(State(app): State<AppState>) -> impl IntoResponse {
+    let policies = match app.storage.list_active_policies().await {
+        Ok(p) => p,
+        Err(e) => {
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(json!({"error": format!("storage_error: {}", e)})),
+            )
+                .into_response()
+        }
+    };
+    let revocations = app.storage.list_revocations().await.unwrap_or_default();
+
+    let mut lines: Vec<String> = policies
+        .iter()
+        .map(|p| {
+            format!(
+                "{}|{}|{}|{}|{}",
+                p.policy_id,
+                p.tool,
+                p.action,
+                p.policy_version,
+                p.signature.as_deref().unwrap_or("")
+            )
+        })
+        .collect();
+    lines.sort();
+    let policies_digest = sha256_hex(&lines.join("\n"));
+
+    let mut rlines: Vec<String> = revocations
+        .iter()
+        .map(|r| format!("{}|{}|{}", r.actor_id, r.reason, r.revoked_unix_ms))
+        .collect();
+    rlines.sort();
+    let revocations_digest = sha256_hex(&rlines.join("\n"));
+
+    let revision = sha256_hex(&format!("{}|{}", policies_digest, revocations_digest));
+
+    Json(json!({
+        "revision": revision,
+        "policies_digest": policies_digest,
+        "revocations_digest": revocations_digest,
+        "active_policies": policies.len(),
+        "revocations": revocations.len(),
+        "contract_version": 1,
+        "generated_unix_ms": now_unix_ms(),
+    }))
+    .into_response()
+}
+
+// ── POST /evidence/artifacts — hash-verified artifact registration ───────────
+// Content-addressed evidence registry. The blob lives in client storage
+// (content_ref: "s3://…", "file://…"); for small artifacts a base64 inline
+// payload is accepted and its sha256 is verified against the declared digest.
+// registered_by binds to the verified JWT subject when JWT auth is enabled.
+
+#[derive(Deserialize)]
+struct EvidenceRegisterRequest {
+    artifact_id: Option<String>,
+    sha256: String,
+    size_bytes: Option<i64>,
+    content_ref: Option<String>,
+    content_b64: Option<String>,
+    metadata: Option<Value>,
+    registered_by: Option<String>,
+}
+
+const MAX_INLINE_ARTIFACT_BYTES: usize = 262_144;
+
+async fn handle_register_evidence(
+    State(app): State<AppState>,
+    headers: HeaderMap,
+    Json(req): Json<EvidenceRegisterRequest>,
+) -> impl IntoResponse {
+    use base64::Engine;
+    let run_id = only_lang::evidence_pack::run_id_unix_ms();
+
+    // Identity: when JWT is enabled, the registered_by must be the verified sub.
+    let registered_by = req.registered_by.clone().unwrap_or_else(|| "anonymous".to_string());
+    if app.jwt_config.is_some() {
+        if let Err(e) = extract_agent_id(&headers, &app.jwt_config, &registered_by).await {
+            return (
+                StatusCode::UNAUTHORIZED,
+                Json(json!({"error": format!("identity_verification_failed: {}", e), "run_id": run_id})),
+            )
+                .into_response();
+        }
+    }
+
+    let mut verified = false;
+    let mut size_bytes = req.size_bytes.unwrap_or(0);
+    if let Some(ref b64) = req.content_b64 {
+        match base64::engine::general_purpose::STANDARD.decode(b64) {
+            Ok(bytes) => {
+                if bytes.len() > MAX_INLINE_ARTIFACT_BYTES {
+                    return (
+                        StatusCode::PAYLOAD_TOO_LARGE,
+                        Json(json!({"error": "inline_artifact_too_large", "max_bytes": MAX_INLINE_ARTIFACT_BYTES})),
+                    )
+                        .into_response();
+                }
+                let actual = {
+                    let mut h = Sha256::new();
+                    h.update(&bytes);
+                    hex::encode(h.finalize())
+                };
+                if actual != req.sha256.to_lowercase() {
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({
+                            "error": "hash_mismatch",
+                            "declared_sha256": req.sha256,
+                            "actual_sha256": actual,
+                        })),
+                    )
+                        .into_response();
+                }
+                verified = true;
+                size_bytes = bytes.len() as i64;
+            }
+            Err(e) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(json!({"error": format!("invalid_base64: {}", e)})),
+                )
+                    .into_response();
+            }
+        }
+    }
+
+    let artifact_id = req
+        .artifact_id
+        .clone()
+        .unwrap_or_else(|| format!("ev-{}", run_id));
+    let record = EvidenceArtifactRecord {
+        artifact_id: artifact_id.clone(),
+        sha256: req.sha256.to_lowercase(),
+        size_bytes,
+        content_ref: req.content_ref.clone().or(if req.content_b64.is_some() {
+            Some("inline".to_string())
+        } else {
+            None
+        }),
+        content_b64: req.content_b64.clone(),
+        verified,
+        metadata: req.metadata.as_ref().map(|m| m.to_string()),
+        registered_by,
+        registered_unix_ms: now_unix_ms(),
+    };
+    match app.storage.store_evidence_artifact(record).await {
+        Ok(()) => (
+            StatusCode::CREATED,
+            Json(json!({
+                "artifact_id": artifact_id,
+                "verified": verified,
+                "size_bytes": size_bytes,
+                "run_id": run_id,
+            })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        )
+            .into_response(),
+    }
+}
+
+async fn handle_get_evidence(
+    State(app): State<AppState>,
+    Path(artifact_id): Path<String>,
+) -> impl IntoResponse {
+    match app.storage.get_evidence_artifact(&artifact_id).await {
+        Ok(Some(a)) => (
+            StatusCode::OK,
+            Json(serde_json::to_value(&a).unwrap_or(json!({}))),
+        )
+            .into_response(),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "artifact_not_found", "artifact_id": artifact_id})),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        )
+            .into_response(),
+    }
+}
+
+async fn handle_list_evidence(State(app): State<AppState>) -> impl IntoResponse {
+    match app.storage.list_evidence_artifacts(200).await {
+        Ok(items) => {
+            let stripped: Vec<Value> = items
+                .iter()
+                .map(|a| {
+                    let mut v = serde_json::to_value(a).unwrap_or(json!({}));
+                    // listings never carry inline payloads
+                    if let Some(obj) = v.as_object_mut() {
+                        obj.remove("content_b64");
+                    }
+                    v
+                })
+                .collect();
+            (StatusCode::OK, Json(json!({"artifacts": stripped}))).into_response()
+        }
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": format!("storage_error: {}", e)})),
+        )
+            .into_response(),
+    }
+}
+
 // ── GET /health ─────────────────────────────────────────────────────────────
 
 async fn handle_health(State(app): State<AppState>) -> impl IntoResponse {
@@ -3854,12 +4426,19 @@ async fn main() {
         .route("/tool-health", get(handle_tool_health))
         .route("/a2a/send", post(handle_a2a_send))
         .route("/a2a/inbox/:agent_id", get(handle_a2a_inbox))
+        .route("/session/:agent_id", get(handle_get_session_context))
+        .route("/resolve/:pending_token", post(handle_resolve))
         .route("/agents/keys/:agent_id", get(handle_get_agent_key))
         .route("/delegate", post(handle_delegate))
         .route("/delegations/:token_id", get(handle_delegation_chain))
         .route("/a2a/ack/:envelope_id", post(handle_a2a_ack))
         .route("/policies/:tool/:action/versions", get(handle_policy_versions))
-        .route("/config/rate-limit", get(handle_get_rate_limit));
+        .route("/config/rate-limit", get(handle_get_rate_limit))
+        .route("/.well-known/dgv", get(handle_well_known))
+        .route("/governance/revision", get(handle_governance_revision))
+        .route("/evidence/artifacts", post(handle_register_evidence))
+        .route("/evidence/artifacts", get(handle_list_evidence))
+        .route("/evidence/artifacts/:artifact_id", get(handle_get_evidence));
 
     // Admin routes (require X-Admin-Key when DGV_ADMIN_KEY is set)
     let admin_routes = Router::new()
