@@ -544,6 +544,14 @@ async fn verify_jwt(
     }
     if let Some(ref aud) = config.audience {
         validation.set_audience(&[aud]);
+    } else {
+        // jsonwebtoken defaults validate_aud to true even with no expected
+        // audience configured, which rejects any real-world token that
+        // simply *has* an `aud` claim (every OIDC token does) — surfaced by
+        // testing against a genuine Google-issued token, not caught by any
+        // synthetic test. No configured audience means "don't care", not
+        // "must be absent".
+        validation.validate_aud = false;
     }
     validation.validate_exp = true;
 
