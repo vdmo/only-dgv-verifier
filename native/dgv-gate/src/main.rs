@@ -96,6 +96,14 @@ fn log_event(level: &str, event: &str, fields: serde_json::Value) {
 /// Gate startup instant for uptime reporting.
 static START_UNIX_MS: std::sync::OnceLock<i64> = std::sync::OnceLock::new();
 
+/// Hashes over a JCS (RFC 8785) canonical serialization, not raw field
+/// concatenation — two requests whose `params` differ only in key order
+/// (`{"a":1,"b":2}` vs `{"b":2,"a":1}`) must hash identically, and no two
+/// distinct field combinations may collide by shifting a byte across an
+/// unmarked boundary. Internal-only: this hash is computed and re-verified
+/// solely by this gate (see `/verify/:run_id`), never independently
+/// reconstructed by an external signer, so its format can change freely
+/// without a wire-protocol break.
 fn compute_decision_hash(
     request_id: &str,
     gate_state: &str,
@@ -104,14 +112,17 @@ fn compute_decision_hash(
     action: &str,
     params: &Value,
 ) -> String {
-    let mut h = Sha256::new();
-    h.update(request_id.as_bytes());
-    h.update(gate_state.as_bytes());
-    h.update(reason_codes.join(",").as_bytes());
-    h.update(tool.as_bytes());
-    h.update(action.as_bytes());
-    h.update(params.to_string().as_bytes());
-    hex::encode(h.finalize())
+    let canonical_input = json!({
+        "action": action,
+        "gate_state": gate_state,
+        "params": params,
+        "reason_codes": reason_codes,
+        "request_id": request_id,
+        "tool": tool,
+    });
+    let canonical = serde_jcs::to_string(&canonical_input)
+        .unwrap_or_else(|_| canonical_input.to_string());
+    sha256_hex(&canonical)
 }
 
 fn compute_params_hash(params: &Value) -> String {
