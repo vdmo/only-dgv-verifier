@@ -12,6 +12,22 @@ Evaluates both architectures against 4 critical governance vectors:
             - Standalone O(1) Ed25519 cryptographic receipts vs O(N) append-only Merkle logs.
 
 Produces structured JSON results and a comprehensive benchmark report (BENCHMARK_AGT_VS_DGV.md).
+
+IMPORTANT — read BENCHMARK_AGT_VS_DGV.md's "Read this first" section before quoting
+this script's output. `MicrosoftAgtEngine` below is OUR OWN reimplementation of AGT's
+published architecture. It is not the Microsoft product, has never been run against
+it, and its results must never be presented as measurements of the real thing.
+
+As of 2026-09-22, every vector in the report has since been re-tested against the
+real, installable package (agent-os-kernel, a component of AGT) — separate scripts
+in verification/: agt_real_test.py (Vector 2, delegation), agt_real_test_vector1_
+execution.py (Vector 1, mid-flight revocation), agt_real_test_vector3_evidence.py
+(Vector 3, evidence/receipts). Every one of this harness's modeled results turned out
+wrong in at least one direction once measured against the real product — sometimes
+overstating the gap (Vector 2's "no subset math" claim), sometimes understating what
+the real product does (Vector 1: the real execute path DOES refuse a revoked token,
+which this harness's MicrosoftAgtEngine does not model at all). Read the report, not
+this script's own output, for what is actually established.
 """
 
 import hashlib
@@ -36,12 +52,18 @@ BASE_URL = f"http://127.0.0.1:{PORT}"
 ADMIN_KEY = "bench-admin-key-2026"
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 1. Reference Implementation of Microsoft AGT (Agent OS + Merkle Audit Chain)
+# 1. A MODEL of Microsoft AGT, not the product. See the module docstring above and
+#    BENCHMARK_AGT_VS_DGV.md before treating anything from this class as a finding
+#    about the real Microsoft Agent Governance Toolkit.
 # ══════════════════════════════════════════════════════════════════════════════
 
 
 class MicrosoftAgtEngine:
-    """Faithful implementation of Microsoft Agent Governance Toolkit (AGT) architecture:
+    """Our own reimplementation of AGT's architecture, from its published description —
+    not the Microsoft product, and never run against it. "Faithful" here describes our
+    effort to match the published architecture, not a verification that it matches the
+    real product's behaviour; some of it (delegation containment, see Vector 2 in the
+    report) turned out not to.
 
     - Agent OS Policy Engine: Rule evaluation at proposal/invocation time.
     - Agent Hypervisor: In-memory Merkle hash chain recording executed actions post-hoc.

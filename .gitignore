@@ -38,3 +38,4 @@ native/dgv_net_k*.hex
 .env
 dgv_signing_key.hex
 certs/
+local-dev-gate/
