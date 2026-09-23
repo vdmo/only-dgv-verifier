@@ -11,7 +11,8 @@ use std::str::FromStr;
 use crate::{
     A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, DelegationRecord,
     EvidenceArtifactRecord, PendingDecisionRecord, PolicyRecord, RevocationRecord,
-    SessionActionRecord, Storage, StorageError, TokenRecord,
+    SessionActionRecord, Storage, StorageError, TokenRecord, VerificationEventRecord,
+    VerificationUsageSummary,
 };
 
 pub struct SqliteStorage {
@@ -189,6 +190,16 @@ impl SqliteStorage {
                 expires_unix_ms INTEGER NOT NULL,
                 resolved INTEGER NOT NULL DEFAULT 0
             )"#,
+            r#"CREATE TABLE IF NOT EXISTS verification_events (
+                id TEXT PRIMARY KEY,
+                run_id TEXT,
+                verified INTEGER NOT NULL,
+                source TEXT NOT NULL,
+                api_key_id TEXT NOT NULL DEFAULT '',
+                created_unix_ms INTEGER NOT NULL
+            )"#,
+            "CREATE INDEX IF NOT EXISTS idx_verification_events_created ON verification_events(created_unix_ms)",
+            "CREATE INDEX IF NOT EXISTS idx_verification_events_key ON verification_events(api_key_id, created_unix_ms)",
         ];
         for stmt in statements {
             sqlx::query(stmt).execute(pool).await?;
@@ -991,6 +1002,57 @@ impl Storage for SqliteStorage {
             .execute(&self.pool)
             .await?;
         Ok(())
+    }
+
+    async fn record_verification_event(&self, e: VerificationEventRecord) -> Result<(), StorageError> {
+        sqlx::query(
+            "INSERT INTO verification_events (id, run_id, verified, source, api_key_id, created_unix_ms)
+             VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(&e.id)
+        .bind(&e.run_id)
+        .bind(e.verified)
+        .bind(&e.source)
+        .bind(&e.api_key_id)
+        .bind(e.created_unix_ms)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn verification_usage_summary(
+        &self,
+        since_unix_ms: i64,
+        api_key_id: Option<&str>,
+    ) -> Result<VerificationUsageSummary, StorageError> {
+        let row = if let Some(key) = api_key_id {
+            sqlx::query(
+                "SELECT COUNT(*) AS total,
+                        SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) AS verified_true,
+                        SUM(CASE WHEN verified = 0 THEN 1 ELSE 0 END) AS verified_false
+                 FROM verification_events WHERE created_unix_ms >= ? AND api_key_id = ?",
+            )
+            .bind(since_unix_ms)
+            .bind(key)
+            .fetch_one(&self.pool)
+            .await?
+        } else {
+            sqlx::query(
+                "SELECT COUNT(*) AS total,
+                        SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) AS verified_true,
+                        SUM(CASE WHEN verified = 0 THEN 1 ELSE 0 END) AS verified_false
+                 FROM verification_events WHERE created_unix_ms >= ?",
+            )
+            .bind(since_unix_ms)
+            .fetch_one(&self.pool)
+            .await?
+        };
+        Ok(VerificationUsageSummary {
+            since_unix_ms,
+            total: row.try_get::<i64, _>("total").unwrap_or(0),
+            verified_true: row.try_get::<Option<i64>, _>("verified_true").unwrap_or(None).unwrap_or(0),
+            verified_false: row.try_get::<Option<i64>, _>("verified_false").unwrap_or(None).unwrap_or(0),
+        })
     }
 
     async fn ping(&self) -> Result<(), StorageError> {

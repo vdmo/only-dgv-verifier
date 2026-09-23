@@ -28,6 +28,7 @@ use dgv_storage::{
     A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, DelegationRecord,
     EvidenceArtifactRecord, PendingDecisionRecord, PolicyRecord, PostgresStorage,
     RevocationRecord, SessionActionRecord, SqliteStorage, Storage, StorageError, TokenRecord,
+    VerificationEventRecord,
 };
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use jsonwebtoken::{decode, decode_header, DecodingKey, Validation, Algorithm};
@@ -1790,6 +1791,7 @@ struct VerifyResponse {
 async fn handle_verify(
     State(app): State<AppState>,
     Path(run_id): Path<String>,
+    headers: HeaderMap,
 ) -> impl IntoResponse {
     match app.storage.get_decision(&run_id).await {
         Ok(Some(d)) => {
@@ -1800,6 +1802,28 @@ async fn handle_verify(
             let reason_codes: Vec<String> = serde_json::from_str(&d.reason_codes).unwrap_or_default();
             let rederived = compute_decision_hash(&d.request_id, &d.gate_state, &reason_codes, tool, action, &params);
             let verified = rederived == d.decision_hash;
+
+            // Metering: every completed check against a real, stored decision is a
+            // billable verification event, regardless of whether it came back
+            // verified — the caller consumed a check either way. A 404 (no such
+            // decision) below is not metered, since nothing was actually verified.
+            let api_key_id = headers
+                .get("X-Api-Key")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("")
+                .to_string();
+            let event = VerificationEventRecord {
+                id: hex::encode(rand::random::<[u8; 16]>()),
+                run_id: Some(run_id.clone()),
+                verified,
+                source: "verify_run_id".to_string(),
+                api_key_id,
+                created_unix_ms: now_unix_ms(),
+            };
+            if let Err(e) = app.storage.record_verification_event(event).await {
+                log_event("warn", "verification_event_record_failed", json!({"error": e.to_string(), "run_id": run_id}));
+            }
+
             (
                 StatusCode::OK,
                 Json(VerifyResponse {
@@ -2149,6 +2173,33 @@ async fn handle_revocations_digest(State(app): State<AppState>) -> impl IntoResp
 async fn list_revocations(State(app): State<AppState>) -> impl IntoResponse {
     match app.storage.list_revocations().await {
         Ok(list) => (StatusCode::OK, Json(serde_json::to_value(list).unwrap_or_default())),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+// ── GET /usage/verifications — billing readiness ────────────────────────────
+
+#[derive(Deserialize)]
+struct UsageVerificationsQuery {
+    since_unix_ms: Option<i64>,
+    api_key_id: Option<String>,
+}
+
+/// Admin-only: how many `/verify/:run_id` calls have completed since a given
+/// time, optionally scoped to one API key. Exists so metered billing can be
+/// switched on later without a gap — the counting has been live since the
+/// route was added, not backfilled from logs.
+async fn handle_usage_verifications(
+    State(app): State<AppState>,
+    Query(q): Query<UsageVerificationsQuery>,
+) -> impl IntoResponse {
+    let since = q.since_unix_ms.unwrap_or(0);
+    match app
+        .storage
+        .verification_usage_summary(since, q.api_key_id.as_deref())
+        .await
+    {
+        Ok(summary) => (StatusCode::OK, Json(serde_json::to_value(summary).unwrap_or_default())),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     }
 }
@@ -4769,6 +4820,7 @@ async fn main() {
         .route("/agents/keys", post(handle_register_agent_key))
         .route("/agents/keys/:agent_id", delete(handle_deactivate_agent_key))
         .route("/policies/:policy_id/rollback", post(handle_policy_rollback))
+        .route("/usage/verifications", get(handle_usage_verifications))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             admin_auth_middleware,
@@ -4816,6 +4868,7 @@ async fn main() {
     println!("  POST /revocations                   - revoke an actor");
     println!("  POST /tenant/:tenant_id/policies    - store tenant-specific policy (signed)");
     println!("  PUT  /config/rate-limit             - update rate limit config");
+    println!("  GET  /usage/verifications           - verification counts (billing readiness)");
 
     log_event("info", "listening", json!({"addr": addr}));
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
