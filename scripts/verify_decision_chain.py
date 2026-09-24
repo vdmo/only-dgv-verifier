@@ -24,6 +24,12 @@ Usage:
 
 Exit code 0 if every record passes all three checks; 1 otherwise, with the
 first failing record and which check failed printed to stderr.
+
+Redacted exports (`GET /decisions/export?redact=true`) omit params, so check 2
+cannot be performed. The chain (1) and signatures (3) are still verified; check
+2 is reported as SKIPPED for those records and the run says so at the end. A
+skipped check is not a pass: a redacted export proves ordering and gate
+signing, not that the recorded parameters match the hash.
 """
 import argparse
 import hashlib
@@ -68,15 +74,19 @@ def verify_chain(export):
 
     for i, d in enumerate(decisions):
         replay = d.get("replay_inputs", {})
+        redacted = bool(replay.get("params_redacted"))
         tool = replay.get("tool", "")
         action = replay.get("action", "")
         params = replay.get("params", {})
         reason_codes = d.get("reason_codes", [])
 
-        rederived = compute_decision_hash(
-            d["request_id"], d["gate_state"], reason_codes, tool, action, params
-        )
-        payload_ok = rederived == d["decision_hash"]
+        if redacted:
+            payload_ok = True  # not checkable without params; reported as SKIPPED
+        else:
+            rederived = compute_decision_hash(
+                d["request_id"], d["gate_state"], reason_codes, tool, action, params
+            )
+            payload_ok = rederived == d["decision_hash"]
 
         try:
             # dgv-gate signs the *hex string* of decision_hash as UTF-8 text
@@ -95,7 +105,7 @@ def verify_chain(export):
         status = "OK" if (payload_ok and sig_ok and chain_ok) else "FAIL"
         print(
             f"  [{i}] {d['run_id']}  chain={'OK' if chain_ok else 'BROKEN'}  "
-            f"hash={'OK' if payload_ok else 'MISMATCH'}  sig={'OK' if sig_ok else 'INVALID'}  -> {status}"
+            f"hash={'SKIPPED' if redacted else ('OK' if payload_ok else 'MISMATCH')}  sig={'OK' if sig_ok else 'INVALID'}  -> {status}"
         )
         if status == "FAIL":
             errors.append((i, d["run_id"], chain_ok, payload_ok, sig_ok))
@@ -130,7 +140,15 @@ def main():
             print(f"  [{i}] {run_id}: {', '.join(reasons)}", file=sys.stderr)
         sys.exit(1)
     else:
-        print("✅ All decisions verified — chain contiguous, hashes correct, signatures valid.")
+        skipped = sum(1 for d in export["decisions"] if d.get("replay_inputs", {}).get("params_redacted"))
+        if skipped:
+            print(
+                f"⚠️  Chain contiguous and signatures valid for all decisions, but hash re-derivation "
+                f"was SKIPPED for {skipped} redacted record(s) — parameters were withheld, so "
+                f"this does not prove they match the signed hash."
+            )
+        else:
+            print("✅ All decisions verified — chain contiguous, hashes correct, signatures valid.")
         sys.exit(0)
 
 

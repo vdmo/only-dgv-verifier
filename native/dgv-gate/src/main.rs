@@ -432,6 +432,173 @@ async fn admin_auth_middleware(
     }
 }
 
+// ── Early denials ────────────────────────────────────────────────────────────
+//
+// Refusals decided before policy evaluation (failed identity, rate limit,
+// open circuit breaker) used to return without ever touching the decision
+// chain: counted in /stats at best, but with no signed, chained record. Now
+// they go through `early_deny`, which signs and persists them like any other
+// DENY, so the chain covers every refusal the gate issues.
+//
+// Persisting is bounded, because these paths are reachable by unauthenticated
+// or abusive callers and each stored decision takes the chain-tail lock: at
+// most DGV_EARLY_DENIAL_LOG_MAX_PER_MIN (default 600) per rolling minute are
+// written. Beyond that the denial is still enforced, signed in the response
+// and counted, but not chained — and `dgv_early_denials_unpersisted_total`
+// makes that gap visible instead of silent.
+
+static EARLY_DENIAL_WINDOW: std::sync::Mutex<(i64, u64)> = std::sync::Mutex::new((0, 0));
+static EARLY_DENIALS_UNPERSISTED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn early_denial_persist_allowed(now_ms: i64) -> bool {
+    let max: u64 = std::env::var("DGV_EARLY_DENIAL_LOG_MAX_PER_MIN")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(600);
+    let mut w = EARLY_DENIAL_WINDOW.lock().unwrap();
+    if now_ms - w.0 >= 60_000 {
+        *w = (now_ms, 0);
+    }
+    if w.1 < max {
+        w.1 += 1;
+        true
+    } else {
+        false
+    }
+}
+
+/// Build, sign, count and (budget permitting) persist a DENY that was decided
+/// before policy evaluation. `agent_id_verified` is false only when identity
+/// verification itself failed, so `replay_inputs.agent_id` is then just the
+/// caller's unverified claim and is recorded as such.
+///
+/// The decision hash is computed over the exact `reason_codes` returned and
+/// stored, so `GET /verify/:run_id` and the offline verifier can re-derive it.
+async fn early_deny(
+    app: &AppState,
+    p: &ProposalSubmitted,
+    run_id: String,
+    reason_codes: Vec<String>,
+    approvals_required: u32,
+    status: StatusCode,
+    agent_id_verified: bool,
+) -> (StatusCode, Json<GovernResponse>) {
+    let now = now_unix_ms();
+    let decision_hash = compute_decision_hash(
+        &p.request_id, "DENY", &reason_codes, &p.tool, &p.action, &p.params,
+    );
+    let signature = app.keys.sign_decision(&decision_hash);
+    {
+        let mut c = app.counters.lock().unwrap();
+        c.decisions_made += 1;
+        c.denials += 1;
+    }
+
+    if early_denial_persist_allowed(now) {
+        let replay_inputs = json!({
+            "tool": p.tool,
+            "action": p.action,
+            "params": p.params,
+            "agent_id": p.agent_id,
+            "workflow": p.workflow,
+            "risk_level": p.risk_level,
+            "early_denial": true,
+            "agent_id_verified": agent_id_verified,
+        });
+        let rec = DecisionRecord {
+            run_id: run_id.clone(),
+            request_id: p.request_id.clone(),
+            decision_hash: decision_hash.clone(),
+            gate_state: "DENY".to_string(),
+            reason_codes: serde_json::to_string(&reason_codes).unwrap_or_default(),
+            replay_inputs: replay_inputs.to_string(),
+            signature: signature.clone(),
+            created_unix_ms: now,
+            parent_decision_hash: None, // set authoritatively by store_decision itself
+        };
+        if let Err(e) = app.storage.store_decision(rec).await {
+            EARLY_DENIALS_UNPERSISTED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            log_event("warn", "early_denial_persist_failed", json!({"error": e.to_string(), "run_id": run_id}));
+        }
+    } else {
+        EARLY_DENIALS_UNPERSISTED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    let decision = DecisionReturned {
+        request_id: p.request_id.clone(),
+        gate_state: "DENY".to_string(),
+        reason_codes,
+        approvals_required,
+        approvals_received: 0,
+        auth_token: None,
+        run_id: run_id.clone(),
+        decision_hash,
+        counterfactual: None,
+        pending_token: None,
+        retry_after_ms: None,
+    };
+    (
+        status,
+        Json(GovernResponse {
+            decision,
+            evidence_pack_id: run_id,
+            signature,
+            verifying_key: hex::encode(app.keys.vk.to_bytes()),
+        }),
+    )
+}
+
+// ── Decision-export access control ───────────────────────────────────────────
+//
+// /decisions/export returns replay_inputs (agent_id, params, workflow) for
+// every decision, so it must not be world-readable. Access requires either
+// X-Export-Key (DGV_EXPORT_KEY — a read-only credential you can hand to an
+// auditor) or X-Admin-Key. With neither key configured the endpoint is
+// closed (403) unless DGV_EXPORT_PUBLIC=1 is set explicitly for development.
+
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+}
+
+#[allow(clippy::result_large_err)]
+fn check_export_access(app: &AppState, headers: &HeaderMap) -> Result<(), axum::response::Response> {
+    let export_key = std::env::var("DGV_EXPORT_KEY").ok().filter(|k| !k.is_empty());
+    let public = std::env::var("DGV_EXPORT_PUBLIC").map(|v| v == "1" || v == "true").unwrap_or(false);
+
+    if export_key.is_none() && app.admin_key.is_none() {
+        if public {
+            return Ok(());
+        }
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "error": "export_disabled",
+                "hint": "set DGV_EXPORT_KEY (or DGV_ADMIN_KEY) to enable /decisions/export, or DGV_EXPORT_PUBLIC=1 for development",
+            })),
+        )
+            .into_response());
+    }
+
+    let header = |name: &str| headers.get(name).and_then(|v| v.to_str().ok()).map(|s| s.as_bytes().to_vec());
+    let export_ok = matches!((&export_key, header("X-Export-Key")), (Some(k), Some(h)) if constant_time_eq(k.as_bytes(), &h));
+    let admin_ok = matches!((&app.admin_key, header("X-Admin-Key")), (Some(k), Some(h)) if constant_time_eq(k.as_bytes(), &h));
+    if export_ok || admin_ok {
+        Ok(())
+    } else {
+        Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({
+                "error": "export_auth_required",
+                "hint": "provide X-Export-Key (or X-Admin-Key)",
+            })),
+        )
+            .into_response())
+    }
+}
+
 // ── JWT verification ─────────────────────────────────────────────────────────
 
 /// JWKS response format (RFC 7517)
@@ -652,30 +819,18 @@ async fn handle_govern(
                 p.agent_id = verified_id;
             }
             Err(e) => {
-                let run_id = only_lang::evidence_pack::run_id_unix_ms();
-                let decision = DecisionReturned {
-                    request_id: p.request_id.clone(),
-                    gate_state: "DENY".to_string(),
-                    reason_codes: vec![format!("identity_verification_failed: {}", e)],
-                    approvals_required: 0,
-                    approvals_received: 0,
-                    auth_token: None,
-                    run_id: run_id.clone(),
-                    decision_hash: compute_decision_hash(&p.request_id, "DENY", &["identity_verification_failed".to_string()], &p.tool, &p.action, &p.params),
-                    counterfactual: None,
-                    pending_token: None,
-                    retry_after_ms: None,
-                };
-                let signature = app.keys.sign_decision(&decision.decision_hash);
-                return (
+                // The agent_id here is only the caller's unverified claim (the
+                // JWT failed) — early_deny records it flagged as such.
+                return early_deny(
+                    &app,
+                    &p,
+                    only_lang::evidence_pack::run_id_unix_ms(),
+                    vec![format!("identity_verification_failed: {}", e)],
+                    0,
                     StatusCode::UNAUTHORIZED,
-                    Json(GovernResponse {
-                        decision,
-                        evidence_pack_id: run_id,
-                        signature,
-                        verifying_key: hex::encode(app.keys.vk.to_bytes()),
-                    }),
-                );
+                    false,
+                )
+                .await;
             }
         }
     }
@@ -692,34 +847,16 @@ async fn handle_govern(
         let rl_key = format!("govern:{}:{}", p.agent_id, p.tool);
         match app.storage.check_and_increment_rate(&rl_key, rl_max, rl_window).await {
             Ok(false) => {
-                let decision = DecisionReturned {
-                    request_id: request_id.clone(),
-                    gate_state: "DENY".to_string(),
-                    reason_codes: vec!["rate_limit_exceeded".to_string()],
-                    approvals_required: 1,
-                    approvals_received: 0,
-                    auth_token: None,
-                    run_id: run_id.clone(),
-                    decision_hash: compute_decision_hash(&request_id, "DENY", &["rate_limit_exceeded".to_string()], &p.tool, &p.action, &p.params),
-                    counterfactual: None,
-                    pending_token: None,
-                    retry_after_ms: None,
-                };
-                let signature = app.keys.sign_decision(&decision.decision_hash);
-                {
-                    let mut c = app.counters.lock().unwrap();
-                    c.decisions_made += 1;
-                    c.denials += 1;
-                }
-                return (
+                return early_deny(
+                    &app,
+                    &p,
+                    run_id,
+                    vec!["rate_limit_exceeded".to_string()],
+                    1,
                     StatusCode::TOO_MANY_REQUESTS,
-                    Json(GovernResponse {
-                        decision,
-                        evidence_pack_id: run_id,
-                        signature,
-                        verifying_key: hex::encode(app.keys.vk.to_bytes()),
-                    }),
-                );
+                    true,
+                )
+                .await;
             }
             Err(e) => {
                 // Storage error — fail open for rate limiting (log but continue)
@@ -729,15 +866,18 @@ async fn handle_govern(
         }
     }
 
-    // 0b. Circuit breaker — deny if the tool's circuit is open
-    {
-        let cb_threshold: u32 = std::env::var("DGV_CIRCUIT_BREAKER_THRESHOLD")
-            .ok().and_then(|v| v.parse().ok()).unwrap_or(5);
+    // 0b. Circuit breaker — deny if the tool's circuit is open. The mutex
+    // guard is confined to this block so no std::sync guard is held across the
+    // await in early_deny (keeps the handler future Send).
+    let cb_threshold: u32 = std::env::var("DGV_CIRCUIT_BREAKER_THRESHOLD")
+        .ok().and_then(|v| v.parse().ok()).unwrap_or(5);
+    let cb_open = {
         let cb_cooldown_ms: i64 = std::env::var("DGV_CIRCUIT_BREAKER_COOLDOWN_MS")
             .ok().and_then(|v| v.parse().ok()).unwrap_or(30_000);
         let cb_enabled = std::env::var("DGV_CIRCUIT_BREAKER_DISABLED")
             .map(|v| v != "1" && v != "true").unwrap_or(true);
 
+        let mut open = false;
         if cb_enabled {
             let mut health_map = app.tool_health.lock().unwrap();
             let health = health_map.entry(p.tool.clone()).or_insert_with(ToolHealth::new);
@@ -747,41 +887,26 @@ async fn handle_govern(
                     health.circuit_open = false;
                     log_event("warn", "circuit_breaker_half_open", json!({"tool": p.tool}));
                 } else {
-                    drop(health_map);
-                    let decision = DecisionReturned {
-                        request_id: request_id.clone(),
-                        gate_state: "DENY".to_string(),
-                        reason_codes: vec![format!(
-                            "circuit_breaker_open: tool {} disabled after {} consecutive failures",
-                            p.tool, cb_threshold
-                        )],
-                        approvals_required: 0,
-                        approvals_received: 0,
-                        auth_token: None,
-                        run_id: run_id.clone(),
-                        decision_hash: compute_decision_hash(&request_id, "DENY", &["circuit_breaker_open".to_string()], &p.tool, &p.action, &p.params),
-                        counterfactual: None,
-                    pending_token: None,
-                    retry_after_ms: None,
-                    };
-                    let signature = app.keys.sign_decision(&decision.decision_hash);
-                    {
-                        let mut c = app.counters.lock().unwrap();
-                        c.decisions_made += 1;
-                        c.denials += 1;
-                    }
-                    return (
-                        StatusCode::OK,
-                        Json(GovernResponse {
-                            decision,
-                            evidence_pack_id: run_id,
-                            signature,
-                            verifying_key: hex::encode(app.keys.vk.to_bytes()),
-                        }),
-                    );
+                    open = true;
                 }
             }
         }
+        open
+    };
+    if cb_open {
+        return early_deny(
+            &app,
+            &p,
+            run_id,
+            vec![format!(
+                "circuit_breaker_open: tool {} disabled after {} consecutive failures",
+                p.tool, cb_threshold
+            )],
+            0,
+            StatusCode::OK,
+            true,
+        )
+        .await;
     }
 
     // 1. Check revocation (from persistent storage + quorum when configured)
@@ -1877,12 +2002,22 @@ async fn handle_verify(
 struct ExportDecisionsQuery {
     after: Option<i64>,
     limit: Option<i64>,
+    /// `redact=true` drops params, agent_id and workflow from each record.
+    /// Chain contiguity and Ed25519 signatures remain verifiable, but the
+    /// decision hash can no longer be re-derived (it covers the params), so
+    /// the offline verifier reports that check as skipped, not passed.
+    redact: Option<bool>,
 }
 
 async fn handle_export_decisions(
     State(app): State<AppState>,
+    headers: HeaderMap,
     Query(q): Query<ExportDecisionsQuery>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
+    if let Err(resp) = check_export_access(&app, &headers) {
+        return resp;
+    }
+    let redact = q.redact.unwrap_or(false);
     let after = q.after.unwrap_or(0);
     let limit = q.limit.unwrap_or(500).clamp(1, 2000);
     match app.storage.list_decisions_chained(after, limit).await {
@@ -1891,6 +2026,14 @@ async fn handle_export_decisions(
             let items: Vec<Value> = decisions
                 .into_iter()
                 .map(|d| {
+                    let mut replay = serde_json::from_str::<Value>(&d.replay_inputs).unwrap_or(json!({}));
+                    if redact {
+                        replay = json!({
+                            "tool": replay.get("tool").cloned().unwrap_or(Value::Null),
+                            "action": replay.get("action").cloned().unwrap_or(Value::Null),
+                            "params_redacted": true,
+                        });
+                    }
                     json!({
                         "run_id": d.run_id,
                         "request_id": d.request_id,
@@ -1898,7 +2041,7 @@ async fn handle_export_decisions(
                         "parent_decision_hash": d.parent_decision_hash,
                         "gate_state": d.gate_state,
                         "reason_codes": serde_json::from_str::<Value>(&d.reason_codes).unwrap_or(json!([])),
-                        "replay_inputs": serde_json::from_str::<Value>(&d.replay_inputs).unwrap_or(json!({})),
+                        "replay_inputs": replay,
                         "signature": d.signature,
                         "created_unix_ms": d.created_unix_ms,
                     })
@@ -1911,6 +2054,7 @@ async fn handle_export_decisions(
                     "count": items.len(),
                     "verifying_key": hex::encode(app.keys.vk.to_bytes()),
                     "next_after": next_after,
+                    "redacted": redact,
                 })),
             )
                 .into_response()
@@ -4405,6 +4549,12 @@ async fn handle_metrics(State(app): State<AppState>) -> impl IntoResponse {
     out.push_str("# HELP dgv_tokens_consumed_total Total auth tokens consumed\n");
     out.push_str("# TYPE dgv_tokens_consumed_total counter\n");
     out.push_str(&format!("dgv_tokens_consumed_total {}\n", c.tokens_consumed));
+    out.push_str("# HELP dgv_early_denials_unpersisted_total Pre-evaluation denials enforced and counted but not written to the decision chain (persist budget exceeded or storage error)\n");
+    out.push_str("# TYPE dgv_early_denials_unpersisted_total counter\n");
+    out.push_str(&format!(
+        "dgv_early_denials_unpersisted_total {}\n",
+        EARLY_DENIALS_UNPERSISTED.load(std::sync::atomic::Ordering::Relaxed)
+    ));
     out.push_str("# HELP dgv_uptime_ms Gate uptime in milliseconds\n");
     out.push_str("# TYPE dgv_uptime_ms gauge\n");
     out.push_str(&format!("dgv_uptime_ms {}\n", uptime_ms));
