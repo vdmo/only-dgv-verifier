@@ -432,6 +432,33 @@ async fn admin_auth_middleware(
     }
 }
 
+// ── Run IDs ──────────────────────────────────────────────────────────────────
+//
+// A run_id is a millisecond timestamp, so two requests landing in the same
+// millisecond used to receive the same id and collide on decisions.run_id —
+// the second decision was then silently not recorded, although the caller had
+// already been given a signed verdict. Now monotonic within the process: the
+// value is the current millisecond, or one more than the last id issued if
+// that is not already later. The format (a decimal millisecond string) is
+// unchanged. Two gate instances sharing one database can still, rarely, draw
+// the same millisecond; a per-instance suffix would close that but changes the
+// id format, so it is deliberately not done here.
+
+static LAST_RUN_ID_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn unique_run_id() -> String {
+    use std::sync::atomic::Ordering::SeqCst;
+    let now = now_unix_ms().max(0) as u64;
+    let mut prev = LAST_RUN_ID_MS.load(SeqCst);
+    loop {
+        let next = now.max(prev + 1);
+        match LAST_RUN_ID_MS.compare_exchange_weak(prev, next, SeqCst, SeqCst) {
+            Ok(_) => return next.to_string(),
+            Err(actual) => prev = actual,
+        }
+    }
+}
+
 // ── Early denials ────────────────────────────────────────────────────────────
 //
 // Refusals decided before policy evaluation (failed identity, rate limit,
@@ -448,6 +475,7 @@ async fn admin_auth_middleware(
 // makes that gap visible instead of silent.
 
 static EARLY_DENIAL_WINDOW: std::sync::Mutex<(i64, u64)> = std::sync::Mutex::new((0, 0));
+static DECISIONS_UNPERSISTED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 static EARLY_DENIALS_UNPERSISTED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 fn early_denial_persist_allowed(now_ms: i64) -> bool {
@@ -824,7 +852,7 @@ async fn handle_govern(
                 return early_deny(
                     &app,
                     &p,
-                    only_lang::evidence_pack::run_id_unix_ms(),
+                    unique_run_id(),
                     vec![format!("identity_verification_failed: {}", e)],
                     0,
                     StatusCode::UNAUTHORIZED,
@@ -836,7 +864,7 @@ async fn handle_govern(
     }
 
     let request_id = p.request_id.clone();
-    let run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let run_id = unique_run_id();
     let now = now_unix_ms();
 
     // 0. Rate limiting (per agent+tool)
@@ -1320,7 +1348,12 @@ async fn evaluate_and_finalize(
         created_unix_ms: now,
         parent_decision_hash: None, // set authoritatively by store_decision itself
     };
-    let _ = app.storage.store_decision(dec_rec).await;
+    if let Err(e) = app.storage.store_decision(dec_rec).await {
+        // The caller is about to receive a signed verdict for a decision that
+        // is not in the chain. Make that visible instead of dropping it.
+        DECISIONS_UNPERSISTED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        log_event("error", "decision_persist_failed", json!({"error": e.to_string(), "run_id": run_id}));
+    }
 
     // R2: record this action so it's part of this agent's accumulated
     // session context for the next /govern call.
@@ -1592,7 +1625,7 @@ async fn handle_execute(
     Json(req): Json<ExecuteRequest>,
 ) -> impl IntoResponse {
     let now = now_unix_ms();
-    let run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let run_id = unique_run_id();
 
     // 0. JWT verification — if configured, verify the JWT
     if app.jwt_config.is_some() {
@@ -1989,6 +2022,47 @@ async fn handle_verify(
     }
 }
 
+/// Storage returns decisions ordered by `created_unix_ms`, but chain order is
+/// the order in which decisions won the chain-tail lock. Under concurrency the
+/// two differ (the timestamp is taken before the lock), which made a correct
+/// chain look broken to the offline verifier. Reorder a batch by following
+/// parent_decision_hash links; anything unreachable keeps timestamp order at
+/// the end rather than being dropped.
+fn order_by_chain(decisions: Vec<DecisionRecord>) -> Vec<DecisionRecord> {
+    use std::collections::HashMap;
+    let by_hash: HashMap<&str, usize> = decisions.iter().enumerate().map(|(i, d)| (d.decision_hash.as_str(), i)).collect();
+    let mut child_of: HashMap<&str, usize> = HashMap::new();
+    let mut heads: Vec<usize> = Vec::new();
+    for (i, d) in decisions.iter().enumerate() {
+        match d.parent_decision_hash.as_deref() {
+            Some(parent) if by_hash.contains_key(parent) => {
+                child_of.insert(parent, i);
+            }
+            _ => heads.push(i), // first ever record, or parent lies outside this batch
+        }
+    }
+    let mut placed = vec![false; decisions.len()];
+    let mut order: Vec<usize> = Vec::with_capacity(decisions.len());
+    for h in heads {
+        let mut cur = Some(h);
+        while let Some(i) = cur {
+            if placed[i] {
+                break;
+            }
+            placed[i] = true;
+            order.push(i);
+            cur = child_of.get(decisions[i].decision_hash.as_str()).copied();
+        }
+    }
+    for (i, was) in placed.iter().enumerate() {
+        if !was {
+            order.push(i);
+        }
+    }
+    let mut slots: Vec<Option<DecisionRecord>> = decisions.into_iter().map(Some).collect();
+    order.into_iter().filter_map(|i| slots[i].take()).collect()
+}
+
 /// GET /decisions/export — a flat, hash-chained batch of past decisions for
 /// offline audit. Each record's `parent_decision_hash` links to the previous
 /// record's `decision_hash` (set authoritatively by `store_decision`, never
@@ -2022,6 +2096,7 @@ async fn handle_export_decisions(
     let limit = q.limit.unwrap_or(500).clamp(1, 2000);
     match app.storage.list_decisions_chained(after, limit).await {
         Ok(decisions) => {
+            let decisions = order_by_chain(decisions);
             let next_after = decisions.last().map(|d| d.created_unix_ms);
             let items: Vec<Value> = decisions
                 .into_iter()
@@ -3579,7 +3654,7 @@ async fn handle_delegate(
     // Persist a decision record for the delegated grant — makes the child
     // token's params recoverable for further delegation and keeps the grant
     // auditable as a governance event.
-    let child_run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let child_run_id = unique_run_id();
     let _ = app.storage.store_decision(DecisionRecord {
         run_id: child_run_id,
         request_id: child_request_id.clone(),
@@ -4122,7 +4197,7 @@ async fn handle_register_evidence(
     Json(req): Json<EvidenceRegisterRequest>,
 ) -> impl IntoResponse {
     use base64::Engine;
-    let run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let run_id = unique_run_id();
 
     // Identity: when JWT is enabled, the registered_by must be the verified sub.
     let registered_by = req.registered_by.clone().unwrap_or_else(|| "anonymous".to_string());
@@ -4554,6 +4629,12 @@ async fn handle_metrics(State(app): State<AppState>) -> impl IntoResponse {
     out.push_str(&format!(
         "dgv_early_denials_unpersisted_total {}\n",
         EARLY_DENIALS_UNPERSISTED.load(std::sync::atomic::Ordering::Relaxed)
+    ));
+    out.push_str("# HELP dgv_decisions_unpersisted_total Decisions returned to callers whose chain record failed to persist (storage error or id conflict)\n");
+    out.push_str("# TYPE dgv_decisions_unpersisted_total counter\n");
+    out.push_str(&format!(
+        "dgv_decisions_unpersisted_total {}\n",
+        DECISIONS_UNPERSISTED.load(std::sync::atomic::Ordering::Relaxed)
     ));
     out.push_str("# HELP dgv_uptime_ms Gate uptime in milliseconds\n");
     out.push_str("# TYPE dgv_uptime_ms gauge\n");
