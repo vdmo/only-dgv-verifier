@@ -28,6 +28,7 @@ use dgv_storage::{
     A2aEnvelopeRecord, AgentKeyRecord, ApprovalRecord, DecisionRecord, DelegationRecord,
     EvidenceArtifactRecord, PendingDecisionRecord, PolicyRecord, PostgresStorage,
     RevocationRecord, SessionActionRecord, SqliteStorage, Storage, StorageError, TokenRecord,
+    VerificationEventRecord,
 };
 use ed25519_dalek::{Signer, SigningKey, Verifier, VerifyingKey};
 use jsonwebtoken::{decode, decode_header, DecodingKey, Validation, Algorithm};
@@ -431,6 +432,201 @@ async fn admin_auth_middleware(
     }
 }
 
+// ── Run IDs ──────────────────────────────────────────────────────────────────
+//
+// A run_id is a millisecond timestamp, so two requests landing in the same
+// millisecond used to receive the same id and collide on decisions.run_id —
+// the second decision was then silently not recorded, although the caller had
+// already been given a signed verdict. Now monotonic within the process: the
+// value is the current millisecond, or one more than the last id issued if
+// that is not already later. The format (a decimal millisecond string) is
+// unchanged. Two gate instances sharing one database can still, rarely, draw
+// the same millisecond; a per-instance suffix would close that but changes the
+// id format, so it is deliberately not done here.
+
+static LAST_RUN_ID_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn unique_run_id() -> String {
+    use std::sync::atomic::Ordering::SeqCst;
+    let now = now_unix_ms().max(0) as u64;
+    let mut prev = LAST_RUN_ID_MS.load(SeqCst);
+    loop {
+        let next = now.max(prev + 1);
+        match LAST_RUN_ID_MS.compare_exchange_weak(prev, next, SeqCst, SeqCst) {
+            Ok(_) => return next.to_string(),
+            Err(actual) => prev = actual,
+        }
+    }
+}
+
+// ── Early denials ────────────────────────────────────────────────────────────
+//
+// Refusals decided before policy evaluation (failed identity, rate limit,
+// open circuit breaker) used to return without ever touching the decision
+// chain: counted in /stats at best, but with no signed, chained record. Now
+// they go through `early_deny`, which signs and persists them like any other
+// DENY, so the chain covers every refusal the gate issues.
+//
+// Persisting is bounded, because these paths are reachable by unauthenticated
+// or abusive callers and each stored decision takes the chain-tail lock: at
+// most DGV_EARLY_DENIAL_LOG_MAX_PER_MIN (default 600) per rolling minute are
+// written. Beyond that the denial is still enforced, signed in the response
+// and counted, but not chained — and `dgv_early_denials_unpersisted_total`
+// makes that gap visible instead of silent.
+
+static EARLY_DENIAL_WINDOW: std::sync::Mutex<(i64, u64)> = std::sync::Mutex::new((0, 0));
+static DECISIONS_UNPERSISTED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static EARLY_DENIALS_UNPERSISTED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+fn early_denial_persist_allowed(now_ms: i64) -> bool {
+    let max: u64 = std::env::var("DGV_EARLY_DENIAL_LOG_MAX_PER_MIN")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(600);
+    let mut w = EARLY_DENIAL_WINDOW.lock().unwrap();
+    if now_ms - w.0 >= 60_000 {
+        *w = (now_ms, 0);
+    }
+    if w.1 < max {
+        w.1 += 1;
+        true
+    } else {
+        false
+    }
+}
+
+/// Build, sign, count and (budget permitting) persist a DENY that was decided
+/// before policy evaluation. `agent_id_verified` is false only when identity
+/// verification itself failed, so `replay_inputs.agent_id` is then just the
+/// caller's unverified claim and is recorded as such.
+///
+/// The decision hash is computed over the exact `reason_codes` returned and
+/// stored, so `GET /verify/:run_id` and the offline verifier can re-derive it.
+async fn early_deny(
+    app: &AppState,
+    p: &ProposalSubmitted,
+    run_id: String,
+    reason_codes: Vec<String>,
+    approvals_required: u32,
+    status: StatusCode,
+    agent_id_verified: bool,
+) -> (StatusCode, Json<GovernResponse>) {
+    let now = now_unix_ms();
+    let decision_hash = compute_decision_hash(
+        &p.request_id, "DENY", &reason_codes, &p.tool, &p.action, &p.params,
+    );
+    let signature = app.keys.sign_decision(&decision_hash);
+    {
+        let mut c = app.counters.lock().unwrap();
+        c.decisions_made += 1;
+        c.denials += 1;
+    }
+
+    if early_denial_persist_allowed(now) {
+        let replay_inputs = json!({
+            "tool": p.tool,
+            "action": p.action,
+            "params": p.params,
+            "agent_id": p.agent_id,
+            "workflow": p.workflow,
+            "risk_level": p.risk_level,
+            "early_denial": true,
+            "agent_id_verified": agent_id_verified,
+        });
+        let rec = DecisionRecord {
+            run_id: run_id.clone(),
+            request_id: p.request_id.clone(),
+            decision_hash: decision_hash.clone(),
+            gate_state: "DENY".to_string(),
+            reason_codes: serde_json::to_string(&reason_codes).unwrap_or_default(),
+            replay_inputs: replay_inputs.to_string(),
+            signature: signature.clone(),
+            created_unix_ms: now,
+            parent_decision_hash: None, // set authoritatively by store_decision itself
+        };
+        if let Err(e) = app.storage.store_decision(rec).await {
+            EARLY_DENIALS_UNPERSISTED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            log_event("warn", "early_denial_persist_failed", json!({"error": e.to_string(), "run_id": run_id}));
+        }
+    } else {
+        EARLY_DENIALS_UNPERSISTED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    let decision = DecisionReturned {
+        request_id: p.request_id.clone(),
+        gate_state: "DENY".to_string(),
+        reason_codes,
+        approvals_required,
+        approvals_received: 0,
+        auth_token: None,
+        run_id: run_id.clone(),
+        decision_hash,
+        counterfactual: None,
+        pending_token: None,
+        retry_after_ms: None,
+    };
+    (
+        status,
+        Json(GovernResponse {
+            decision,
+            evidence_pack_id: run_id,
+            signature,
+            verifying_key: hex::encode(app.keys.vk.to_bytes()),
+        }),
+    )
+}
+
+// ── Decision-export access control ───────────────────────────────────────────
+//
+// /decisions/export returns replay_inputs (agent_id, params, workflow) for
+// every decision, so it must not be world-readable. Access requires either
+// X-Export-Key (DGV_EXPORT_KEY — a read-only credential you can hand to an
+// auditor) or X-Admin-Key. With neither key configured the endpoint is
+// closed (403) unless DGV_EXPORT_PUBLIC=1 is set explicitly for development.
+
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+}
+
+#[allow(clippy::result_large_err)]
+fn check_export_access(app: &AppState, headers: &HeaderMap) -> Result<(), axum::response::Response> {
+    let export_key = std::env::var("DGV_EXPORT_KEY").ok().filter(|k| !k.is_empty());
+    let public = std::env::var("DGV_EXPORT_PUBLIC").map(|v| v == "1" || v == "true").unwrap_or(false);
+
+    if export_key.is_none() && app.admin_key.is_none() {
+        if public {
+            return Ok(());
+        }
+        return Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({
+                "error": "export_disabled",
+                "hint": "set DGV_EXPORT_KEY (or DGV_ADMIN_KEY) to enable /decisions/export, or DGV_EXPORT_PUBLIC=1 for development",
+            })),
+        )
+            .into_response());
+    }
+
+    let header = |name: &str| headers.get(name).and_then(|v| v.to_str().ok()).map(|s| s.as_bytes().to_vec());
+    let export_ok = matches!((&export_key, header("X-Export-Key")), (Some(k), Some(h)) if constant_time_eq(k.as_bytes(), &h));
+    let admin_ok = matches!((&app.admin_key, header("X-Admin-Key")), (Some(k), Some(h)) if constant_time_eq(k.as_bytes(), &h));
+    if export_ok || admin_ok {
+        Ok(())
+    } else {
+        Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({
+                "error": "export_auth_required",
+                "hint": "provide X-Export-Key (or X-Admin-Key)",
+            })),
+        )
+            .into_response())
+    }
+}
+
 // ── JWT verification ─────────────────────────────────────────────────────────
 
 /// JWKS response format (RFC 7517)
@@ -651,36 +847,24 @@ async fn handle_govern(
                 p.agent_id = verified_id;
             }
             Err(e) => {
-                let run_id = only_lang::evidence_pack::run_id_unix_ms();
-                let decision = DecisionReturned {
-                    request_id: p.request_id.clone(),
-                    gate_state: "DENY".to_string(),
-                    reason_codes: vec![format!("identity_verification_failed: {}", e)],
-                    approvals_required: 0,
-                    approvals_received: 0,
-                    auth_token: None,
-                    run_id: run_id.clone(),
-                    decision_hash: compute_decision_hash(&p.request_id, "DENY", &["identity_verification_failed".to_string()], &p.tool, &p.action, &p.params),
-                    counterfactual: None,
-                    pending_token: None,
-                    retry_after_ms: None,
-                };
-                let signature = app.keys.sign_decision(&decision.decision_hash);
-                return (
+                // The agent_id here is only the caller's unverified claim (the
+                // JWT failed) — early_deny records it flagged as such.
+                return early_deny(
+                    &app,
+                    &p,
+                    unique_run_id(),
+                    vec![format!("identity_verification_failed: {}", e)],
+                    0,
                     StatusCode::UNAUTHORIZED,
-                    Json(GovernResponse {
-                        decision,
-                        evidence_pack_id: run_id,
-                        signature,
-                        verifying_key: hex::encode(app.keys.vk.to_bytes()),
-                    }),
-                );
+                    false,
+                )
+                .await;
             }
         }
     }
 
     let request_id = p.request_id.clone();
-    let run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let run_id = unique_run_id();
     let now = now_unix_ms();
 
     // 0. Rate limiting (per agent+tool)
@@ -691,34 +875,16 @@ async fn handle_govern(
         let rl_key = format!("govern:{}:{}", p.agent_id, p.tool);
         match app.storage.check_and_increment_rate(&rl_key, rl_max, rl_window).await {
             Ok(false) => {
-                let decision = DecisionReturned {
-                    request_id: request_id.clone(),
-                    gate_state: "DENY".to_string(),
-                    reason_codes: vec!["rate_limit_exceeded".to_string()],
-                    approvals_required: 1,
-                    approvals_received: 0,
-                    auth_token: None,
-                    run_id: run_id.clone(),
-                    decision_hash: compute_decision_hash(&request_id, "DENY", &["rate_limit_exceeded".to_string()], &p.tool, &p.action, &p.params),
-                    counterfactual: None,
-                    pending_token: None,
-                    retry_after_ms: None,
-                };
-                let signature = app.keys.sign_decision(&decision.decision_hash);
-                {
-                    let mut c = app.counters.lock().unwrap();
-                    c.decisions_made += 1;
-                    c.denials += 1;
-                }
-                return (
+                return early_deny(
+                    &app,
+                    &p,
+                    run_id,
+                    vec!["rate_limit_exceeded".to_string()],
+                    1,
                     StatusCode::TOO_MANY_REQUESTS,
-                    Json(GovernResponse {
-                        decision,
-                        evidence_pack_id: run_id,
-                        signature,
-                        verifying_key: hex::encode(app.keys.vk.to_bytes()),
-                    }),
-                );
+                    true,
+                )
+                .await;
             }
             Err(e) => {
                 // Storage error — fail open for rate limiting (log but continue)
@@ -728,15 +894,18 @@ async fn handle_govern(
         }
     }
 
-    // 0b. Circuit breaker — deny if the tool's circuit is open
-    {
-        let cb_threshold: u32 = std::env::var("DGV_CIRCUIT_BREAKER_THRESHOLD")
-            .ok().and_then(|v| v.parse().ok()).unwrap_or(5);
+    // 0b. Circuit breaker — deny if the tool's circuit is open. The mutex
+    // guard is confined to this block so no std::sync guard is held across the
+    // await in early_deny (keeps the handler future Send).
+    let cb_threshold: u32 = std::env::var("DGV_CIRCUIT_BREAKER_THRESHOLD")
+        .ok().and_then(|v| v.parse().ok()).unwrap_or(5);
+    let cb_open = {
         let cb_cooldown_ms: i64 = std::env::var("DGV_CIRCUIT_BREAKER_COOLDOWN_MS")
             .ok().and_then(|v| v.parse().ok()).unwrap_or(30_000);
         let cb_enabled = std::env::var("DGV_CIRCUIT_BREAKER_DISABLED")
             .map(|v| v != "1" && v != "true").unwrap_or(true);
 
+        let mut open = false;
         if cb_enabled {
             let mut health_map = app.tool_health.lock().unwrap();
             let health = health_map.entry(p.tool.clone()).or_insert_with(ToolHealth::new);
@@ -746,41 +915,26 @@ async fn handle_govern(
                     health.circuit_open = false;
                     log_event("warn", "circuit_breaker_half_open", json!({"tool": p.tool}));
                 } else {
-                    drop(health_map);
-                    let decision = DecisionReturned {
-                        request_id: request_id.clone(),
-                        gate_state: "DENY".to_string(),
-                        reason_codes: vec![format!(
-                            "circuit_breaker_open: tool {} disabled after {} consecutive failures",
-                            p.tool, cb_threshold
-                        )],
-                        approvals_required: 0,
-                        approvals_received: 0,
-                        auth_token: None,
-                        run_id: run_id.clone(),
-                        decision_hash: compute_decision_hash(&request_id, "DENY", &["circuit_breaker_open".to_string()], &p.tool, &p.action, &p.params),
-                        counterfactual: None,
-                    pending_token: None,
-                    retry_after_ms: None,
-                    };
-                    let signature = app.keys.sign_decision(&decision.decision_hash);
-                    {
-                        let mut c = app.counters.lock().unwrap();
-                        c.decisions_made += 1;
-                        c.denials += 1;
-                    }
-                    return (
-                        StatusCode::OK,
-                        Json(GovernResponse {
-                            decision,
-                            evidence_pack_id: run_id,
-                            signature,
-                            verifying_key: hex::encode(app.keys.vk.to_bytes()),
-                        }),
-                    );
+                    open = true;
                 }
             }
         }
+        open
+    };
+    if cb_open {
+        return early_deny(
+            &app,
+            &p,
+            run_id,
+            vec![format!(
+                "circuit_breaker_open: tool {} disabled after {} consecutive failures",
+                p.tool, cb_threshold
+            )],
+            0,
+            StatusCode::OK,
+            true,
+        )
+        .await;
     }
 
     // 1. Check revocation (from persistent storage + quorum when configured)
@@ -1194,7 +1348,12 @@ async fn evaluate_and_finalize(
         created_unix_ms: now,
         parent_decision_hash: None, // set authoritatively by store_decision itself
     };
-    let _ = app.storage.store_decision(dec_rec).await;
+    if let Err(e) = app.storage.store_decision(dec_rec).await {
+        // The caller is about to receive a signed verdict for a decision that
+        // is not in the chain. Make that visible instead of dropping it.
+        DECISIONS_UNPERSISTED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        log_event("error", "decision_persist_failed", json!({"error": e.to_string(), "run_id": run_id}));
+    }
 
     // R2: record this action so it's part of this agent's accumulated
     // session context for the next /govern call.
@@ -1466,7 +1625,7 @@ async fn handle_execute(
     Json(req): Json<ExecuteRequest>,
 ) -> impl IntoResponse {
     let now = now_unix_ms();
-    let run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let run_id = unique_run_id();
 
     // 0. JWT verification — if configured, verify the JWT
     if app.jwt_config.is_some() {
@@ -1790,6 +1949,7 @@ struct VerifyResponse {
 async fn handle_verify(
     State(app): State<AppState>,
     Path(run_id): Path<String>,
+    headers: HeaderMap,
 ) -> impl IntoResponse {
     match app.storage.get_decision(&run_id).await {
         Ok(Some(d)) => {
@@ -1800,6 +1960,28 @@ async fn handle_verify(
             let reason_codes: Vec<String> = serde_json::from_str(&d.reason_codes).unwrap_or_default();
             let rederived = compute_decision_hash(&d.request_id, &d.gate_state, &reason_codes, tool, action, &params);
             let verified = rederived == d.decision_hash;
+
+            // Metering: every completed check against a real, stored decision is a
+            // billable verification event, regardless of whether it came back
+            // verified — the caller consumed a check either way. A 404 (no such
+            // decision) below is not metered, since nothing was actually verified.
+            let api_key_id = headers
+                .get("X-Api-Key")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("")
+                .to_string();
+            let event = VerificationEventRecord {
+                id: hex::encode(rand::random::<[u8; 16]>()),
+                run_id: Some(run_id.clone()),
+                verified,
+                source: "verify_run_id".to_string(),
+                api_key_id,
+                created_unix_ms: now_unix_ms(),
+            };
+            if let Err(e) = app.storage.record_verification_event(event).await {
+                log_event("warn", "verification_event_record_failed", json!({"error": e.to_string(), "run_id": run_id}));
+            }
+
             (
                 StatusCode::OK,
                 Json(VerifyResponse {
@@ -1840,6 +2022,47 @@ async fn handle_verify(
     }
 }
 
+/// Storage returns decisions ordered by `created_unix_ms`, but chain order is
+/// the order in which decisions won the chain-tail lock. Under concurrency the
+/// two differ (the timestamp is taken before the lock), which made a correct
+/// chain look broken to the offline verifier. Reorder a batch by following
+/// parent_decision_hash links; anything unreachable keeps timestamp order at
+/// the end rather than being dropped.
+fn order_by_chain(decisions: Vec<DecisionRecord>) -> Vec<DecisionRecord> {
+    use std::collections::HashMap;
+    let by_hash: HashMap<&str, usize> = decisions.iter().enumerate().map(|(i, d)| (d.decision_hash.as_str(), i)).collect();
+    let mut child_of: HashMap<&str, usize> = HashMap::new();
+    let mut heads: Vec<usize> = Vec::new();
+    for (i, d) in decisions.iter().enumerate() {
+        match d.parent_decision_hash.as_deref() {
+            Some(parent) if by_hash.contains_key(parent) => {
+                child_of.insert(parent, i);
+            }
+            _ => heads.push(i), // first ever record, or parent lies outside this batch
+        }
+    }
+    let mut placed = vec![false; decisions.len()];
+    let mut order: Vec<usize> = Vec::with_capacity(decisions.len());
+    for h in heads {
+        let mut cur = Some(h);
+        while let Some(i) = cur {
+            if placed[i] {
+                break;
+            }
+            placed[i] = true;
+            order.push(i);
+            cur = child_of.get(decisions[i].decision_hash.as_str()).copied();
+        }
+    }
+    for (i, was) in placed.iter().enumerate() {
+        if !was {
+            order.push(i);
+        }
+    }
+    let mut slots: Vec<Option<DecisionRecord>> = decisions.into_iter().map(Some).collect();
+    order.into_iter().filter_map(|i| slots[i].take()).collect()
+}
+
 /// GET /decisions/export — a flat, hash-chained batch of past decisions for
 /// offline audit. Each record's `parent_decision_hash` links to the previous
 /// record's `decision_hash` (set authoritatively by `store_decision`, never
@@ -1853,20 +2076,39 @@ async fn handle_verify(
 struct ExportDecisionsQuery {
     after: Option<i64>,
     limit: Option<i64>,
+    /// `redact=true` drops params, agent_id and workflow from each record.
+    /// Chain contiguity and Ed25519 signatures remain verifiable, but the
+    /// decision hash can no longer be re-derived (it covers the params), so
+    /// the offline verifier reports that check as skipped, not passed.
+    redact: Option<bool>,
 }
 
 async fn handle_export_decisions(
     State(app): State<AppState>,
+    headers: HeaderMap,
     Query(q): Query<ExportDecisionsQuery>,
-) -> impl IntoResponse {
+) -> axum::response::Response {
+    if let Err(resp) = check_export_access(&app, &headers) {
+        return resp;
+    }
+    let redact = q.redact.unwrap_or(false);
     let after = q.after.unwrap_or(0);
     let limit = q.limit.unwrap_or(500).clamp(1, 2000);
     match app.storage.list_decisions_chained(after, limit).await {
         Ok(decisions) => {
+            let decisions = order_by_chain(decisions);
             let next_after = decisions.last().map(|d| d.created_unix_ms);
             let items: Vec<Value> = decisions
                 .into_iter()
                 .map(|d| {
+                    let mut replay = serde_json::from_str::<Value>(&d.replay_inputs).unwrap_or(json!({}));
+                    if redact {
+                        replay = json!({
+                            "tool": replay.get("tool").cloned().unwrap_or(Value::Null),
+                            "action": replay.get("action").cloned().unwrap_or(Value::Null),
+                            "params_redacted": true,
+                        });
+                    }
                     json!({
                         "run_id": d.run_id,
                         "request_id": d.request_id,
@@ -1874,7 +2116,7 @@ async fn handle_export_decisions(
                         "parent_decision_hash": d.parent_decision_hash,
                         "gate_state": d.gate_state,
                         "reason_codes": serde_json::from_str::<Value>(&d.reason_codes).unwrap_or(json!([])),
-                        "replay_inputs": serde_json::from_str::<Value>(&d.replay_inputs).unwrap_or(json!({})),
+                        "replay_inputs": replay,
                         "signature": d.signature,
                         "created_unix_ms": d.created_unix_ms,
                     })
@@ -1887,6 +2129,7 @@ async fn handle_export_decisions(
                     "count": items.len(),
                     "verifying_key": hex::encode(app.keys.vk.to_bytes()),
                     "next_after": next_after,
+                    "redacted": redact,
                 })),
             )
                 .into_response()
@@ -2149,6 +2392,33 @@ async fn handle_revocations_digest(State(app): State<AppState>) -> impl IntoResp
 async fn list_revocations(State(app): State<AppState>) -> impl IntoResponse {
     match app.storage.list_revocations().await {
         Ok(list) => (StatusCode::OK, Json(serde_json::to_value(list).unwrap_or_default())),
+        Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
+    }
+}
+
+// ── GET /usage/verifications — billing readiness ────────────────────────────
+
+#[derive(Deserialize)]
+struct UsageVerificationsQuery {
+    since_unix_ms: Option<i64>,
+    api_key_id: Option<String>,
+}
+
+/// Admin-only: how many `/verify/:run_id` calls have completed since a given
+/// time, optionally scoped to one API key. Exists so metered billing can be
+/// switched on later without a gap — the counting has been live since the
+/// route was added, not backfilled from logs.
+async fn handle_usage_verifications(
+    State(app): State<AppState>,
+    Query(q): Query<UsageVerificationsQuery>,
+) -> impl IntoResponse {
+    let since = q.since_unix_ms.unwrap_or(0);
+    match app
+        .storage
+        .verification_usage_summary(since, q.api_key_id.as_deref())
+        .await
+    {
+        Ok(summary) => (StatusCode::OK, Json(serde_json::to_value(summary).unwrap_or_default())),
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({"error": e.to_string()}))),
     }
 }
@@ -3384,7 +3654,7 @@ async fn handle_delegate(
     // Persist a decision record for the delegated grant — makes the child
     // token's params recoverable for further delegation and keeps the grant
     // auditable as a governance event.
-    let child_run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let child_run_id = unique_run_id();
     let _ = app.storage.store_decision(DecisionRecord {
         run_id: child_run_id,
         request_id: child_request_id.clone(),
@@ -3927,7 +4197,7 @@ async fn handle_register_evidence(
     Json(req): Json<EvidenceRegisterRequest>,
 ) -> impl IntoResponse {
     use base64::Engine;
-    let run_id = only_lang::evidence_pack::run_id_unix_ms();
+    let run_id = unique_run_id();
 
     // Identity: when JWT is enabled, the registered_by must be the verified sub.
     let registered_by = req.registered_by.clone().unwrap_or_else(|| "anonymous".to_string());
@@ -4354,6 +4624,18 @@ async fn handle_metrics(State(app): State<AppState>) -> impl IntoResponse {
     out.push_str("# HELP dgv_tokens_consumed_total Total auth tokens consumed\n");
     out.push_str("# TYPE dgv_tokens_consumed_total counter\n");
     out.push_str(&format!("dgv_tokens_consumed_total {}\n", c.tokens_consumed));
+    out.push_str("# HELP dgv_early_denials_unpersisted_total Pre-evaluation denials enforced and counted but not written to the decision chain (persist budget exceeded or storage error)\n");
+    out.push_str("# TYPE dgv_early_denials_unpersisted_total counter\n");
+    out.push_str(&format!(
+        "dgv_early_denials_unpersisted_total {}\n",
+        EARLY_DENIALS_UNPERSISTED.load(std::sync::atomic::Ordering::Relaxed)
+    ));
+    out.push_str("# HELP dgv_decisions_unpersisted_total Decisions returned to callers whose chain record failed to persist (storage error or id conflict)\n");
+    out.push_str("# TYPE dgv_decisions_unpersisted_total counter\n");
+    out.push_str(&format!(
+        "dgv_decisions_unpersisted_total {}\n",
+        DECISIONS_UNPERSISTED.load(std::sync::atomic::Ordering::Relaxed)
+    ));
     out.push_str("# HELP dgv_uptime_ms Gate uptime in milliseconds\n");
     out.push_str("# TYPE dgv_uptime_ms gauge\n");
     out.push_str(&format!("dgv_uptime_ms {}\n", uptime_ms));
@@ -4769,6 +5051,7 @@ async fn main() {
         .route("/agents/keys", post(handle_register_agent_key))
         .route("/agents/keys/:agent_id", delete(handle_deactivate_agent_key))
         .route("/policies/:policy_id/rollback", post(handle_policy_rollback))
+        .route("/usage/verifications", get(handle_usage_verifications))
         .route_layer(middleware::from_fn_with_state(
             app_state.clone(),
             admin_auth_middleware,
@@ -4816,6 +5099,7 @@ async fn main() {
     println!("  POST /revocations                   - revoke an actor");
     println!("  POST /tenant/:tenant_id/policies    - store tenant-specific policy (signed)");
     println!("  PUT  /config/rate-limit             - update rate limit config");
+    println!("  GET  /usage/verifications           - verification counts (billing readiness)");
 
     log_event("info", "listening", json!({"addr": addr}));
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();

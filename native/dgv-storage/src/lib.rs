@@ -181,6 +181,43 @@ pub struct EvidenceArtifactRecord {
     pub registered_unix_ms: i64,
 }
 
+/// One completed call to a verification surface (currently `/verify/:run_id`;
+/// intended to also cover a future stateless "verify this receipt" endpoint,
+/// hence `run_id` is optional). Recorded regardless of the outcome — a
+/// `verified: false` answer is still a completed, billable check, the same
+/// way INATE bills a completed tap-sequence validation whether or not it
+/// passed. Malformed requests that never reach a verdict are not recorded
+/// here at all, so this table only ever holds real, billable events —
+/// counting rows is counting usage, with no separate "was this billable"
+/// filter needed downstream.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerificationEventRecord {
+    pub id: String,
+    pub run_id: Option<String>,
+    pub verified: bool,
+    /// Where the call came from — "gate" for the existing authenticated
+    /// /verify/:run_id path today; reserved values for a future public API
+    /// ("api") and the offline/WASM tools if they ever choose to report in
+    /// ("offline") rather than staying silent and unmetered as they are now.
+    pub source: String,
+    /// The caller's identity for billing, when known. Empty for the current
+    /// /verify/:run_id path, which has no API-key concept yet — see the
+    /// gate's own note on this at the call site.
+    pub api_key_id: String,
+    pub created_unix_ms: i64,
+}
+
+/// Aggregate usage over a window — the shape an invoice or a dashboard reads,
+/// not a replacement for the row-level record above (which stays the source
+/// of truth; this is always re-derivable from it).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerificationUsageSummary {
+    pub since_unix_ms: i64,
+    pub total: i64,
+    pub verified_true: i64,
+    pub verified_false: i64,
+}
+
 /// R2 (AARM): one action evaluated for an agent, recorded so the gate can
 /// accumulate context about what this agent has done earlier in the same
 /// session. Keyed by agent_id — the same stable identity already used for
@@ -294,6 +331,17 @@ pub trait Storage: Send + Sync {
     async fn store_pending_decision(&self, p: PendingDecisionRecord) -> Result<(), StorageError>;
     async fn get_pending_decision(&self, pending_token: &str) -> Result<Option<PendingDecisionRecord>, StorageError>;
     async fn mark_pending_resolved(&self, pending_token: &str) -> Result<(), StorageError>;
+
+    // Verification usage (billing readiness for the metered verification API)
+    async fn record_verification_event(&self, e: VerificationEventRecord) -> Result<(), StorageError>;
+    /// Aggregate usage since `since_unix_ms`, optionally scoped to one
+    /// `api_key_id` (None = every caller, the shape the admin usage route
+    /// wants today before per-customer keys exist).
+    async fn verification_usage_summary(
+        &self,
+        since_unix_ms: i64,
+        api_key_id: Option<&str>,
+    ) -> Result<VerificationUsageSummary, StorageError>;
 
     // Health
     async fn ping(&self) -> Result<(), StorageError>;
