@@ -1,0 +1,92 @@
+[
+  {
+    "expected_sha256": "f7d04a8395832c8e0df2c8d3303e4c8f6dc9248b32e69f67ddbd7303ffd2db5d",
+    "name": "plain",
+    "params_json": "{\"b\":[1,2],\"a\":\"x\"}"
+  },
+  {
+    "expected_sha256": "f8ed496aefe1b35f5f94841a8e8ec056bde923c68873083e242d109c194412c5",
+    "name": "nested_key_order",
+    "params_json": "{\"z\":{\"y\":1,\"x\":[{\"b\":1,\"a\":2}]},\"a\":true}"
+  },
+  {
+    "expected_sha256": "832ee93d67f80e0ed1f3ebb9477a326a3579e86ecba7801361276972046630c1",
+    "name": "safe_int_max",
+    "params_json": "{\"n\":9007199254740991}"
+  },
+  {
+    "expected_sha256": "6aaa5c6c3df5c05946397194cb304ecde4cab7569b7ee3359463abc42b5c511e",
+    "name": "safe_int_min",
+    "params_json": "{\"n\":-9007199254740991}"
+  },
+  {
+    "expected_sha256": "d54b76bbaa7ab5e3655d95ccd0dd7be3a635b3ae8f24b22aea14f06641c5d76a",
+    "name": "big_int_2_53",
+    "params_json": "{\"n\":9007199254740992}"
+  },
+  {
+    "expected_sha256": "f81d4e7860d954d5ad9242387fdd28822d5ebb809416cef607e01d76eeaf37ef",
+    "name": "big_int_2_53_plus_1",
+    "params_json": "{\"n\":9007199254740993}"
+  },
+  {
+    "expected_sha256": "6e1b3f556c0e0e0b414b3f21ca3fd5519de02ffb90ba6e66e8bc85a5537ac304",
+    "name": "big_int_u64_max",
+    "params_json": "{\"n\":18446744073709551615}"
+  },
+  {
+    "expected_sha256": "47dd4ccb8429c091b51197c4f230bfafb6439232456278ecca1f6a15c43333e1",
+    "name": "big_int_i64_min",
+    "params_json": "{\"n\":-9223372036854775808}"
+  },
+  {
+    "expected_sha256": "5ac64a7cb3545f1d8e1c8936d729b4f0f8ac994e26d7dd2edb0749ef16ca0b17",
+    "name": "big_int_nested",
+    "params_json": "{\"a\":[{\"b\":9007199254740993}]}"
+  },
+  {
+    "expected_sha256": "45a315a2be6aaba8710b85afd31f1158d29ecaa859c70c453a14a4ee3a802f9e",
+    "name": "float_integral",
+    "params_json": "{\"x\":1.0}"
+  },
+  {
+    "expected_sha256": "2c4bb0da3016d24e2b32eb4623249f7dd69727dc9ea9dbe5ab35fb31bcedcdc0",
+    "name": "float_neg_zero",
+    "params_json": "{\"x\":-0.0}"
+  },
+  {
+    "expected_sha256": "ee44ab97a05eb3e39f058ebf9580e6c2539da163b44c2e95fdd45fdbbc0a91b2",
+    "name": "float_exp",
+    "params_json": "{\"x\":1e2}"
+  },
+  {
+    "expected_sha256": "26d092e2aecd31a9f934daa9029220d9e0067bd7a57d6f50069228ee8da4cfa1",
+    "name": "float_frac",
+    "params_json": "{\"x\":0.1}"
+  },
+  {
+    "expected_sha256": "7ef814e148712b6834e8db3b4cc4aa9459f3ca81e09f3c65fe96f03e15f7b370",
+    "name": "float_small",
+    "params_json": "{\"x\":1e-7}"
+  },
+  {
+    "expected_sha256": "d939db12270c0b83d0285e0bc874eea2ec26e37e9482bf69ec19c7a49ab0531a",
+    "name": "float_large",
+    "params_json": "{\"x\":1.5e300}"
+  },
+  {
+    "expected_sha256": "8cd232084d49426d9ee703a5b6c863c7addf9576a331f48b68a16816ebcdbaf1",
+    "name": "unicode_literal",
+    "params_json": "{\"k\":\"é\"}"
+  },
+  {
+    "expected_sha256": "ccaf2723613a450475008a4d8408cfe6ca945cfb08b89469ce4fc0862a265ab3",
+    "name": "unicode_nfd",
+    "params_json": "{\"k\":\"é\"}"
+  },
+  {
+    "expected_sha256": "036085d703d1d3c42117dce0b32b826e5e40f071d97a74987b5aea5c98124725",
+    "name": "escapes",
+    "params_json": "{\"k\":\"a\\\"b\\\\c\\n\\u0001\"}"
+  }
+]

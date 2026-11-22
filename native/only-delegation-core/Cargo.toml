@@ -1,0 +1,10 @@
+[package]
+name = "only-delegation-core"
+version = "0.1.0"
+edition = "2021"
+description = "Pure, integer-only, no_std depth/expiry decision core of dgv-gate's /delegate"
+
+[dependencies]
+
+[dev-dependencies]
+proptest = "1"

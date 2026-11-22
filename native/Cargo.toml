@@ -13,5 +13,7 @@ members = [
     "only-proxy",
     "only-heal",
     "only-lang-ir",
+    "only-quorum-core",
+    "only-delegation-core",
 ]
 resolver = "2"

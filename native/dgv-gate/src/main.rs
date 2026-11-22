@@ -16,6 +16,8 @@
 //!   GET  /revocations      — list revocations
 //!   POST /tenant/:tenant_id/policies — store tenant-specific policy
 
+use only_quorum_core as qcore;
+use only_delegation_core as dcore;
 use axum::{
     extract::{Json, Path, Query, State},
     http::{HeaderMap, StatusCode},
@@ -105,6 +107,34 @@ static START_UNIX_MS: std::sync::OnceLock<i64> = std::sync::OnceLock::new();
 /// solely by this gate (see `/verify/:run_id`), never independently
 /// reconstructed by an external signer, so its format can change freely
 /// without a wire-protocol break.
+/// Largest integer magnitude that survives RFC 8785's double-based number
+/// formatting exactly (2^53 - 1).
+const JCS_MAX_SAFE_INT: u64 = 9_007_199_254_740_991;
+
+/// RFC 8785 serializes every number through an IEEE-754 double, so integers
+/// whose magnitude exceeds 2^53-1 would collide with their neighbours
+/// (`2^53` and `2^53+1` share one digest). Before canonicalizing, replace any
+/// such integer with the tagged object `{"$dgv_int":"<exact decimal>"}`.
+/// Safe integers, floats and everything else are untouched, so digests for
+/// ordinary payloads are unchanged. Mirrored by `scripts/verify_decision_chain.py`.
+fn exact_big_ints(v: &Value) -> Value {
+    match v {
+        Value::Number(n) => {
+            let big = if let Some(u) = n.as_u64() {
+                u > JCS_MAX_SAFE_INT
+            } else if let Some(i) = n.as_i64() {
+                i.unsigned_abs() > JCS_MAX_SAFE_INT
+            } else {
+                false
+            };
+            if big { json!({"$dgv_int": n.to_string()}) } else { v.clone() }
+        }
+        Value::Array(a) => Value::Array(a.iter().map(exact_big_ints).collect()),
+        Value::Object(o) => Value::Object(o.iter().map(|(k, x)| (k.clone(), exact_big_ints(x))).collect()),
+        _ => v.clone(),
+    }
+}
+
 fn compute_decision_hash(
     request_id: &str,
     gate_state: &str,
@@ -116,7 +146,7 @@ fn compute_decision_hash(
     let canonical_input = json!({
         "action": action,
         "gate_state": gate_state,
-        "params": params,
+        "params": exact_big_ints(params),
         "reason_codes": reason_codes,
         "request_id": request_id,
         "tool": tool,
@@ -2532,7 +2562,14 @@ async fn check_revocation_with_quorum(
     }
 
     if app.quorum_peers.is_empty() {
-        return QuorumOutcome::ConfirmedClean;
+        // No peers: the pure core still enforces quorum_size (fail-closed if > 1).
+        return match qcore::decide(false, &[], app.quorum_size) {
+            qcore::Outcome::ConfirmedClean => QuorumOutcome::ConfirmedClean,
+            _ => QuorumOutcome::PartitionFailure(format!(
+                "insufficient quorum: 1 clean vote out of {} required (no peers configured)",
+                app.quorum_size
+            )),
+        };
     }
 
     let nonce = hex::encode(rand::random::<[u8; 16]>());
@@ -2559,7 +2596,8 @@ async fn check_revocation_with_quorum(
     }
 
     let results = futures::future::join_all(tasks).await;
-    let mut clean_votes = 1usize;
+    let mut votes: Vec<qcore::Vote> = Vec::with_capacity(app.quorum_peers.len());
+    let mut revoked_rec: Option<RevocationRecord> = None;
 
     for res in results {
         if let Ok(resp) = res {
@@ -2588,12 +2626,16 @@ async fn check_revocation_with_quorum(
                                                 || app.gossip_keys.iter().any(|k| k == &vk);
                                             if is_trusted && vk.verify(canonical.as_bytes(), &sig).is_ok() {
                                                 if qc.status == "revoked" {
+                                                    // A valid signed "revoked" always denies, with or
+                                                    // without a record (fail closed).
+                                                    votes.push(qcore::Vote::Revoked);
                                                     if let Some(rec) = qc.record {
                                                         let _ = app.storage.store_revocation(rec.clone()).await;
-                                                        return QuorumOutcome::Revoked(rec);
+                                                        revoked_rec = Some(rec);
+                                                        break;
                                                     }
                                                 } else if qc.status == "clean" {
-                                                    clean_votes += 1;
+                                                    votes.push(qcore::Vote::Clean);
                                                 }
                                             }
                                         }
@@ -2607,13 +2649,23 @@ async fn check_revocation_with_quorum(
         }
     }
 
-    if clean_votes >= app.quorum_size {
-        QuorumOutcome::ConfirmedClean
-    } else {
-        QuorumOutcome::PartitionFailure(format!(
+    // Peers that produced no valid vote abstain; the pure core never needs them.
+    while votes.len() < app.quorum_peers.len() && !votes.contains(&qcore::Vote::Revoked) {
+        votes.push(qcore::Vote::Abstain);
+    }
+    match qcore::decide(false, &votes, app.quorum_size) {
+        qcore::Outcome::ConfirmedClean => QuorumOutcome::ConfirmedClean,
+        qcore::Outcome::Revoked => match revoked_rec {
+            Some(rec) => QuorumOutcome::Revoked(rec),
+            None => QuorumOutcome::PartitionFailure(
+                "peer reported revocation without a record; denying (fail closed)".to_string(),
+            ),
+        },
+        qcore::Outcome::PartitionFailure => QuorumOutcome::PartitionFailure(format!(
             "insufficient quorum: received {} clean votes out of {} required",
-            clean_votes, app.quorum_size
-        ))
+            qcore::clean_votes(&votes),
+            app.quorum_size
+        )),
     }
 }
 
@@ -3467,7 +3519,7 @@ async fn handle_delegate(
             Json(json!({"error": "parent_token_consumed"})),
         );
     }
-    if parent.expires_unix_ms <= now {
+    if !dcore::parent_live(parent.expires_unix_ms, now) {
         return (
             StatusCode::GONE,
             Json(json!({"error": "parent_token_expired"})),
@@ -3486,8 +3538,9 @@ async fn handle_delegate(
     }
 
     // 3. Depth bound — authority decays with each hop
-    let child_depth = parent.delegation_depth + 1;
-    if child_depth > app.max_delegation_depth {
+    let child_depth = match dcore::child_depth(parent.delegation_depth, app.max_delegation_depth) {
+        Some(d) => d,
+        None => {
         return (
             StatusCode::FORBIDDEN,
             Json(json!({
@@ -3496,7 +3549,8 @@ async fn handle_delegate(
                 "parent_depth": parent.delegation_depth,
             })),
         );
-    }
+        }
+    };
 
     // 4. Recover the parent's raw params for the subset check
     let parent_decision = match app.storage.get_decision_by_request_id(&parent.request_id).await {
@@ -3529,8 +3583,9 @@ async fn handle_delegate(
     let child_params_hash = compute_params_hash(&child_params);
 
     // 6. Child expiry can only tighten the parent's
-    let child_expiry = req.expires_unix_ms.unwrap_or(parent.expires_unix_ms);
-    if child_expiry > parent.expires_unix_ms {
+    let child_expiry = match dcore::child_expiry(parent.expires_unix_ms, req.expires_unix_ms, now) {
+        dcore::Expiry::Ok(e) => e,
+        dcore::Expiry::ExceedsParent => {
         return (
             StatusCode::FORBIDDEN,
             Json(json!({
@@ -3538,13 +3593,14 @@ async fn handle_delegate(
                 "parent_expires_unix_ms": parent.expires_unix_ms,
             })),
         );
-    }
-    if child_expiry <= now {
+        }
+        dcore::Expiry::InPast => {
         return (
             StatusCode::GONE,
             Json(json!({"error": "child_expiry_in_past"})),
         );
-    }
+        }
+    };
 
     // 7. Delegator must hold a registered, active key — verify the signature
     let delegator_key = match app.storage.get_agent_key(&req.delegator_id).await {
@@ -5130,5 +5186,342 @@ async fn shutdown_signal() {
     tokio::select! {
         _ = ctrl_c => { log_event("info", "shutdown_initiated", json!({"signal": "SIGINT"})); },
         _ = terminate => { log_event("info", "shutdown_initiated", json!({"signal": "SIGTERM"})); },
+    }
+}
+
+#[cfg(test)]
+mod adversarial_semantics {
+    use super::*;
+
+    // ── json_subset: delegation scope narrowing ──────────────────────────────
+
+    #[test]
+    fn semantic_deny_wildcard_scope_widening_in_delegation() {
+        // "*" is an opaque string, never a wildcard: a child cannot claim it,
+        // and a parent "*" does not grant the child any specific value.
+        assert!(!json_subset(&json!({"to": "*"}), &json!({"to": "a@x.com"})));
+        assert!(!json_subset(&json!({"to": "a@x.com"}), &json!({"to": "*"})));
+        assert!(!json_subset(&json!({"to": ["*"]}), &json!({"to": ["a@x.com", "b@x.com"]})));
+        assert!(!json_subset(&json!({"to": ["a@x.com"]}), &json!({"to": ["*"]})));
+    }
+
+    #[test]
+    fn semantic_deny_path_traversal_resource_normalization() {
+        // Strings are compared byte-for-byte; no normalization that could
+        // make a widened path look equal to a narrow one.
+        let parent = json!({"path": "/data/reports/q1"});
+        for evil in ["/data/reports/../secrets", "/data/reports/q1/../../secrets",
+                     "/data/reports/./q1", "/data//reports/q1", "/data/reports/q1/",
+                     "/data/reports/%2e%2e/secrets", "/DATA/reports/q1"] {
+            assert!(!json_subset(&json!({"path": evil}), &parent), "accepted {evil}");
+        }
+        assert!(json_subset(&json!({"path": "/data/reports/q1"}), &parent));
+    }
+
+    #[test]
+    fn semantic_deny_case_fold_privilege_escalation_bypass() {
+        let parent = json!({"role": "reader", "scope": ["read"]});
+        assert!(!json_subset(&json!({"role": "Reader"}), &parent));
+        assert!(!json_subset(&json!({"role": "READER"}), &parent));
+        assert!(!json_subset(&json!({"scope": ["READ"]}), &parent));
+        // Unicode look-alikes (Kelvin sign U+212A, fullwidth) are different strings.
+        assert!(!json_subset(&json!({"role": "\u{FF52}eader"}), &parent));
+        assert!(!json_subset(&json!({"scope": ["rea\u{0064}\u{200B}"]}), &parent));
+    }
+
+    #[test]
+    fn json_subset_structural_edges_fail_closed() {
+        // adding a key, null-vs-missing, type confusion, number representation
+        assert!(!json_subset(&json!({"a":1,"extra":1}), &json!({"a":1})));
+        assert!(!json_subset(&json!({"a":null}), &json!({})));
+        assert!(!json_subset(&json!({"a":{}}), &json!({"a":[]})));
+        assert!(!json_subset(&json!([1]), &json!({"0":1})));
+        assert!(!json_subset(&json!({"n":1}), &json!({"n":1.0})));
+        assert!(!json_subset(&json!({"n":"1"}), &json!({"n":1})));
+        assert!(!json_subset(&json!({"b":true}), &json!({"b":"true"})));
+        // narrowing is allowed
+        assert!(json_subset(&json!({}), &json!({"a":1,"b":[1,2]})));
+        assert!(json_subset(&json!({"b":[]}), &json!({"a":1,"b":[1,2]})));
+        assert!(json_subset(&json!({"b":[2,2,1]}), &json!({"b":[1,2]})));
+    }
+
+    #[test]
+    fn json_subset_deep_nesting_terminates() {
+        let mut v = json!("leaf");
+        for _ in 0..100 { v = json!({"k": v}); }          // within serde_json's 128 parse limit
+        assert!(json_subset(&v, &v));
+        let mut w = json!("other");
+        for _ in 0..100 { w = json!({"k": w}); }
+        assert!(!json_subset(&w, &v));
+    }
+
+    // ── compute_decision_hash: canonicalization ──────────────────────────────
+
+    fn h(params: Value) -> String {
+        compute_decision_hash("r1", "ALLOW", &[], "t", "send", &params)
+    }
+
+    #[test]
+    fn psr001_nested_args_key_ordering_invariant() {
+        let a: Value = serde_json::from_str(r#"{"z":{"y":1,"x":[{"b":1,"a":2}]},"a":true}"#).unwrap();
+        let b: Value = serde_json::from_str(r#"{"a":true,"z":{"x":[{"a":2,"b":1}],"y":1}}"#).unwrap();
+        assert_eq!(h(a), h(b));
+    }
+
+    #[test]
+    fn psr001_array_order_and_reason_code_order_matter() {
+        assert_ne!(h(json!({"a":[1,2]})), h(json!({"a":[2,1]})));
+        let r1 = compute_decision_hash("r","DENY",&["a".into(),"b".into()],"t","x",&json!({}));
+        let r2 = compute_decision_hash("r","DENY",&["b".into(),"a".into()],"t","x",&json!({}));
+        assert_ne!(r1, r2);
+    }
+
+    #[test]
+    fn psr001_golden_digest_is_pinned() {
+        // Cross-implementation anchor: sha256 of the RFC 8785 string
+        // {"action":"send","gate_state":"ALLOW","params":{"a":"x","b":[1,2]},"reason_codes":[],"request_id":"r1","tool":"t"}
+        assert_eq!(h(json!({"b":[1,2],"a":"x"})),
+                   "9c0776f24efeb7a97c8a5ed1852722e90c30f6752b2f51882ccc398f7a7aee1e");
+    }
+
+    /// Distinct integers must never share a digest, including above 2^53.
+    #[test]
+    fn psr001_canonical_integers_above_2_pow_53_exact() {
+        let a = h(json!({"n": 9007199254740993u64}));   // 2^53 + 1
+        let b = h(json!({"n": 9007199254740992u64}));   // 2^53
+        assert_ne!(a, b, "2^53+1 collides with 2^53");
+        assert_ne!(h(json!({"n": u64::MAX})), h(json!({"n": u64::MAX - 1})));
+        assert_ne!(h(json!({"n": i64::MIN})), h(json!({"n": i64::MIN + 1})));
+        assert_ne!(h(json!({"n": [9007199254740993u64]})), h(json!({"n": [9007199254740992u64]})));
+        assert_ne!(h(json!({"n": {"m": -9007199254740993i64}})), h(json!({"n": {"m": -9007199254740992i64}})));
+    }
+
+    /// Safe integers keep their plain encoding (existing receipts stay
+    /// verifiable) and a big integer cannot alias a string of the same digits.
+    #[test]
+    fn psr001_safe_integers_unchanged_and_big_int_tag_cannot_alias() {
+        assert_ne!(h(json!({"n": 9007199254740991u64})), h(json!({"n": 9007199254740990u64})));
+        assert_ne!(h(json!({"n": -9007199254740991i64})), h(json!({"n": -9007199254740990i64})));
+        assert_ne!(h(json!({"n": 9007199254740993u64})), h(json!({"n": "9007199254740993"})));
+        assert_eq!(exact_big_ints(&json!({"n": 9007199254740991u64})), json!({"n": 9007199254740991u64}));
+        assert_eq!(exact_big_ints(&json!({"n": 9007199254740992u64})), json!({"n": {"$dgv_int": "9007199254740992"}}));
+        assert_eq!(exact_big_ints(&json!({"n": 1.5})), json!({"n": 1.5}));
+    }
+
+    /// Shared cross-implementation vectors: the Rust gate is the source of
+    /// truth. `scripts/decision_hash_vectors.json` is checked here and by
+    /// `test_decision_hash_vectors.py` against the Python offline verifier.
+    /// Regenerate with DGV_WRITE_VECTORS=1.
+    #[test]
+    fn psr001_cross_impl_vectors_match_file() {
+        let cases: Vec<(&str, &str)> = vec![
+            ("plain", r#"{"b":[1,2],"a":"x"}"#),
+            ("nested_key_order", r#"{"z":{"y":1,"x":[{"b":1,"a":2}]},"a":true}"#),
+            ("safe_int_max", r#"{"n":9007199254740991}"#),
+            ("safe_int_min", r#"{"n":-9007199254740991}"#),
+            ("big_int_2_53", r#"{"n":9007199254740992}"#),
+            ("big_int_2_53_plus_1", r#"{"n":9007199254740993}"#),
+            ("big_int_u64_max", r#"{"n":18446744073709551615}"#),
+            ("big_int_i64_min", r#"{"n":-9223372036854775808}"#),
+            ("big_int_nested", r#"{"a":[{"b":9007199254740993}]}"#),
+            ("float_integral", r#"{"x":1.0}"#),
+            ("float_neg_zero", r#"{"x":-0.0}"#),
+            ("float_exp", r#"{"x":1e2}"#),
+            ("float_frac", r#"{"x":0.1}"#),
+            ("float_small", r#"{"x":1e-7}"#),
+            ("float_large", r#"{"x":1.5e300}"#),
+            ("unicode_literal", "{\"k\":\"\u{e9}\"}"),
+            ("unicode_nfd", "{\"k\":\"e\u{301}\"}"),
+            ("escapes", r#"{"k":"a\"b\\c\n\u0001"}"#),
+        ];
+        let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../scripts/decision_hash_vectors.json");
+        let compute = |src: &str| {
+            let params: Value = serde_json::from_str(src).unwrap();
+            compute_decision_hash("r1", "ALLOW", &["rc".to_string()], "t", "send", &params)
+        };
+        if std::env::var("DGV_WRITE_VECTORS").is_ok() {
+            let arr: Vec<Value> = cases.iter().map(|(n, src)| json!({
+                "name": n, "params_json": src, "expected_sha256": compute(src)})).collect();
+            std::fs::write(path, serde_json::to_string_pretty(&arr).unwrap() + "\n").unwrap();
+            return;
+        }
+        let file: Vec<Value> = serde_json::from_str(&std::fs::read_to_string(path).expect("vectors file")).unwrap();
+        assert_eq!(file.len(), cases.len());
+        for (v, (n, src)) in file.iter().zip(cases.iter()) {
+            assert_eq!(v["name"], *n);
+            assert_eq!(v["expected_sha256"].as_str().unwrap(), compute(src), "vector {n}");
+        }
+    }
+
+    #[test]
+    fn psr001_float_formatting_follows_rfc8785() {
+        // RFC 8785 serializes numbers like ECMAScript: 1.0 -> 1, -0.0 -> 0.
+        assert_eq!(h(serde_json::from_str(r#"{"x":1.0}"#).unwrap()), h(json!({"x":1})));
+        assert_eq!(h(serde_json::from_str(r#"{"x":-0.0}"#).unwrap()), h(json!({"x":0})));
+        assert_eq!(h(serde_json::from_str(r#"{"x":1e2}"#).unwrap()), h(json!({"x":100})));
+        assert_ne!(h(json!({"x":0.1})), h(json!({"x":0.2})));
+    }
+
+    #[test]
+    fn psr001_unicode_escaping_stability_and_no_normalization() {
+        // Escaped and literal forms parse to the same string -> same digest.
+        let lit: Value = serde_json::from_str("{\"k\":\"\u{e9}\"}").unwrap();
+        let esc: Value = serde_json::from_str(r#"{"k":"é"}"#).unwrap();
+        assert_eq!(h(lit), h(esc));
+        // NFC vs NFD are different strings and must NOT be merged by the hash.
+        assert_ne!(h(json!({"k":"\u{e9}"})), h(json!({"k":"e\u{301}"})));
+        // Control characters and quotes are escaped deterministically.
+        assert_eq!(h(json!({"k":"a\"b\\c\n\u{1}"})), h(json!({"k":"a\"b\\c\n\u{1}"})));
+        assert_ne!(h(json!({"k":"a\u{1}"})), h(json!({"k":"a\u{2}"})));
+    }
+
+    #[test]
+    fn semantic_deny_duplicate_claim_key_shadowing() {
+        // A body with duplicate keys is parsed last-wins by serde_json. The
+        // digest must be computed over exactly what the gate evaluated.
+        let dup: Value = serde_json::from_str(r#"{"to":"attacker@x.com","to":"a@x.com"}"#).unwrap();
+        assert_eq!(dup, json!({"to":"a@x.com"}));
+        assert_eq!(h(dup), h(json!({"to":"a@x.com"})));
+        assert_ne!(h(json!({"to":"attacker@x.com"})), h(json!({"to":"a@x.com"})));
+    }
+}
+
+/// Differential test: the gate's `json_subset` vs a Rust transcription of the Lean model
+/// `formal/lean/JsonSubsetModel.lean` (`subN`, fuel recursion, association-list objects).
+/// This checks agreement on random inputs; it does not prove the two equal.
+#[cfg(test)]
+mod json_subset_model_diff {
+    use super::json_subset;
+    use proptest::prelude::*;
+    use serde_json::{json, Map, Value};
+
+    /// Line-by-line transcription of `subN` in JsonSubsetModel.lean.
+    fn sub_n(n: usize, c: &Value, p: &Value) -> bool {
+        if n == 0 {
+            return false;
+        }
+        match (c, p) {
+            (Value::Null, Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::Number(a), Value::Number(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Array(c), Value::Array(p)) => {
+                c.iter().all(|x| p.iter().any(|y| sub_n(n - 1, x, y)))
+            }
+            (Value::Object(c), Value::Object(p)) => c.iter().all(|(k, v)| {
+                p.iter().any(|(k2, w)| k2 == k && sub_n(n - 1, v, w))
+            }),
+            _ => false,
+        }
+    }
+
+    fn depth(v: &Value) -> usize {
+        match v {
+            Value::Array(a) => 1 + a.iter().map(depth).max().unwrap_or(0),
+            Value::Object(o) => 1 + o.values().map(depth).max().unwrap_or(0),
+            _ => 1,
+        }
+    }
+
+    /// JSub := ∃ n, subN n c p; fuel depth(c)+1 is enough for a child of that depth.
+    fn model(c: &Value, p: &Value) -> bool {
+        sub_n(depth(c) + 1, c, p)
+    }
+
+    fn scalar() -> impl Strategy<Value = Value> {
+        prop_oneof![
+            Just(Value::Null),
+            any::<bool>().prop_map(Value::Bool),
+            (0i64..3).prop_map(|n| json!(n)),
+            Just(json!(1.0)),
+            Just(json!(0.5)),
+            "[a-c*]{0,2}".prop_map(Value::String),
+        ]
+    }
+
+    fn value() -> impl Strategy<Value = Value> {
+        scalar().prop_recursive(4, 24, 4, |inner| {
+            prop_oneof![
+                prop::collection::vec(inner.clone(), 0..4).prop_map(Value::Array),
+                prop::collection::vec(("[a-c]{1,2}", inner), 0..4).prop_map(|kv| {
+                    let mut m = Map::new();
+                    for (k, v) in kv { m.insert(k, v); }
+                    Value::Object(m)
+                }),
+            ]
+        })
+    }
+
+    /// Mutate a value into a plausible narrower/wider variant so positive cases are common.
+    fn nb(seed: &[u8], i: &mut usize) -> u8 {
+        let x = seed[*i % seed.len()];
+        *i += 1;
+        x
+    }
+
+    fn narrow(v: &Value, seed: &[u8], i: &mut usize) -> Value {
+        match v {
+            Value::Array(a) => {
+                let mut out = Vec::new();
+                for x in a {
+                    if nb(seed, i) % 3 != 0 { out.push(narrow(x, seed, i)); }
+                }
+                Value::Array(out)
+            }
+            Value::Object(o) => {
+                let mut m = Map::new();
+                for (k, x) in o {
+                    if nb(seed, i) % 3 != 0 { m.insert(k.clone(), narrow(x, seed, i)); }
+                }
+                if nb(seed, i) % 7 == 0 { m.insert("zz".into(), json!(1)); }
+                Value::Object(m)
+            }
+            other => if nb(seed, i) % 11 == 0 { json!("*") } else { other.clone() },
+        }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(20000))]
+
+        #[test]
+        fn gate_matches_model_random_pairs(c in value(), p in value()) {
+            prop_assert_eq!(json_subset(&c, &p), model(&c, &p), "c={} p={}", c, p);
+        }
+
+        #[test]
+        fn gate_matches_model_derived_pairs(p in value(), seed in prop::collection::vec(any::<u8>(), 1..64)) {
+            let c = narrow(&p, &seed, &mut 0);
+            prop_assert_eq!(json_subset(&c, &p), model(&c, &p), "c={} p={}", c, p);
+            // reflexivity (jsub_refl) and the reverse direction
+            prop_assert!(json_subset(&p, &p));
+            prop_assert_eq!(json_subset(&p, &c), model(&p, &c));
+        }
+
+        /// jsub_trans on the real implementation.
+        #[test]
+        fn gate_is_transitive(p in value(), s1 in prop::collection::vec(any::<u8>(), 1..64),
+                              s2 in prop::collection::vec(any::<u8>(), 1..64)) {
+            let b = narrow(&p, &s1, &mut 0);
+            let c = narrow(&b, &s2, &mut 0);
+            if json_subset(&b, &p) && json_subset(&c, &b) {
+                prop_assert!(json_subset(&c, &p));
+            }
+        }
+    }
+
+    #[test]
+    fn positive_cases_are_well_represented() {
+        // guard against a vacuous test: derived pairs must accept a healthy share
+        use proptest::strategy::ValueTree;
+        use proptest::test_runner::TestRunner;
+        let mut r = TestRunner::default();
+        let (mut yes, mut n) = (0, 0);
+        for _ in 0..500 {
+            let p = value().new_tree(&mut r).unwrap().current();
+            let c = narrow(&p, &[1, 2, 3, 4, 5], &mut 0);
+            n += 1;
+            if json_subset(&c, &p) { yes += 1; }
+        }
+        assert!(yes * 5 >= n, "only {yes}/{n} accepted");
     }
 }

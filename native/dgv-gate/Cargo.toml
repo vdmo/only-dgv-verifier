@@ -13,6 +13,8 @@ hex = "0.4"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 rand = "0.8"
 only-core = { path = "../only-core" }
+only-quorum-core = { path = "../only-quorum-core" }
+only-delegation-core = { path = "../only-delegation-core" }
 only-lang = { path = "../only-lang" }
 only-memory = { path = "../only-memory" }
 only-gate = { path = "../only-gate" }
@@ -25,3 +27,6 @@ jsonwebtoken = "9"
 reqwest = { version = "0.12", features = ["json", "stream"] }
 futures = "0.3"
 serde_jcs = "0.2"
+
+[dev-dependencies]
+proptest = "1"

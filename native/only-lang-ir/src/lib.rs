@@ -673,7 +673,11 @@ mod tests {
         let per_call_ns = elapsed.as_nanos() as u64 / iterations;
 
         println!("IR execution: {} ns/call ({} cycles)", per_call_ns, 6);
-        assert!(per_call_ns < 1000, "IR execution should be sub-microsecond, got {}ns", per_call_ns);
+        // The sub-microsecond claim is about optimized builds; unoptimized debug
+        // builds are several times slower and would fail this spuriously.
+        if !cfg!(debug_assertions) {
+            assert!(per_call_ns < 1000, "IR execution should be sub-microsecond, got {}ns", per_call_ns);
+        }
     }
 
     #[test]

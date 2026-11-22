@@ -397,14 +397,21 @@ def main():
                 "identity": {},
             },
         )
+        # With quorum_size > 1 and peers configured, an unconfirmed quorum is
+        # DEFER (AARM R4: pending more information), not DENY. Both are
+        # fail-closed: a signed receipt, "insufficient quorum" reason, and NO
+        # auth token. A DEFER additionally carries a pending_token to resolve.
+        t0_dec = part_t0_data.get("decision", {})
         if (
             st_part_t0 == 200
-            and part_t0_data.get("decision", {}).get("gate_state") == "DENY"
-            and "insufficient quorum" in str(part_t0_data.get("decision", {}).get("reason_codes", []))
-            and part_t0_data.get("decision", {}).get("auth_token") is None
+            and t0_dec.get("gate_state") in ("DENY", "DEFER")
+            and "insufficient quorum" in str(t0_dec.get("reason_codes", []))
+            and t0_dec.get("auth_token") is None
+            and part_t0_data.get("signature")
+            and (t0_dec.get("gate_state") == "DENY" or t0_dec.get("pending_token"))
         ):
             ok(
-                "Isolated G1 fails closed at T₀: produces signed DENY receipt and issues no token when quorum unreachable"
+                "Isolated G1 fails closed at T₀: signed DEFER/DENY receipt and no token when quorum unreachable"
             )
         else:
             bad("Partition fail-closed check at T₀", f"status={st_part_t0} {part_t0_data}")
