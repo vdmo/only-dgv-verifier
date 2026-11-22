@@ -44,13 +44,55 @@ except ImportError:
     sys.exit(2)
 
 
+JCS_MAX_SAFE_INT = 9007199254740991
+
+
+def _es6_number(f):
+    """ECMAScript Number::toString for a finite double (RFC 8785 sec. 3.2.2.3)."""
+    import math, re
+    if math.isnan(f) or math.isinf(f):
+        raise ValueError("non-finite number cannot be canonicalized")
+    if f == 0:
+        return "0"                       # also covers -0.0
+    if f == int(f) and abs(f) < 1e21:
+        return str(int(f))
+    r = repr(f)                          # shortest round-trip digits
+    m = re.fullmatch(r"(-?)(\d+(?:\.\d+)?)e([+-])(\d+)", r)
+    if m:                                # Python 'e-07' -> ES6 'e-7'
+        sign, mant, es, ed = m.groups()
+        r = f"{sign}{mant}e{es}{int(ed)}"
+    return r
+
+
+def _canon(value):
+    if isinstance(value, bool) or value is None:
+        return json.dumps(value)
+    if isinstance(value, int):
+        if abs(value) > JCS_MAX_SAFE_INT:
+            # mirror dgv-gate exact_big_ints: tagged object, exact decimal
+            return '{"$dgv_int":' + json.dumps(str(value)) + "}"
+        return str(value)
+    if isinstance(value, float):
+        return _es6_number(value)
+    if isinstance(value, str):
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, list):
+        return "[" + ",".join(_canon(v) for v in value) + "]"
+    if isinstance(value, dict):
+        # RFC 8785: keys sorted by UTF-16 code units
+        keys = sorted(value, key=lambda k: k.encode("utf-16-be"))
+        return "{" + ",".join(json.dumps(k, ensure_ascii=False) + ":" + _canon(value[k]) for k in keys) + "}"
+    raise TypeError(f"unsupported JSON type {type(value)}")
+
+
 def jcs_canonicalize(value):
-    """Minimal RFC 8785 (JCS) canonical JSON: sorted object keys, no
-    insignificant whitespace, recursively. Matches serde_jcs's behavior for
-    the JSON shapes dgv-gate signs (no non-finite floats, no exotic number
-    formatting beyond what json.dumps already produces for ints/simple
-    floats — sufficient for verifying dgv-gate's own output)."""
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    """RFC 8785 (JCS) canonical JSON matching dgv-gate's serde_jcs output:
+    sorted keys (UTF-16 order), ES6 number formatting (1.0 -> 1, -0.0 -> 0),
+    and — because JCS formats numbers as doubles — integers beyond +/-(2^53-1)
+    are replaced by {"$dgv_int":"<exact decimal>"} exactly as the gate does
+    (see exact_big_ints in dgv-gate/src/main.rs). Verified against the shared
+    vectors in scripts/decision_hash_vectors.json."""
+    return _canon(value)
 
 
 def compute_decision_hash(request_id, gate_state, reason_codes, tool, action, params):
