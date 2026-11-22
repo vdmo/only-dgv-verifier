@@ -1,389 +1,135 @@
 # only-dgv-verifier
 
-**Deterministic & Governance Verified (DGV) — v1.0.0**
+**Deterministic & Governance Verified (DGV)** — a specification, a test-card suite, and a reference authorization gate for AI agents.
 
-**Author:** [vdmo](https://github.com/vdmo)
+Author: [vdmo](https://github.com/vdmo)
 
-A certification specification and verification suite for AI systems, agent runtimes, and governance layers that want to make public claims about determinism, policy enforcement, controllability, auditability, refusal behavior, or related properties.
+DGV turns vague governance claims ("deterministic", "revocable", "auditable") into specific, reproducible checks. A system may only advertise a claim if it passed the published test card for that claim, at that benchmark version, in a stated execution mode.
 
-DGV converts vague governance language into explicit, reproducible evidence. It uses pass/fail tests where possible, and rubric-based scoring where exact-output testing is not sufficient. A claim may only be advertised if the system has passed the relevant published tests for the exact benchmark version.
-
----
-
-## What's In This Repository
-
-| Component | Description |
-|---|---|
-| `dgv-verifier` | Native Rust engine — evaluates state, mathematical scripts, and governance constraints. Generates verifiable JSON receipts with provenance signatures, explanation traces, and audit logs. |
-| `only-gate` | Native Rust engine — validates hardware/crypto constraints: ML-KEM-768 post-quantum key encapsulation, SHAKE-256 conformance, GPU TEE attestation, basis-freshness checks. |
-| `test_cards/` | 69 test cards (60 positive + 9 negative/adversarial/mutation/replay) covering 35 claim classes across all 7 SVRNOS governance layers. |
-| `evidence/` | Cryptographic evidence packages with SHA-256 content-hash receipts for every test card. Each includes `execution_mode`, `binary_checksum`, `build_provenance`, and `negative_test` fields. |
-| `dgv_runner.py` | Test runner — executes all cards against the native engines and generates evidence with execution mode, binary checksum, and build provenance metadata. |
-| `verify_registry.py` | Registry verifier — validates the public claims registry, recomputes receipts, enforces badge rules, checks cross-consistency (test card ↔ evidence, binary checksums, version matching, negative_test flags). |
-| `registry.json` | Public claims registry — append-only record of certified systems and their claims with execution-mode-qualified badges. Includes an example gold certification with NDA-gated audit metadata. |
-| `registry.schema.json` | JSON Schema (Draft 2020-12) for the public claims registry, including execution_mode, binary_checksum, and audit metadata. |
-| `spec.md` | The DGV Specification v1.0.0 — stable standard with change control, dispute resolution, badge enforcement, and execution mode separation. |
-| `TRUST_ROOT.md` | Trust model documentation — explains binary-only distribution rationale, NDA-gated source review paths (Attestation + Sandbox), and the full trust chain. |
-| `BUILD_PROVENANCE.md` | Build chain documentation — toolchain, dependencies, checksums, SLSA Level 2 provenance, GPG signing. |
-| `CHECKSUMS.txt` | SHA-256 checksums for verifier binaries (GPG-signed). |
-| `CHECKSUMS.txt.sig` | GPG detached signature for CHECKSUMS.txt (Ed25519). |
-| `RELEASE_SIGNING_KEY.asc` | Public GPG key for verifying release signatures. |
-| `RECEIPT_VERIFICATION.md` | Procedure for independently verifying evidence receipts. |
+The design rule throughout: **an untrusted proposer (an AI agent) plus a deterministic checker.** The checker's decisions are signed, hash-chained, and replayable. Where a property is machine-checked, this repo says so; where it is only tested, it says that too.
 
 ---
 
-## Objective Contract experiment (local, synthetic)
+## What is here
 
-This experiment implements deterministic checks for `prepare_quote`, not general intent understanding or a live CRM gate. It does not implement the proposed ONLY Lang authority commands. Website cards TC-070 through TC-089 are specifications, not evidence that those interpreter features or reproducible builds passed.
+| Part | Location | What it is |
+|---|---|---|
+| Specification | `spec.md`, `TRUST_ROOT.md`, `BUILD_PROVENANCE.md` | The DGV spec, trust model, and build provenance. |
+| Test cards | `test_cards/` | 89 cards (`DGV-TC-001` to `089`) across claim families, plus negative, mutation and replay cards. |
+| Runner and evidence | `dgv_runner.py`, `evidence/`, `check_passes.py` | Runs the cards against the native engines and writes receipts with SHA-256 hashes. |
+| Registry | `registry.json`, `verify_registry.py` | Public claims registry with badge rules, recomputed and checked by the verifier. |
+| Verifier binaries | `bin/` | Pre-compiled `dgv-verifier` and `only-gate`; checksums are GPG-signed (`CHECKSUMS.txt.sig`). |
+| **dgv-gate** | `native/dgv-gate` | Rust authorization gate: signed decisions, tokens, revocation with quorum, delegation, A2A envelopes. Source is in this repo. |
+| Cores | `native/only-quorum-core`, `native/only-delegation-core` | Small `no_std`, integer-only decision functions extracted from the gate so they can be proved. |
+| Formal work | `formal/tla`, `formal/alloy`, `formal/lean` | TLA+/Alloy models and Lean 4 proofs. See `formal/lean/README.md`. |
+| Gate test suites | `test_gate*.py`, `test_delegation*.py`, `test_revocation*.py`, `test_*quorum*.py`, ... | End-to-end tests that start real gate processes. |
+| Local experiments | `docs/EXPERIMENTS.md` | Objective-contract and revocation experiments (synthetic, local). |
 
-Run from this directory with Python 3.10+ in a virtual environment; the experiment uses only the standard library:
+---
 
-```bash
-python3 -m venv .venv
-.venv/bin/python -m unittest -v test_objective_contract
-.venv/bin/python dgv_runner.py --objective-experiment
-.venv/bin/python dgv_runner.py --objective-experiment --output evidence/my_objective_run.json
-```
+## Quick start
 
-`--output` creates a new file and refuses to overwrite existing evidence. The checked-in `evidence/objective_contract_experiment.json` contains deterministic fixtures, expected outcomes, all predicate results, complete replay inputs and hashes. The unit suite compares the saved report against a fresh run. These cases are separate from the numbered native DGV suite.
-
-To evaluate an independently prepared host request and replay its receipt:
-
-```bash
-.venv/bin/python dgv_runner.py --objective-request request.json --output receipt.json
-.venv/bin/python verify_receipt.py --objective-receipt receipt.json --objective-request request.json
-```
-
-The request has exactly four keys: `contract`, `proposal`, `context`, `now_ms`. `objective_experiment.base_request()` is the synthetic reference fixture; `objective_contract.py` defines the exact accepted fields. The host must obtain the contract review, reviewers, actor, policy version, revocation state, ledger, approvals and time independently of the proposing agent. Do not expose the entire request as an untrusted agent API payload. No credentials or identities are authenticated by this prototype; reviewer IDs in the fixtures are synthetic assertions.
-
-The contract fixes the customer, permitted services, currency, total budget, aggregate approval threshold, freshness windows, expiry and unresolved requirements. All money is non-negative integer minor units; there is no currency conversion. `source_instruction` is retained for human review, not interpreted by a model. The contract hash binds that review to every contract field. Above the aggregate threshold, transaction approval must bind both the contract hash and exact proposal hash. Any unknown field or unsupported schema is rejected, not silently ignored.
-
-A violated constraint returns `DENY`; missing or stale evidence, changed policy and declared ambiguity return `ESCALATE`. A known violation takes precedence over escalation. Neither result authorizes execution. `ALLOW` means the synthetic inputs satisfy this evaluator, not that a CRM action occurred. No tool callback or CRM write is performed.
-
-Receipts use the distinct `DGV-OBJECTIVE-EXPERIMENT-1` profile, not PSR-001 conformance. Canonicalization is compact sorted-key JSON, ASCII strings, safe integers (absolute value at most 2^53-1), booleans and null. Arrays retain order; duplicate keys, non-ASCII strings and floating-point values are rejected. This restricted profile is not advertised as a general RFC 8785 implementation. SHA-256 covers every receipt field except `receipt_hash`; hashes of contract, proposal, context and decision are also checked by re-derivation. A hash is not a digital signature.
-
-Replay without an independent request returns `UNVERIFIABLE` even if the content hash and decision match. Matching an independent request returns `VERIFIED_AGAINST_SUPPLIED_CONTEXT`, never a fresh execution authorization. If an attacker replaces both the receipt and the supposedly independent request, hashes cannot establish truth; protect the external reference. The verifier does not fetch URLs or run scripts from receipts.
-
-Live deployment still requires authenticated evidence adapters, a complete authoritative ledger, atomic check-and-reserve/write, revocation freshness guarantees, permission boundaries and independent review. A stale or incomplete ledger cannot establish aggregate safety. Historical receipts are not retroactively invalidated by a later revocation. No continuous lineage or general semantic alignment is claimed.
-
-## Revocation propagation experiment (two local gates, one SQLite authority)
-
-This experiment tests whether a revoked actor can still execute after revocation commits, using two local gate processes against one temporary SQLite authority store. It does **not** test network partitions, replicated consensus, or production-scale propagation latency. No CRM writes or external tool calls are performed.
-
-The key design choice: authority check, token consumption, and the synthetic destination write all happen inside one SQLite `BEGIN IMMEDIATE` transaction. A gate cannot authorize a write using a stale cached authority, because the check and the write commit together or fail together.
-
-Run from this directory with the virtual environment:
+Python 3.10+ and the pre-built binaries in `bin/` are enough to run the card suite.
 
 ```bash
-.venv/bin/python dgv_runner.py --revocation-experiment
-.venv/bin/python dgv_runner.py --revocation-experiment --race-trials 50 --output evidence/my_revocation_run.json
-.venv/bin/python -m unittest -v test_revocation
-```
-
-`--output` creates a new file and refuses to overwrite. The checked-in `evidence/revocation_experiment.json` contains 36 cases (12 sequential + 24 simultaneous revoke/write races), all predicate results, the full committed history snapshot, measurements and a report hash. The unit suite compares the saved report against a fresh run and checks tampering.
-
-To verify a saved report against an independently retained checkpoint:
-
-```bash
-.venv/bin/python verify_receipt.py --revocation-report evidence/revocation_experiment.json --expected-hash <report_hash>
-```
-
-Without `--expected-hash`, verification returns `UNVERIFIABLE` — the report hash alone cannot establish that the report was not wholesale replaced.
-
-### What the experiment demonstrated
-
-| Case | Result |
-|---|---|
-| Stale cached authority after committed revocation | **DENY** — execution check ordered after revocation commit |
-| Old token after re-grant | **DENY** — token version is stale |
-| Fresh token after re-grant | **ALLOW** — new version-bound token |
-| Token replay on other gate | **DENY** — one-use across gates |
-| Duplicate action with new token | **DENY** — action ID already committed |
-| Write committed before revocation | **ALLOW** — revocation is not retroactive |
-| Store timeout (locked database) | **DENY** — no cached-permission fallback |
-| Store recovery after timeout | **ALLOW** — failed attempt did not consume token |
-| Payload or destination substitution | **DENY** — token binding mismatch |
-| Concurrent token use (two gates) | Exactly one ALLOW, one DENY |
-| 24 simultaneous revoke/write races | All correctly ordered by transaction commit |
-
-All 24 race trials resolved as `revoke_before_check` — SQLite's `BEGIN IMMEDIATE` lock serializes concurrent transactions, so revocation always commits before the execution check can start. There is no stale-cache window when authority checks and writes share the same transaction.
-
-### What this does not prove
-
-- **No network partition:** the "unavailable store" case is a SQLite lock timeout, not a real network outage. Production requires fail-closed behavior when the authority service is unreachable.
-- **No replication or consensus:** one SQLite database, one writer at a time. Multi-region deployment needs consensus (Raft, Paxos, or a managed service) to maintain the same guarantee.
-- **No authenticated identities:** trusted local processes have direct database access. Production requires authenticated service roles and protected destination writes.
-- **No external exactly-once:** commit errors are unconfirmed — reconcile by action ID before retrying.
-- **No production SLA:** latency samples describe this run only.
-- **No signature:** the report hash is not a digital signature. An independent trusted checkpoint is needed to detect wholesale replacement.
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.8+
-- Pre-compiled binaries are included in `/bin` (no build required)
-
-### Run the Full Suite
-
-```bash
-python3 dgv_runner.py
-```
-
-This executes all 60 test cards against the native engines and generates fresh evidence packages in `/evidence/`.
-
-### Check Results
-
-```bash
-python3 check_passes.py
-```
-
-### Verify the Public Registry
-
-```bash
+python3 dgv_runner.py --dry-run     # list cards
+python3 dgv_runner.py               # run all cards, write evidence/
+python3 check_passes.py             # summarize results
 pip install jsonschema
-python3 verify_registry.py
+python3 verify_registry.py          # validate registry, recompute receipts
 ```
 
-This validates `registry.json` against the schema, recomputes every SHA-256 receipt, and enforces badge rules.
-
-### Run a Single Card
+One card or case:
 
 ```bash
 python3 dgv_runner.py --card DGV-TC-001
 python3 dgv_runner.py --case DGV-TC-001-01
 ```
 
-### Dry Run (List Cards Without Executing)
-
-```bash
-python3 dgv_runner.py --dry-run
-```
-
----
-
-## Docker (One-Command Verification)
+Reproducible container:
 
 ```bash
 docker build -t dgv-verifier .
 docker run --rm dgv-verifier
 ```
 
-This runs the full 69-card suite in a reproducible container and prints the pass/fail summary. See `Dockerfile` for substrate details.
+### Building and testing the Rust gate
 
----
-
-## Architecture
-
-```
-  Test Cards (60 JSON files)
-      │
-      ▼
-  dgv_runner.py (Python harness)
-      │
-      ├──▶ dgv-verifier (Rust) ──▶ JSON receipts
-      │    Core engine: equilibrium math, scripts, governance
-      │
-      └──▶ only-gate (Rust) ────▶ JSON receipts
-           Hardware/crypto: PQ keys, TEE attestation, freshness
-      │
-      ▼
-  Evidence Packages (JSON + SHA-256 receipts)
-      │
-      ▼
-  registry.json (Public Claims Registry)
-      │
-      ▼
-  verify_registry.py (Independent verification)
-```
-
-### Two-Engine Design
-
-1. **`dgv-verifier`** — The core engine. Evaluates mathematical scripts via `only-lang`, checks arithmetic equilibrium (Σ sᵢvᵢ = 0), intercepts unapproved commands, and generates verifiable JSON payloads with provenance signatures, explanation traces, and audit logs.
-
-2. **`only-gate`** — The hardware/crypto engine. Validates real-world constraints: ML-KEM-768 post-quantum key encapsulation, SHAKE-256 conformance, GPU TEE attestation reports, and basis-freshness checks for silent decay detection.
-
-Pre-compiled release binaries for both engines are in `/bin`. This allows running the entire verification suite without building the Rust source code.
-
----
-
-## The 69 Test Cards
-
-The suite covers 35 claim classes organized into 7 families mapped to the SVRNOS 7-Layer Governance Model, plus 9 negative/adversarial/mutation/replay test cards that prove the verifier correctly detects and rejects violations:
-
-| Family | SVRNOS Layer | Cards | Key Claims |
-|---|---|---|---|
-| Compute Integrity | L1: Compute Substrate | TC-017, 028, 034 | Hardware enclave binding, AI-ID registry, PQ key acceptance |
-| Component & Provenance | L2: Component & Provenance | TC-007, 009, 014, 016, 027, 031 | Provenance, token replay, watermarking, delegation, weight integrity, RAG corpus |
-| Routing & Boundary | L3: Routing & Boundary | TC-012, 022, 026, 033 | Adversarial resistance, double-spend, classification, PHI boundary |
-| Evidence Transport | L4: Evidence Transport | TC-006, 015, 030, 035 | Audit completeness, heartbeat, TRACE conformance, ZKP export |
-| Session & State | L5: Session & State | TC-008, 018, 029, 056, 059, 060 | Stability, spectral drift, model drift, sustained ambiguity, silent decay, persistent state |
-| Risk Interpretation | L6: Risk Interpretation | TC-001, 002, 004, 011, 013, 019, 025, 058 | Determinism, boundary, hierarchy, explanation, bias, repair, DPIA, correct-but-unauthorized |
-| Application Enforcement | L7: Application Enforcement | TC-003, 005, 010, 020, 021, 023, 024, 032, 057 | Policy, refusal, latency, revocation, multi-sig, escalation, legal hold, HITL, lawful continuation |
-| **Negative Tests** | Multiple | **TC-061, 062, 063, 064, 065** | Non-determinism detection, policy bypass detection, provenance forgery detection, receipt tampering detection, adversarial input rejection |
-| **Mutation Tests** | Multiple | **TC-066, 067, 068** | Mutated input detection, bit-flip corruption detection, weight mutation detection |
-| **Replay Tests** | L1: Authorization | **TC-069** | Replay attack detection |
-
-See `spec.md` Section 16.1 for the complete Layer Alignment Matrix with GER mappings.
-
----
-
-## Badge System
-
-Badges now include execution mode to prevent confusion between simulated, native, live, and audited verification:
-
-| Badge | Meaning | Requirements |
-|---|---|---|
-| **Unverified** | No claim being made | System may appear in registry for transparency |
-| **Verified:simulation** | Simulated enforcement pass | All mandatory cases passed in simulation mode + valid receipt |
-| **Verified:native** | Verifier binary pass | All mandatory cases passed against native binary + valid receipt |
-| **Verified:live** | Deployed system pass | All mandatory cases passed against production system + valid receipt |
-| **Gold:audited_live** | Independently audited | All verified requirements + independent audit record with NDA-gated source review |
-
-A `simulation` pass cannot be advertised as equivalent to a `native` or `live` pass. Badge rules are enforced by `verify_registry.py`. Any certification past its `expires_at` timestamp is automatically downgraded to `unverified`.
-
----
-
-## Trust Model
-
-The verifier engines are distributed as precompiled binaries. The source code is not public due to IP protection (PIR algorithms, patent-pending work). Trust is established through a four-layer defense-in-depth approach:
-
-1. **Deterministic execution** — same input always produces same output
-2. **Binary provenance** — SHA-256 checksums (GPG-signed with Ed25519), build documentation, SLSA Level 2 (see `BUILD_PROVENANCE.md`)
-3. **Execution chain in evidence** — every evidence package includes `binary_checksum` (SHA-256 of the verifier binary that produced it) and `build_provenance` (SLSA level, toolchain, target). The receipt hash covers these fields, closing the source → build → binary → evidence → registry chain.
-4. **Execution mode transparency** — every evidence package states how the test was run (simulation, native, live, audited_live)
-5. **NDA-gated source review** — third parties can review source under NDA (Attestation or Sandbox path) and issue signed attestations published in the registry
-
-For the full trust model, including NDA review paths (Attestation Review and Sandbox Review), see [`TRUST_ROOT.md`](TRUST_ROOT.md).
-
-For NDA-gated review requests: **trust@only.institute**
-
----
-
-## Claim Language Rules
-
-DGV explicitly rejects vague terms. A system may only use governance language backed by specific passed test cards.
-
-**Approved:**
-- *"Certified for deterministic refusal handling under DGV v1.0.0, Test Card DGV-TC-005."*
-
-**Disallowed (without specific test card backing):**
-- *"Safe."* / *"Aligned."* / *"Fully governed."* / *"Deterministic."* / *"Trustworthy."*
-
-See `spec.md` Section 12 for the full rules.
-
----
-
-## Regulatory Mappings
-
-DGV test cards map to real-world regulatory frameworks:
-
-| Framework | Relevant Test Cards | Mapping |
-|---|---|---|
-| **EU AI Act** (high-risk requirements) | TC-024, 025, 032 | Legal hold interlock, DPIA linkage, human oversight |
-| **NIST AI RMF** (risk management) | TC-001, 003, 005, 011 | Determinism, policy compliance, refusal, explainability |
-| **TRACE Profile** | TC-030 | GatewayClaim JWT conformance with mandatory modules |
-| **ISO 42001** (AI management) | TC-006, 007, 014 | Audit completeness, provenance, cryptographic watermarking |
-| **21 CFR Part 11** (GxP) | TC-006, 014, 030 | Audit trails, electronic signatures, traceability |
-| **GDPR** | TC-024, 025, 033 | Legal hold, DPIA, cross-agent PHI boundary |
-
-See `spec.md` Section 16 for the complete SVRNOS/GER alignment matrix.
-
----
-
-## CI/CD Integration
-
-### GitHub Actions
-
-```yaml
-name: DGV Verification
-on: [push, pull_request]
-jobs:
-  dgv:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      - run: pip install jsonschema
-      - run: python3 dgv_runner.py
-      - run: python3 verify_registry.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dgv-evidence
-          path: evidence/
-```
-
-### Pre-Commit Hook
+Requires a Rust toolchain; Postgres is needed only for the concurrent multi-instance test.
 
 ```bash
-#!/bin/bash
-python3 dgv_runner.py --card DGV-TC-001 && python3 dgv_runner.py --card DGV-TC-005
+cd native
+cargo test -p only-quorum-core -p only-delegation-core -p dgv-gate
+cargo build --release -p dgv-gate
 ```
 
----
-
-## Independent Verification
-
-Any third party can verify the results:
-
-1. **Reproduce**: Clone this repo and run `python3 dgv_runner.py` — the same 69 cards must pass.
-2. **Verify receipts**: Run `python3 verify_registry.py` — every SHA-256 receipt must recompute correctly.
-3. **Check the spec**: Read `spec.md` to understand what each claim means and what passing requires.
-4. **Inspect evidence**: Each file in `evidence/` contains the full test input, output, and cryptographic receipt.
-
-See `RECEIPT_VERIFICATION.md` for the detailed receipt verification procedure.
+The gate's end-to-end suites are Python scripts at the repo root (for example `python3 test_delegation_adversarial.py`, `python3 test_revocation_quorum.py`). They start gate processes on local ports. Some older scripts hard-code the author's checkout path and need it adjusted. A workspace-wide `cargo test` can fail on the optional `dgv-python` crate if your Python is newer than PyO3 supports; test the packages above directly.
 
 ---
 
-## LLM Prompt Testing
+## What is proved, and what is only tested
 
-Test Card 012 evaluates adversarial prompt injection resistance against a live LLM using the official `openai` SDK.
+This section is the honest status of the strongest claims.
 
-```bash
-OPENAI_API_KEY="sk-proj-YOUR_KEY_HERE" python3 dgv_llm_runner.py
-```
+**Machine-checked in Lean 4 (via Charon and Aeneas, standard axioms only, no `sorry`):**
+- The real Rust quorum `decide` function, for any number of votes and any quorum size: exact output, and "a confirmed-clean answer implies no vote was revoked."
+- A refinement from that function to the TLA+ `QuorumSaysClean` / `QuorumSaysRevoked` predicates for any node set, and the TLA+ safety invariants over all reachable states for any cluster size.
+- The delegation depth and expiry rules for all i64 inputs: no overflow, depth never exceeds the maximum, a child's expiry never exceeds its parent's, and chains cannot grow past the bound.
 
----
+**Modelled, not proved about the Rust:** delegation scope narrowing (`json_subset`) is a hand-written Lean model proved reflexive and transitive. A differential test compares the gate's real function against a transcription of the model on random inputs. That is agreement on tested inputs, not a proof.
 
-## Repository Structure
+**Tested only:** signatures, nonces, freshness and key checks, storage atomicity, networking, gossip liveness, receipts, and everything in the card suite.
 
-```
-only-dgv-verifier/
-├── bin/                    # Pre-compiled native binaries
-│   ├── dgv-verifier
-│   └── only-gate
-├── test_cards/             # 60 JSON test cards
-├── evidence/               # Cryptographic evidence packages
-├── registry.json           # Public claims registry
-├── registry.schema.json    # Registry JSON Schema (Draft 2020-12)
-├── verify_registry.py      # Registry verification tool
-├── dgv_runner.py           # Test runner
-├── dgv_llm_runner.py       # LLM prompt injection test runner
-├── check_passes.py         # Results summary
-├── spec.md                 # DGV Specification v1.0.0
-├── RECEIPT_VERIFICATION.md # Receipt verification procedure
-├── testcards.schema.json   # Test card JSON Schema
-├── Dockerfile              # Reproducible verification container
-├── requirements.txt        # Python dependencies
-└── release/                # Release packaging
-```
+**Not covered:** Ed25519 and SHA-256 security (assumed), partitions where a revocation sits only on unreachable nodes (the `NoRevAnywhereAtExec` property fails there by design, and the gate fails closed or defers instead), and properties with no formal model in the repo. The full list is in `formal/lean/README.md`.
+
+A passing card or a proof about one function does not make a whole system safe. Claims should be quoted narrowly, as in the claim rules below.
 
 ---
 
-## Author
+## Test cards and badges
 
-This project was authored by vdmo.
+Cards are grouped by claim family (compute integrity, provenance, routing and boundary, evidence transport, session and state, risk interpretation, application enforcement) with additional negative, mutation, replay, delegation, revocation and receipt cards. Each card defines inputs, expected outputs and the evidence required. `spec.md` Section 16 holds the layer alignment matrix.
+
+Badges carry the execution mode so simulated, native, live and audited passes are never confused:
+
+| Badge | Meaning |
+|---|---|
+| Unverified | No claim is being made. |
+| Verified:simulation | All mandatory cases passed in simulation, with a valid receipt. |
+| Verified:native | Passed against the native verifier binary. |
+| Verified:live | Passed against a deployed system. |
+| Gold:audited_live | Verified, plus an independent audit record with NDA-gated source review. |
+
+`verify_registry.py` enforces the badge rules, and expired certifications are downgraded automatically.
+
+### Claim language
+
+Approved: *"Certified for deterministic refusal handling under DGV v1.0.0, Test Card DGV-TC-005."*
+Not allowed without a specific passing card: "safe", "aligned", "fully governed", "deterministic", "trustworthy". See `spec.md` Section 12.
 
 ---
 
-## Versioning
+## Trust model
 
-This repository follows the DGV benchmark version (currently v1.0.0). See `spec.md` Section 13.1 for the change control policy and Section 14 for versioning rules.
+`dgv-verifier` and `only-gate` are distributed as pre-compiled binaries; their source is not public. Trust rests on deterministic execution, signed checksums and build provenance (`BUILD_PROVENANCE.md`), a `binary_checksum` recorded in every evidence package, execution-mode labels, and optional NDA-gated source review. Details are in [`TRUST_ROOT.md`](TRUST_ROOT.md). NDA review requests: trust@only.institute.
+
+The `dgv-gate` source is in `native/` of this repository (see `native/LICENSE` for terms) and is the code the Lean work extracts from.
 
 ---
 
-## License
+## Independent verification
 
-See repository for license details.
+1. Run `python3 dgv_runner.py`; the cards must pass.
+2. Run `python3 verify_registry.py`; every receipt must recompute.
+3. Follow `RECEIPT_VERIFICATION.md` to check a receipt by hand, or use `verify_receipt.py` and `scripts/verify_decision_chain.py` for gate decision chains. Decision hashes use RFC 8785 canonical JSON; integers above 2^53 are encoded exactly (tagged) so distinct values never share a hash, and shared vectors are in `scripts/decision_hash_vectors.json`.
+4. To check the proofs, see `formal/lean/README.md`. The Lean project currently needs a local Aeneas checkout (`formal/lean/lakefile.lean` has an absolute path to adjust).
+
+---
+
+## Other documents
+
+`A2A_TRANSPORT.md`, `AUDIT_PACKAGE.md`, `DEPLOYMENT.md`, `FORMAL_SOUNDNESS_PROOF.md`, `OWASP_AGENTIC_TOP10.md`, `REPRODUCIBILITY.md`, `BENCHMARK_AGT_VS_DGV.md`, `openapi.yaml`, and `docs/LIMITATIONS.md`.
+
+## Versioning and license
+
+Follows the DGV benchmark version (currently v1.0.0); see `spec.md` Sections 13 and 14. License: see the repository.
