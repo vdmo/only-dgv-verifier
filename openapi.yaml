@@ -713,7 +713,7 @@ paths:
                   description: hex-encoded Ed25519 public key (32 bytes)
                 enc_public_key_hex:
                   type: string
-                  description: optional hex-encoded X25519 public key (32 bytes) for ECDH-sealed A2A payloads (dgv-sealed-v1)
+                  description: optional hex-encoded X25519 public key (32 bytes) for ECDH-sealed A2A payloads (dgv-sealed-v3)
       responses:
         '200': {description: Key registered}
         '400': {description: Invalid public key}
@@ -804,7 +804,9 @@ paths:
     get:
       tags: [A2A]
       summary: Fetch undelivered envelopes
-      description: When JWT is configured, the verified sub must equal agent_id.
+      description: |
+        With JWT configured, the verified sub must equal agent_id. Without JWT this
+        returns 401 unless DGV_A2A_ALLOW_UNAUTHENTICATED=1 (development only).
       operationId: a2aInbox
       parameters:
         - name: agent_id
@@ -831,6 +833,8 @@ paths:
     post:
       tags: [A2A]
       summary: Acknowledge envelope delivery
+      description: |
+        Only the envelope's recipient can acknowledge it. Authentication as for the inbox.
       operationId: a2aAck
       parameters:
         - name: envelope_id
@@ -848,7 +852,10 @@ paths:
                 agent_id: {type: string}
       responses:
         '200': {description: Marked delivered}
-        '409': {description: Already delivered or not found}
+        '400': {description: agent_id missing}
+        '401': {description: JWT required}
+        '403': {description: JWT sub mismatch}
+        '409': {description: 'Already delivered, not found, or not addressed to agent_id'}
 
   /delegate:
     post:
@@ -1392,7 +1399,7 @@ components:
           description: |
             Where the ciphertext lives — "relay:<relay_url>|<queue_id>" or
             "direct:<url>". Opaque to the gate; delivered to the recipient
-            verbatim. See A2A_TRANSPORT.md (dgv-sealed-v1).
+            verbatim. See A2A_TRANSPORT.md (dgv-sealed-v3).
 
     A2aEnvelopeRecord:
       allOf:
