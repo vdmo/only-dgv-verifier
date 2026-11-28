@@ -44,6 +44,14 @@ enc_public_key_hex?}` — Ed25519 for envelope signatures, X25519 for ECDH.
 `GET /agents/keys/:agent_id` is public: agents resolve peer keys from the
 registry, never from in-band message data (prevents key-substitution).
 
+## Signed envelope and receipt
+
+The envelope and the gate's receipt are specified in `A2A_ENVELOPE_V2.md`. The
+sender's signature covers every field including `transport_ref`; the receipt
+covers the envelope hash, payload hash, decision, time and gate key ID, and can
+be verified offline with `dgv_a2a_v2.py`. `recv_sealed_a2a` also checks the
+receipt when given the gate's public key.
+
 ## Sealed payload — `dgv-sealed-v3`
 
 HPKE (RFC 9180), base mode, from the `cryptography` library (tested with
@@ -134,11 +142,12 @@ accepted limitation; rotate queue IDs if this matters).
 - **No forward secrecy against the recipient's key** — whoever obtains the
   recipient's X25519 private key can open the messages sealed to it.
 - **No independent security review** of this protocol.
-- **Gate receipts are narrow** — the delivery receipt signs the envelope,
-  sender and recipient IDs, not the payload hash or time.
-- **Envelope signing string** — fields are joined with `|` without escaping.
+- **Receipts show acceptance only** — not receipt or reading by the recipient;
+  refusals are not signed and receipts are not chained (see
+  `A2A_ENVELOPE_V2.md`).
 - **No sender anonymity from the gate**, and **no traffic-analysis resistance**.
 - **Queue correlation** — deterministic queue IDs are dictionary-guessable.
 
 Sealing is covered by `test_a2a_security.py`, inbox and ack authorization by
-`test_a2a_ack_authz.py`, and the gate + relay path by `test_a2a_transport.py`.
+`test_a2a_ack_authz.py`, envelopes, receipts and the offline verifier by
+`test_a2a_evidence.py`, and the gate + relay path by `test_a2a_transport.py`.

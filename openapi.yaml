@@ -768,12 +768,14 @@ paths:
       summary: Submit a signed agent-to-agent envelope
       description: |
         Delivers a signed envelope from one registered agent to another.
-        The gate verifies the sender's Ed25519 signature over the canonical
-        string `envelope_id|sender_id|recipient_id|payload_hash|nonce|sent_unix_ms|expires_unix_ms`,
-        checks expiry, clock skew, sender/recipient revocation and key status,
-        and rejects replays via envelope_id and (sender_id, nonce) uniqueness.
-        Payloads never transit the gate — only payload hashes. Returns a
-        gate-signed delivery receipt.
+        The gate verifies the sender's Ed25519 signature over the RFC 8785
+        canonical envelope (dgv-a2a-envelope-v2, see A2A_ENVELOPE_V2.md), which
+        covers transport_ref; enforces field limits, expiry, clock skew and a
+        maximum lifetime (DGV_A2A_MAX_LIFETIME_MS, default one hour); checks
+        sender/recipient revocation and key status; and rejects replays via
+        envelope_id and (sender_id, nonce) uniqueness. Payloads never transit
+        the gate — only payload hashes. Returns a signed receipt
+        (dgv-a2a-receipt-v2).
       operationId: a2aSend
       requestBody:
         required: true
@@ -791,8 +793,22 @@ paths:
                 properties:
                   accepted: {type: boolean}
                   envelope_id: {type: string}
-                  gate_receipt: {type: string}
+                  receipt:
+                    type: object
+                    description: the signed receipt body
+                    properties:
+                      decision: {type: string, enum: [accepted]}
+                      decided_unix_ms: {type: integer}
+                      envelope_hash: {type: string}
+                      envelope_id: {type: string}
+                      sender_id: {type: string}
+                      recipient_id: {type: string}
+                      payload_hash: {type: string}
+                      gate_key_id: {type: string}
+                  gate_receipt: {type: string, description: Ed25519 signature over the canonical receipt}
                   verifying_key: {type: string}
+        '400':
+          description: unsupported_envelope_version, invalid_envelope, lifetime_too_long or sent in the future
         '403':
           description: Invalid signature, unregistered/revoked sender or recipient
         '409':
@@ -1373,6 +1389,7 @@ components:
       type: object
       required: [envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms, expires_unix_ms, signature]
       properties:
+        version: {type: string, enum: [dgv-a2a-envelope-v2], description: required when sending}
         envelope_id:
           type: string
           description: Unique envelope ID — replay protection
@@ -1410,6 +1427,10 @@ components:
               type: string
             gate_receipt_signature:
               type: string
+            receipt_json:
+              type: string
+              nullable: true
+              description: the signed receipt body as JSON
             delivered:
               type: boolean
             delivered_unix_ms:

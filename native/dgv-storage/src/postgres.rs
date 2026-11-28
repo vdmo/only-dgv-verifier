@@ -165,6 +165,7 @@ impl PostgresStorage {
             "ALTER TABLE agent_keys ADD COLUMN IF NOT EXISTS enc_public_key_hex TEXT",
             "ALTER TABLE agent_keys ADD COLUMN IF NOT EXISTS pq_public_key_hex TEXT",
             "ALTER TABLE a2a_envelopes ADD COLUMN IF NOT EXISTS transport_ref TEXT",
+            "ALTER TABLE a2a_envelopes ADD COLUMN IF NOT EXISTS receipt_json TEXT",
             "ALTER TABLE tokens ADD COLUMN IF NOT EXISTS granted_to TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE tokens ADD COLUMN IF NOT EXISTS parent_token_id TEXT",
             "ALTER TABLE tokens ADD COLUMN IF NOT EXISTS delegation_depth BIGINT NOT NULL DEFAULT 0",
@@ -795,8 +796,8 @@ impl Storage for PostgresStorage {
             r#"INSERT INTO a2a_envelopes
                (envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms,
                 expires_unix_ms, sender_signature, gate_receipt_signature, transport_ref,
-                delivered, delivered_unix_ms)
-               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)"#,
+                delivered, delivered_unix_ms, receipt_json)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)"#,
         )
         .bind(&e.envelope_id)
         .bind(&e.sender_id)
@@ -810,6 +811,7 @@ impl Storage for PostgresStorage {
         .bind(&e.transport_ref)
         .bind(e.delivered)
         .bind(e.delivered_unix_ms)
+        .bind(&e.receipt_json)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -835,6 +837,7 @@ impl Storage for PostgresStorage {
                 sender_signature: r.get("sender_signature"),
                 gate_receipt_signature: r.get("gate_receipt_signature"),
                 transport_ref: r.get("transport_ref"),
+                receipt_json: r.get("receipt_json"),
                 delivered: r.get("delivered"),
                 delivered_unix_ms: r.get("delivered_unix_ms"),
             })

@@ -210,6 +210,7 @@ impl SqliteStorage {
             "ALTER TABLE agent_keys ADD COLUMN enc_public_key_hex TEXT",
             "ALTER TABLE agent_keys ADD COLUMN pq_public_key_hex TEXT",
             "ALTER TABLE a2a_envelopes ADD COLUMN transport_ref TEXT",
+            "ALTER TABLE a2a_envelopes ADD COLUMN receipt_json TEXT",
             "ALTER TABLE tokens ADD COLUMN granted_to TEXT NOT NULL DEFAULT ''",
             "ALTER TABLE tokens ADD COLUMN parent_token_id TEXT",
             "ALTER TABLE tokens ADD COLUMN delegation_depth INTEGER NOT NULL DEFAULT 0",
@@ -783,8 +784,8 @@ impl Storage for SqliteStorage {
             r#"INSERT INTO a2a_envelopes
                (envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms,
                 expires_unix_ms, sender_signature, gate_receipt_signature, transport_ref,
-                delivered, delivered_unix_ms)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+                delivered, delivered_unix_ms, receipt_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(&e.envelope_id)
         .bind(&e.sender_id)
@@ -798,6 +799,7 @@ impl Storage for SqliteStorage {
         .bind(&e.transport_ref)
         .bind(e.delivered)
         .bind(e.delivered_unix_ms)
+        .bind(&e.receipt_json)
         .execute(&self.pool)
         .await?;
         Ok(())
@@ -823,6 +825,7 @@ impl Storage for SqliteStorage {
                 sender_signature: r.get("sender_signature"),
                 gate_receipt_signature: r.get("gate_receipt_signature"),
                 transport_ref: r.get("transport_ref"),
+                receipt_json: r.get("receipt_json"),
                 delivered: r.get::<i64, _>("delivered") != 0,
                 delivered_unix_ms: r.get("delivered_unix_ms"),
             })

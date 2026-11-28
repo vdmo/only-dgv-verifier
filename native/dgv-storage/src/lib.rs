@@ -146,10 +146,12 @@ pub struct A2aEnvelopeRecord {
     pub nonce: String,
     pub sent_unix_ms: i64,
     pub expires_unix_ms: i64,
-    /// Sender's Ed25519 signature over the canonical envelope string
+    /// Sender's Ed25519 signature over the canonical envelope (dgv-a2a-envelope-v2)
     pub sender_signature: String,
-    /// Gate's signature over the delivery receipt
+    /// Gate's signature over the canonical receipt
     pub gate_receipt_signature: String,
+    /// The signed receipt body (dgv-a2a-receipt-v2) as JSON. None for rows stored before v2.
+    pub receipt_json: Option<String>,
     /// Where the ciphertext lives — e.g. "relay:<relay_url>|<queue_id>" or
     /// "direct:<url>". Opaque to the gate; set by the sender, read by the
     /// recipient's SDK. None = legacy out-of-band delivery.

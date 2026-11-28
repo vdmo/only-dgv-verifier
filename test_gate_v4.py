@@ -91,9 +91,15 @@ ED_RECIPIENT_PUB = ED_RECIPIENT.public_key().public_bytes(
     serialization.Encoding.Raw, serialization.PublicFormat.Raw).hex()
 
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import dgv_a2a_v2  # noqa: E402
+
+
 def sign_a2a(priv, envelope_id, sender_id, recipient_id, payload_hash, nonce, sent, expires):
-    canonical = f"{envelope_id}|{sender_id}|{recipient_id}|{payload_hash}|{nonce}|{sent}|{expires}"
-    return priv.sign(canonical.encode()).hex()
+    envelope = {"envelope_id": envelope_id, "sender_id": sender_id, "recipient_id": recipient_id,
+                "payload_hash": payload_hash, "nonce": nonce, "sent_unix_ms": sent,
+                "expires_unix_ms": expires, "transport_ref": None}
+    return priv.sign(dgv_a2a_v2.envelope_bytes(envelope)).hex()
 
 
 def post(path, body, headers=None, admin_key=None):
@@ -359,6 +365,7 @@ def main():
             sig = sign_a2a(ED_SENDER, "env-1", "agent-sender", "agent-recipient",
                            payload_hash, "nonce-1", sent, expires)
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-1", "sender_id": "agent-sender",
                 "recipient_id": "agent-recipient", "payload_hash": payload_hash,
                 "nonce": "nonce-1", "sent_unix_ms": sent, "expires_unix_ms": expires,
@@ -376,6 +383,7 @@ def main():
             sig = sign_a2a(ED_SENDER, "env-1", "agent-sender", "agent-recipient",
                            payload_hash, "nonce-1", sent, expires)
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-1", "sender_id": "agent-sender",
                 "recipient_id": "agent-recipient", "payload_hash": payload_hash,
                 "nonce": "nonce-1", "sent_unix_ms": sent, "expires_unix_ms": expires,
@@ -392,6 +400,7 @@ def main():
             sig = sign_a2a(ED_SENDER, "env-2", "agent-sender", "agent-recipient",
                            payload_hash, "nonce-1", sent, expires)
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-2", "sender_id": "agent-sender",
                 "recipient_id": "agent-recipient", "payload_hash": payload_hash,
                 "nonce": "nonce-1", "sent_unix_ms": sent, "expires_unix_ms": expires,
@@ -409,6 +418,7 @@ def main():
             # Tamper: change the payload hash after signing
             bad_hash = hashlib.sha256(b"evil").hexdigest()
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-3", "sender_id": "agent-sender",
                 "recipient_id": "agent-recipient", "payload_hash": bad_hash,
                 "nonce": "nonce-3", "sent_unix_ms": sent, "expires_unix_ms": expires,
@@ -426,6 +436,7 @@ def main():
             sig = sign_a2a(ED_RECIPIENT, "env-4", "agent-sender", "agent-recipient",
                            payload_hash, "nonce-4", sent, expires)
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-4", "sender_id": "agent-sender",
                 "recipient_id": "agent-recipient", "payload_hash": payload_hash,
                 "nonce": "nonce-4", "sent_unix_ms": sent, "expires_unix_ms": expires,
@@ -442,6 +453,7 @@ def main():
             sig = sign_a2a(ED_SENDER, "env-5", "agent-sender", "agent-recipient",
                            payload_hash, "nonce-5", sent, expires)
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-5", "sender_id": "agent-sender",
                 "recipient_id": "agent-recipient", "payload_hash": payload_hash,
                 "nonce": "nonce-5", "sent_unix_ms": sent, "expires_unix_ms": expires,
@@ -458,6 +470,7 @@ def main():
             sig = sign_a2a(ED_SENDER, "env-6", "agent-ghost", "agent-recipient",
                            payload_hash, "nonce-6", sent, expires)
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-6", "sender_id": "agent-ghost",
                 "recipient_id": "agent-recipient", "payload_hash": payload_hash,
                 "nonce": "nonce-6", "sent_unix_ms": sent, "expires_unix_ms": expires,
@@ -494,6 +507,7 @@ def main():
             sig = sign_a2a(ED_SENDER, "env-7", "agent-sender", "agent-recipient",
                            payload_hash, "nonce-7", sent, expires)
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-7", "sender_id": "agent-sender",
                 "recipient_id": "agent-recipient", "payload_hash": payload_hash,
                 "nonce": "nonce-7", "sent_unix_ms": sent, "expires_unix_ms": expires,
@@ -512,6 +526,7 @@ def main():
             sig = sign_a2a(ED_SENDER, "env-8", "agent-sender", "agent-recipient",
                            payload_hash, "nonce-8", sent, expires)
             code, resp = post("/a2a/send", {
+                "version": dgv_a2a_v2.ENVELOPE_DOMAIN,
                 "envelope_id": "env-8", "sender_id": "agent-sender",
                 "recipient_id": "agent-recipient", "payload_hash": payload_hash,
                 "nonce": "nonce-8", "sent_unix_ms": sent, "expires_unix_ms": expires,

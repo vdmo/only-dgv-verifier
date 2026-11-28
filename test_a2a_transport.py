@@ -39,7 +39,7 @@ from dgv_sdk import (
     sealed_payload_hash, relay_queue_id, relay_send, relay_recv,
     transport_ref_relay, parse_transport_ref,
     send_sealed_a2a, recv_sealed_a2a,
-    a2a_canonical_string, sign_a2a_envelope,
+    sign_a2a_envelope,
 )
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -220,17 +220,11 @@ def main():
         legit = seal_a2a_payload(a_enc["private_key_hex"],
                                  b_enc["public_key_hex"], eid3, 9, b"legit")
         ph_legit = sealed_payload_hash(legit)
-        sent_ms = int(time.time() * 1000)
-        exp_ms = sent_ms + 60000
-        nonce3 = str(_uuid.uuid4())
-        canon = a2a_canonical_string(eid3, "agent-a", "agent-b", ph_legit,
-                                     nonce3, sent_ms, exp_ms)
-        sig3 = Ed25519PrivateKey.from_private_bytes(
-            bytes.fromhex(a_sign_sk)).sign(canon.encode()).hex()
         qid = relay_queue_id("agent-b")
-        resp = client.a2a_send(eid3, "agent-a", "agent-b", ph_legit, nonce3,
-                               sent_ms, exp_ms, sig3,
-                               transport_ref=transport_ref_relay(RELAY_URL, qid))
+        resp = client.a2a_send(**sign_a2a_envelope(
+            a_sign_sk, eid3, "agent-a", "agent-b", b"", str(_uuid.uuid4()),
+            int(time.time() * 1000) + 60_000, payload_hash=ph_legit,
+            transport_ref=transport_ref_relay(RELAY_URL, qid)))
         evil = seal_a2a_payload(a_enc["private_key_hex"],
                                 b_enc["public_key_hex"], eid3, 9,
                                 b"EVIL transfer 9999")
