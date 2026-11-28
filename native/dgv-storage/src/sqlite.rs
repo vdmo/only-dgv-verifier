@@ -829,12 +829,13 @@ impl Storage for SqliteStorage {
             .collect())
     }
 
-    async fn mark_a2a_delivered(&self, envelope_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError> {
+    async fn mark_a2a_delivered(&self, envelope_id: &str, recipient_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError> {
         let result = sqlx::query(
-            "UPDATE a2a_envelopes SET delivered = 1, delivered_unix_ms = ? WHERE envelope_id = ? AND delivered = 0",
+            "UPDATE a2a_envelopes SET delivered = 1, delivered_unix_ms = ? WHERE envelope_id = ? AND recipient_id = ? AND delivered = 0",
         )
         .bind(delivered_unix_ms)
         .bind(envelope_id)
+        .bind(recipient_id)
         .execute(&self.pool)
         .await?;
         if result.rows_affected() == 0 {

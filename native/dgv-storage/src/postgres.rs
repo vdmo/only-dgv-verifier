@@ -841,12 +841,13 @@ impl Storage for PostgresStorage {
             .collect())
     }
 
-    async fn mark_a2a_delivered(&self, envelope_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError> {
+    async fn mark_a2a_delivered(&self, envelope_id: &str, recipient_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError> {
         let result = sqlx::query(
-            "UPDATE a2a_envelopes SET delivered = TRUE, delivered_unix_ms = $1 WHERE envelope_id = $2 AND delivered = FALSE",
+            "UPDATE a2a_envelopes SET delivered = TRUE, delivered_unix_ms = $1 WHERE envelope_id = $2 AND recipient_id = $3 AND delivered = FALSE",
         )
         .bind(delivered_unix_ms)
         .bind(envelope_id)
+        .bind(recipient_id)
         .execute(&self.pool)
         .await?;
         if result.rows_affected() == 0 {

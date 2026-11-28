@@ -1,4 +1,11 @@
-# A2A Sealed Transport — `dgv-sealed-v1`
+# A2A Sealed Transport — `dgv-sealed-v3`
+
+> **Security notice.** `dgv-sealed-v1` and `dgv-sealed-v2` are withdrawn.
+> v1 used the same key and nonce for both directions between two agents (and
+> again if a counter repeated), which exposes message contents. v2's
+> "post-quantum" layer added no post-quantum protection, and its forward
+> secrecy did not hold if the recipient's key was stolen. Treat anything sent
+> with v1 or v2 as potentially readable, and rotate any secrets it carried.
 
 The DGV stack splits agent-to-agent messaging into a **control plane** (this
 gate) and a **data plane** (any opaque transport — the reference one is
@@ -37,37 +44,41 @@ enc_public_key_hex?}` — Ed25519 for envelope signatures, X25519 for ECDH.
 `GET /agents/keys/:agent_id` is public: agents resolve peer keys from the
 registry, never from in-band message data (prevents key-substitution).
 
-## Sealed payload — `dgv-sealed-v1`
+## Sealed payload — `dgv-sealed-v3`
 
-Agent-side crypto (SDK helpers in `dgv_sdk.py`), mirroring
-`libonlystate::messages::envelope`:
+HPKE (RFC 9180), base mode, from the `cryptography` library (tested with
+50.0.2): DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, ChaCha20-Poly1305.
 
 ```
-shared_key = X25519(sender_enc_sk, recipient_enc_pk)
-enc_key    = SHA3-256("enc"   || shared_key || counter_be8)
-nonce      = SHA3-256("nonce" || counter_be8)[..12]
-ciphertext = ChaCha20Poly1305(enc_key, nonce, plaintext)
+LP(f1, f2, ...) = for each field: len(f) as 8 bytes big-endian || f
+info = LP("dgv-sealed-v3", sender_x25519_pk, recipient_x25519_pk,
+          envelope_id, counter_be8)
+ct   = HPKE-Seal(recipient_x25519_pk, info, plaintext)   # enc || ciphertext
 ```
 
-- `counter` is a per-(sender, recipient) monotonic value supplied by the
-  sender — every message gets a unique key+nonce without a handshake.
-- Static-static ECDH means the shared key is constant per pair; per-message
-  KDF gives unique AEAD keys. Post-quantum upgrade path: WOTS+ envelope
-  signatures from libonlystate (not wired here yet — Ed25519 only).
+- Each message uses a fresh ephemeral key, so keys and nonces do not repeat
+  even if `counter` does. `counter` is still carried for the relay.
+- **HPKE base mode does not authenticate the sender.** The recipient MUST verify
+  the sender's Ed25519 envelope signature (which covers `payload_hash`) against
+  the sender's registry key. `recv_sealed_a2a` does this before opening.
+- Old v1/v2 messages open only with `allow_legacy=True`.
 
 ## Hash binding
 
-The gate binds the authorized envelope to the ciphertext:
-
 ```
-payload_hash = SHA-256("dgv-sealed-v1" || "|" || envelope_id || "|"
-                       || counter_be8 || ciphertext)
+payload_hash = SHA-256(LP("dgv-sealed-v3", envelope_id, counter_be8, ct))
 ```
 
-Recipient MUST verify `sealed_payload_hash(received) == envelope.payload_hash`
-before opening. A swapped/tampered ciphertext fails this check even if it
-decrypts — the authorized content is the *specific* ciphertext, not "whatever
-arrives for this envelope."
+The recipient MUST check `sealed_payload_hash(received) == envelope.payload_hash`
+before opening. A swapped ciphertext fails this check.
+
+## Inbox and ack authorization
+
+`POST /a2a/ack/:envelope_id` only marks an envelope whose recipient equals the
+caller's `agent_id`. With JWT configured, `agent_id` must equal the verified
+subject. Without JWT, inbox and ack return 401 unless the gate is started with
+`DGV_A2A_ALLOW_UNAUTHENTICATED=1`, a development-only setting in which
+`agent_id` is self-declared and anyone who knows it can act as that agent.
 
 ## transport_ref
 
@@ -116,41 +127,18 @@ accepted limitation; rotate queue IDs if this matters).
 | Relay down | envelope stays authorized at gate; delivery retried by sender |
 | Gate down | fail-closed by default (see DGV_PARTITION_POLICY) |
 
-## Sealed v2 — forward secrecy + hybrid PQ (experimental)
+## What this does NOT provide
 
-`dgv-sealed-v2` (`dgv_sdk.seal_a2a_v2_payload` / `open_a2a_payload`) adds:
+- **No post-quantum protection** — neither encryption (X25519) nor signatures
+  (Ed25519).
+- **No forward secrecy against the recipient's key** — whoever obtains the
+  recipient's X25519 private key can open the messages sealed to it.
+- **No independent security review** of this protocol.
+- **Gate receipts are narrow** — the delivery receipt signs the envelope,
+  sender and recipient IDs, not the payload hash or time.
+- **Envelope signing string** — fields are joined with `|` without escaping.
+- **No sender anonymity from the gate**, and **no traffic-analysis resistance**.
+- **Queue correlation** — deterministic queue IDs are dictionary-guessable.
 
-- An **ephemeral X25519 ratchet key** per payload — static-key compromise
-  cannot decrypt previously sealed v2 ciphertexts (forward secrecy).
-- A **hybrid post-quantum key combiner** — PQ key material registered
-  alongside Ed25519/X25519 keys is combined into the AEAD key derivation,
-  so an attacker must break both the classical and PQ components.
-- `payload_hash` binds the exact v2 ephemeral key + ciphertext.
-- `open_a2a_payload` transparently opens both v1 and v2 payloads.
-
-Verified by `test_a2a_ratchet_pq.py` (10 checks: PQ key registration,
-seal/open, static-compromise resistance, tamper rejection, gate
-authorization + signed receipt, relay delivery, v1 compatibility).
-
-**Honest caveat:** the v2 hybrid construction is implemented and
-functionally tested but has NOT undergone an independent cryptographic
-design review. Do not describe it as "post-quantum secure" — "hybrid PQ
-experimental" is the accurate term. Ephemeral keys are authenticated via
-the sender's static signature; active-MITM resistance assumes the gate's
-key registry is honest.
-
-## What this does NOT provide (honest non-claims)
-
-- **No post-quantum signatures** — envelopes are Ed25519; libonlystate's WOTS+
-  exists but is not integrated in this path.
-- **No forward secrecy in v1** — v1 payloads use static-static X25519; old
-  ciphertext remains decryptable to anyone holding the old private key.
-  Use v2 for forward secrecy.
-- **No sender anonymity from the gate** — the gate necessarily knows
-  sender→recipient to authorize. Only the relay is identity-blind.
-- **No traffic-analysis resistance** — timing/size metadata is observable.
-- **Queue correlation** — deterministic queue IDs are dictionary-guessable
-  (see above).
-
-Verified by `test_a2a_transport.py` (15 checks against a live gate + live
-onlystate-relay binary) and `test_a2a_ratchet_pq.py` (10 checks).
+Sealing is covered by `test_a2a_security.py`, inbox and ack authorization by
+`test_a2a_ack_authz.py`, and the gate + relay path by `test_a2a_transport.py`.

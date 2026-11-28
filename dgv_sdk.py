@@ -585,21 +585,37 @@ def sign_a2a_envelope(
     }
 
 
-# ── Sealed A2A transport (dgv-sealed-v1) ─────────────────────────────────────
+# ── Sealed A2A transport (dgv-sealed-v3) ─────────────────────────────────────
 #
 # Data plane for A2A: the gate authorizes envelopes (control plane) while the
-# ciphertext travels a zero-knowledge relay (onlystate-relay). The gate sees
-# only SHA-256 hashes; the relay sees only opaque queue IDs. Crypto mirrors
-# libonlystate::messages::envelope: X25519 ECDH shared key, per-message key +
-# nonce derived via SHA3-256 from a monotonic counter, ChaCha20-Poly1305 AEAD.
+# ciphertext travels a relay (onlystate-relay). The gate sees only SHA-256
+# hashes; the relay sees only opaque queue IDs.
 #
-# payload_hash bound by the gate =
-#   SHA-256("dgv-sealed-v1" || "|" || envelope_id || "|" || counter_be8 || ciphertext)
+# Encryption is HPKE (RFC 9180), base mode, from the `cryptography` library:
+# DHKEM(X25519, HKDF-SHA256) / HKDF-SHA256 / ChaCha20-Poly1305. Every message
+# gets a fresh ephemeral key, so keys and nonces are not reused even if the
+# caller's counter repeats. `info` binds sender key, recipient key, envelope id
+# and counter.
+#
+# What it does NOT give:
+#   - sender authentication by itself: anyone can encrypt to a public key. The
+#     sender is authenticated by the Ed25519 envelope signature over
+#     payload_hash, which recv_sealed_a2a verifies.
+#   - forward secrecy against theft of the recipient's private key.
+#   - post-quantum security.
+#
+# dgv-sealed-v1 and -v2 can no longer be used to send: v1 reused key and nonce
+# between the two directions of a pair, and v2's "post-quantum" part added no
+# protection. Old messages open only with allow_legacy=True.
+#
+# payload_hash bound by the gate (v3) = SHA-256 over the length-prefixed fields
+#   ("dgv-sealed-v3", envelope_id, counter_be8, encapsulated_key || ciphertext)
 #
 # transport_ref format: "relay:<relay_base_url>|<queue_id>" or "direct:<url>".
 # Relay queue for a recipient = SHA-256("dgv-a2a-queue" || "|" || recipient_id).
 
-SEALED_VERSION = "dgv-sealed-v1"
+SEALED_VERSION = "dgv-sealed-v3"
+SEALED_V1_VERSION = "dgv-sealed-v1"
 SEALED_V2_VERSION = "dgv-sealed-v2"
 
 
@@ -633,6 +649,8 @@ def _x25519_shared(private_key_hex: str, peer_public_key_hex: str) -> bytes:
 
 
 def _kdf(shared: bytes, counter: int) -> "tuple[bytes, bytes]":
+    """Legacy v1/v2 derivation. For reading old messages only: with a constant
+    `shared` it repeats keys and nonces. Never use it to encrypt."""
     cb = counter.to_bytes(8, "big")
     return _sha3(b"enc" + shared + cb), _sha3(b"nonce" + cb)[:12]
 
@@ -658,93 +676,42 @@ def parse_transport_ref(ref: str) -> Dict[str, str]:
 
 
 def generate_pq_keypair() -> Dict[str, str]:
-    """Generate a post-quantum hybrid keypair (private_hex, public_hex).
-    Compatible with NIST FIPS 203 ML-KEM-768 seed/lattice key representations."""
-    import secrets
-    seed_sk = secrets.token_hex(64)
-    pk = _sha3(b"dgv-pq-ml-kem-768-vk|" + bytes.fromhex(seed_sk)).hex()
-    return {"private_key_hex": seed_sk, "public_key_hex": pk}
+    """Removed. The previous function did not create ML-KEM keys and the layer
+    built on it gave no post-quantum protection."""
+    raise NotImplementedError(
+        "No post-quantum encryption is implemented. The former dgv-sealed-v2 "
+        "'hybrid PQ' layer added no protection and has been removed.")
 
 
-def seal_a2a_v2_payload(
-    sender_enc_private_hex: str,
-    recipient_enc_public_hex: str,
-    envelope_id: str,
-    counter: int,
-    plaintext: bytes,
-    recipient_pq_public_hex: Optional[str] = None,
-) -> Dict[str, Any]:
-    """Seal a payload using dgv-sealed-v2:
-    - Ephemeral Diffie-Hellman Ratchet for forward secrecy: compromises of
-      static keys cannot decrypt past sessions because the ephemeral key is
-      destroyed after encryption.
-    - Post-Quantum Hybrid KEM: incorporates lattice/ML-KEM key encapsulation
-      so quantum adversaries cannot break confidentiality.
-    """
-    import base64
-    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-
-    # 1. Ephemeral key pair for forward secrecy
-    eph = generate_enc_keypair()
-    eph_sk, eph_pk = eph["private_key_hex"], eph["public_key_hex"]
-
-    # 2. Key agreements
-    static_shared = _x25519_shared(sender_enc_private_hex, recipient_enc_public_hex)
-    eph_shared = _x25519_shared(eph_sk, recipient_enc_public_hex)
-
-    # 3. Post-quantum hybrid combiner
-    if recipient_pq_public_hex:
-        pq_bytes = bytes.fromhex(recipient_pq_public_hex)
-        pq_ss = _sha3(b"dgv-pq-kem-ss|" + pq_bytes + eph_shared)
-    else:
-        pq_ss = b""
-
-    # 4. Master key derivation
-    master_shared = _sha3(b"dgv-sealed-v2|" + static_shared + b"|" + eph_shared + b"|" + pq_ss)
-    key, nonce = _kdf(master_shared, counter)
-
-    ct = ChaCha20Poly1305(key).encrypt(nonce, plaintext, None)
-    return {
-        "v": SEALED_V2_VERSION,
-        "envelope_id": envelope_id,
-        "counter": counter,
-        "eph_pk": eph_pk,
-        "pq_used": bool(recipient_pq_public_hex),
-        "ct": base64.b64encode(ct).decode(),
-    }
+def seal_a2a_v2_payload(*_args: Any, **_kwargs: Any) -> Dict[str, Any]:
+    """Removed: dgv-sealed-v2 can no longer be used to send."""
+    raise ValueError("dgv-sealed-v2 is withdrawn; use seal_a2a_payload (dgv-sealed-v3)")
 
 
-def open_a2a_v2_payload(
-    recipient_enc_private_hex: str,
-    sender_enc_public_hex: str,
-    sealed: Dict[str, Any],
-    recipient_pq_private_hex: Optional[str] = None,
-) -> bytes:
-    """Open a dgv-sealed-v2 payload using the ephemeral ratchet and post-quantum hybrid combiner."""
-    import base64
-    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+def _lp(*fields: bytes) -> bytes:
+    """Length-prefix each field so different field values never encode alike."""
+    return b"".join(len(f).to_bytes(8, "big") + f for f in fields)
 
-    if sealed.get("v") != SEALED_V2_VERSION:
-        raise ValueError(f"expected {SEALED_V2_VERSION}, got {sealed.get('v')}")
 
-    eph_pk = sealed.get("eph_pk")
-    if not eph_pk:
-        raise ValueError("dgv-sealed-v2 missing ephemeral public key (eph_pk)")
+def _hpke_suite():
+    try:
+        from cryptography.hazmat.primitives import hpke
+    except ImportError as exc:
+        raise ImportError(
+            "Sealed A2A needs `cryptography` with HPKE support "
+            "(tested with 50.0.2): pip install --upgrade cryptography") from exc
+    return hpke.Suite(hpke.KEM.X25519, hpke.KDF.HKDF_SHA256, hpke.AEAD.CHACHA20_POLY1305)
 
-    static_shared = _x25519_shared(recipient_enc_private_hex, sender_enc_public_hex)
-    eph_shared = _x25519_shared(recipient_enc_private_hex, eph_pk)
 
-    if sealed.get("pq_used") and recipient_pq_private_hex:
-        pq_bytes = _sha3(b"dgv-pq-ml-kem-768-vk|" + bytes.fromhex(recipient_pq_private_hex))
-        pq_ss = _sha3(b"dgv-pq-kem-ss|" + pq_bytes + eph_shared)
-    else:
-        pq_ss = b""
+def _x25519_public_bytes(private_key) -> bytes:
+    from cryptography.hazmat.primitives import serialization
+    return private_key.public_key().public_bytes(
+        serialization.Encoding.Raw, serialization.PublicFormat.Raw)
 
-    master_shared = _sha3(b"dgv-sealed-v2|" + static_shared + b"|" + eph_shared + b"|" + pq_ss)
-    key, nonce = _kdf(master_shared, int(sealed["counter"]))
 
-    ct = base64.b64decode(sealed["ct"])
-    return ChaCha20Poly1305(key).decrypt(nonce, ct, None)
+def _v3_info(sender_pub: bytes, recipient_pub: bytes, envelope_id: str, counter: int) -> bytes:
+    return _lp(SEALED_VERSION.encode(), sender_pub, recipient_pub,
+               envelope_id.encode(), counter.to_bytes(8, "big"))
 
 
 def seal_a2a_payload(
@@ -756,21 +723,23 @@ def seal_a2a_payload(
     recipient_pq_public_hex: Optional[str] = None,
     version: str = SEALED_VERSION,
 ) -> Dict[str, Any]:
-    """Seal a payload for `recipient`. Supports v1 and v2 (pass version=SEALED_V2_VERSION for forward secrecy & PQ)."""
-    if version == SEALED_V2_VERSION:
-        return seal_a2a_v2_payload(
-            sender_enc_private_hex,
-            recipient_enc_public_hex,
-            envelope_id,
-            counter,
-            plaintext,
-            recipient_pq_public_hex,
-        )
+    """Seal a payload for `recipient` with HPKE (dgv-sealed-v3).
+
+    `counter` is carried for the relay and bound into the message; secrecy no
+    longer depends on it being unique. This call does not authenticate the
+    sender: sign the envelope (see send_sealed_a2a)."""
+    if version != SEALED_VERSION:
+        raise ValueError(f"cannot seal with {version}: only {SEALED_VERSION} is supported")
+    if recipient_pq_public_hex is not None:
+        raise ValueError("post-quantum encryption is not implemented")
     import base64
-    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-    shared = _x25519_shared(sender_enc_private_hex, recipient_enc_public_hex)
-    key, nonce = _kdf(shared, counter)
-    ct = ChaCha20Poly1305(key).encrypt(nonce, plaintext, None)
+    from cryptography.hazmat.primitives.asymmetric.x25519 import (
+        X25519PrivateKey, X25519PublicKey)
+    sender = X25519PrivateKey.from_private_bytes(bytes.fromhex(sender_enc_private_hex))
+    recipient_pub = bytes.fromhex(recipient_enc_public_hex)
+    info = _v3_info(_x25519_public_bytes(sender), recipient_pub, envelope_id, counter)
+    ct = _hpke_suite().encrypt(
+        plaintext, X25519PublicKey.from_public_bytes(recipient_pub), info=info)
     return {
         "v": SEALED_VERSION,
         "envelope_id": envelope_id,
@@ -780,22 +749,44 @@ def seal_a2a_payload(
 
 
 def sealed_payload_hash(sealed: Dict[str, Any]) -> str:
-    """The payload_hash the gate binds to the envelope. Supports v1 and v2."""
+    """The payload_hash the gate binds to the envelope. Also computes the old
+    v1/v2 formulas so stored legacy messages can still be checked."""
     import base64
     import hashlib
-    v = sealed.get("v", SEALED_VERSION)
+    v = sealed.get("v")
     ct = base64.b64decode(sealed["ct"])
     counter = int(sealed["counter"]).to_bytes(8, "big")
+    eid = sealed["envelope_id"].encode()
+    if v == SEALED_VERSION:
+        return hashlib.sha256(_lp(v.encode(), eid, counter, ct)).hexdigest()
     if v == SEALED_V2_VERSION:
         eph = bytes.fromhex(sealed.get("eph_pk", ""))
         return hashlib.sha256(
-            SEALED_V2_VERSION.encode() + b"|" + sealed["envelope_id"].encode()
-            + b"|" + eph + b"|" + counter + ct
-        ).hexdigest()
-    return hashlib.sha256(
-        SEALED_VERSION.encode() + b"|" + sealed["envelope_id"].encode()
-        + b"|" + counter + ct
-    ).hexdigest()
+            v.encode() + b"|" + eid + b"|" + eph + b"|" + counter + ct).hexdigest()
+    if v == SEALED_V1_VERSION:
+        return hashlib.sha256(v.encode() + b"|" + eid + b"|" + counter + ct).hexdigest()
+    raise ValueError(f"unsupported sealed version: {v}")
+
+
+def _open_legacy(recipient_enc_private_hex: str, sender_enc_public_hex: str,
+                 sealed: Dict[str, Any], recipient_pq_private_hex: Optional[str]) -> bytes:
+    import base64
+    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
+    shared = _x25519_shared(recipient_enc_private_hex, sender_enc_public_hex)
+    if sealed["v"] == SEALED_V2_VERSION:
+        eph_pk = sealed.get("eph_pk")
+        if not eph_pk:
+            raise ValueError("dgv-sealed-v2 missing ephemeral public key (eph_pk)")
+        eph_shared = _x25519_shared(recipient_enc_private_hex, eph_pk)
+        pq_ss = b""
+        if sealed.get("pq_used"):
+            if not recipient_pq_private_hex:
+                raise ValueError("this old v2 message needs the old pq private value")
+            pq_pub = _sha3(b"dgv-pq-ml-kem-768-vk|" + bytes.fromhex(recipient_pq_private_hex))
+            pq_ss = _sha3(b"dgv-pq-kem-ss|" + pq_pub + eph_shared)
+        shared = _sha3(b"dgv-sealed-v2|" + shared + b"|" + eph_shared + b"|" + pq_ss)
+    key, nonce = _kdf(shared, int(sealed["counter"]))
+    return ChaCha20Poly1305(key).decrypt(nonce, base64.b64decode(sealed["ct"]), None)
 
 
 def open_a2a_payload(
@@ -803,21 +794,28 @@ def open_a2a_payload(
     sender_enc_public_hex: str,
     sealed: Dict[str, Any],
     recipient_pq_private_hex: Optional[str] = None,
+    allow_legacy: bool = False,
 ) -> bytes:
-    """Open a sealed payload (v1 or v2). Raises on AEAD failure (tamper or wrong keys)."""
+    """Open a sealed payload. Raises on tampering, wrong keys or changed context.
+
+    Success shows the payload was sealed for this recipient and context, NOT who
+    sealed it: verify the envelope signature too (recv_sealed_a2a does).
+    `allow_legacy=True` also reads old v1/v2 messages, whose confidentiality
+    should be assumed weak."""
     v = sealed.get("v")
-    if v == SEALED_V2_VERSION:
-        return open_a2a_v2_payload(
-            recipient_enc_private_hex, sender_enc_public_hex, sealed, recipient_pq_private_hex
-        )
+    if v in (SEALED_V1_VERSION, SEALED_V2_VERSION):
+        if not allow_legacy:
+            raise ValueError(f"{v} is withdrawn; pass allow_legacy=True to read an old message")
+        return _open_legacy(recipient_enc_private_hex, sender_enc_public_hex,
+                            sealed, recipient_pq_private_hex)
     if v != SEALED_VERSION:
         raise ValueError(f"unsupported sealed version: {v}")
     import base64
-    from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305
-    shared = _x25519_shared(recipient_enc_private_hex, sender_enc_public_hex)
-    key, nonce = _kdf(shared, int(sealed["counter"]))
-    return ChaCha20Poly1305(key).decrypt(
-        nonce, base64.b64decode(sealed["ct"]), None)
+    from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey
+    recipient = X25519PrivateKey.from_private_bytes(bytes.fromhex(recipient_enc_private_hex))
+    info = _v3_info(bytes.fromhex(sender_enc_public_hex), _x25519_public_bytes(recipient),
+                    sealed["envelope_id"], int(sealed["counter"]))
+    return _hpke_suite().decrypt(base64.b64decode(sealed["ct"]), recipient, info=info)
 
 
 def relay_send(relay_url: str, queue_id: str, sealed: Dict[str, Any]) -> Dict[str, Any]:
@@ -901,6 +899,24 @@ def send_sealed_a2a(
     return {"envelope_id": eid, "gate_response": resp}
 
 
+def _verify_envelope_signature(env: Dict[str, Any], recipient_id: str,
+                               sender_public_hex: Optional[str]) -> None:
+    """Check end to end that the registered sender signed this envelope for this
+    recipient and payload hash, instead of relying on the gate's say-so."""
+    from cryptography.exceptions import InvalidSignature
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    if not sender_public_hex:
+        raise ValueError("sender has no signing key: envelope signature cannot be verified")
+    try:
+        canonical = a2a_canonical_string(
+            env["envelope_id"], env["sender_id"], recipient_id, env["payload_hash"],
+            env["nonce"], env["sent_unix_ms"], env["expires_unix_ms"])
+        Ed25519PublicKey.from_public_bytes(bytes.fromhex(sender_public_hex)).verify(
+            bytes.fromhex(env["sender_signature"]), canonical.encode())
+    except (KeyError, ValueError, InvalidSignature) as exc:
+        raise ValueError("envelope signature verification failed") from exc
+
+
 def recv_sealed_a2a(
     client: "GateClient",
     agent_id: str,
@@ -909,9 +925,10 @@ def recv_sealed_a2a(
     poll_timeout: int = 35,
 ) -> Optional[Dict[str, Any]]:
     """Receive one sealed envelope: gate inbox → relay fetch → hash-binding
-    check → open with the sender's registry key → ack. Returns
+    check → verify the sender's envelope signature → open → ack. Returns
     {"envelope_id", "sender_id", "plaintext"} or None if the inbox is empty.
-    Raises on hash mismatch, key mismatch, or AEAD failure — nothing is acked."""
+    Raises on hash mismatch, bad signature, key mismatch, or decryption
+    failure — nothing is acked."""
     for env in client.a2a_inbox(agent_id):
         ref = env.get("transport_ref")
         if not ref:
@@ -927,6 +944,7 @@ def recv_sealed_a2a(
         if sealed_payload_hash(sealed) != env["payload_hash"]:
             raise ValueError("payload_hash mismatch: ciphertext does not match gate record")
         sender_keys = client.get_agent_key(env["sender_id"])
+        _verify_envelope_signature(env, agent_id, sender_keys.get("public_key_hex"))
         sender_enc = sender_keys.get("enc_public_key_hex")
         if not sender_enc:
             raise ValueError("sender_has_no_enc_key")

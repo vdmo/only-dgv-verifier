@@ -188,8 +188,8 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - **Justification enforcement** — `min_justification_length` in policies requires minimum justification length
 - **Semantic justification verification (pluggable)** — `DGV_SEMANTIC_VERIFIER_URL` delegates justification↔action semantic checks to an external verifier webhook; the gate performs no LLM analysis itself. `DGV_SEMANTIC_FAIL_CLOSED=1` denies when the verifier is unreachable (default fail-open with logged warning)
 - **Circuit breakers** — callers report tool outcomes via `POST /tool-health/report`; after `DGV_CIRCUIT_BREAKER_THRESHOLD` consecutive failures (default 5) the circuit opens and `/govern` denies new proposals for that tool; half-open probe after `DGV_CIRCUIT_BREAKER_COOLDOWN_MS` (default 30s); admin reset via `POST /tool-health/reset/:tool`
-- **A2A signed envelopes** — `POST /a2a/send` accepts Ed25519-signed envelopes between admin-registered agents (`POST/DELETE /agents/keys`); verifies sender signature over the canonical envelope string, expiry, clock skew, revocation of both parties; replay-protected via envelope_id PK and (sender_id, nonce) UNIQUE; gate-signed delivery receipt; `GET /a2a/inbox/:agent_id` + `POST /a2a/ack/:envelope_id` for delivery (JWT-verified when configured). Payloads never transit the gate — hash-only.
-- **A2A sealed transport (dgv-sealed-v1)** — optional data plane over `onlystate-relay`: agents register X25519 encryption keys (`enc_public_key_hex`), seal payloads via ECDH + SHA3-256 per-message KDF + ChaCha20-Poly1305 (mirroring `libonlystate`); the gate binds `payload_hash` to the *ciphertext*, and `transport_ref` tells the recipient where the ciphertext lives. Public `GET /agents/keys/:agent_id` resolves peer keys. See `A2A_TRANSPORT.md`.
+- **A2A signed envelopes** — `POST /a2a/send` accepts Ed25519-signed envelopes between admin-registered agents (`POST/DELETE /agents/keys`); verifies sender signature over the canonical envelope string, expiry, clock skew, revocation of both parties; replay-protected via envelope_id PK and (sender_id, nonce) UNIQUE; gate-signed delivery receipt; `GET /a2a/inbox/:agent_id` + `POST /a2a/ack/:envelope_id` for delivery (recipient-bound; JWT-verified, and closed without JWT unless `DGV_A2A_ALLOW_UNAUTHENTICATED=1`). Payloads never transit the gate — hash-only.
+- **A2A sealed transport (dgv-sealed-v3)** — optional data plane over `onlystate-relay`: agents register X25519 encryption keys (`enc_public_key_hex`) and seal payloads with HPKE (RFC 9180); the gate binds `payload_hash` to the *ciphertext*, the recipient verifies the sender's envelope signature, and `transport_ref` says where the ciphertext lives. `dgv-sealed-v1`/`v2` are withdrawn (v1 reused keys and nonces; v2's post-quantum layer gave no protection). See `A2A_TRANSPORT.md`.
 - **Token delegation (dgv-delegate-v1)** — `POST /delegate` mints a strictly-narrower child token from a live parent: same tool+action, params must be a JSON subset of the parent's (keys omittable, values never added/changed, array elements drawn from parent's), expiry ≤ parent's, `min_approvals` inherited, depth bounded by `DGV_MAX_DELEGATION_DEPTH` (default 3). The delegator signs the canonical delegation string with its registered Ed25519 key; a `DelegationRecord` is persisted (query lineage via `GET /delegations/:token_id`). Tokens are now **grantee-bound** — `executor_id` must equal `granted_to`; revoking any ancestor in the chain denies delegated execution at T₁.
 - CORS — configurable via `DGV_CORS_ORIGINS` (permissive `*` in dev, restrictive list in production)
 - Formal soundness proof — `FORMAL_SOUNDNESS_PROOF.md` proves receipt integrity, path compliance, null effect on deny, replayability, continuing authority, and distributed revocation
@@ -205,7 +205,7 @@ The gate (`dgv-gate` binary v0.2.0) provides real HTTP enforcement with signed r
 - JWKS responses are TTL-cached (`DGV_JWKS_CACHE_TTL_MS`, default 300s); an unknown `kid` triggers exactly one forced refetch to handle key rotation faster than TTL expiry
 - Circuit-breaker state is per-instance in memory — not shared across multi-instance deployments (unlike revocations, which live in shared storage)
 - Circuit breakers depend on callers honestly reporting tool outcomes — the gate cannot observe downstream failures itself
-- A2A payloads are hash-only at the gate — payload confidentiality now has a reference implementation (`dgv-sealed-v1` over onlystate-relay), but it is ECDH+ChaCha20-Poly1305, not post-quantum; WOTS+ signatures from libonlystate are not wired in; deterministic queue IDs are dictionary-guessable (see A2A_TRANSPORT.md non-claims)
+- A2A payloads are hash-only at the gate — optional sealing (`dgv-sealed-v3`, HPKE) is not post-quantum, has no forward secrecy against theft of the recipient's key, and has not been independently reviewed; WOTS+ signatures from libonlystate are not wired in; deterministic queue IDs are dictionary-guessable (see A2A_TRANSPORT.md)
 - Semantic verification quality depends entirely on the external verifier — the gate performs no semantic analysis itself
 - TLS termination is handled by reverse proxy (nginx profile in docker-compose; the gate itself is plain HTTP)
 - Policy signing verifies integrity but not provenance (no SLSA/dependency chain verification)
@@ -455,7 +455,11 @@ Phase 8 mechanisms, kept distinct:
 
 ## 4f. Sealed A2A transport test results
 
-Run `test_a2a_transport.py` to verify the dgv-sealed-v1 data plane — a live
+**The results below are historical: they were recorded for `dgv-sealed-v1`,
+which is withdrawn.** Current checks: `test_a2a_security.py`,
+`test_a2a_ack_authz.py` and `test_a2a_transport.py`.
+
+Run `test_a2a_transport.py` to verify the data plane — a live
 gate plus a live `onlystate-relay` binary:
 
 ```bash
@@ -558,7 +562,7 @@ The counterexample both tools produce is the documented residual boundary: a rev
 - It does not claim the gate's default governance script is suitable for production use (it is a demonstration script; custom policies can be stored via API or loaded from YAML files)
 - It does not claim the semantic verifier performs analysis inside the gate (the gate delegates to a configured webhook; verifier quality is external)
 - It does not claim circuit-breaker state is distributed (it is per-instance in memory; shared-state breakers are future work)
-- It does not claim A2A payloads are confidential *by the gate itself* (the gate stores hashes only) — dgv-sealed-v1 provides agent-side confidentiality via ECDH+ChaCha20-Poly1305 over onlystate-relay, which is not post-quantum and does not hide traffic metadata (see A2A_TRANSPORT.md)
+- It does not claim A2A payloads are confidential *by the gate itself* (the gate stores hashes only) — `dgv-sealed-v3` provides agent-side confidentiality with HPKE, unreviewed and not post-quantum
 - It does not claim delegation is a full capability system — child scope is confined to the parent's literal tool+action with a JSON-subset params check; there is no cross-tool scope composition or parametric value widening (e.g., "amount ≤ X") — those would need richer policy semantics
 
 ## 8. Recommended audit scope

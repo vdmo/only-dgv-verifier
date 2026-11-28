@@ -45,16 +45,17 @@ from dgv_sdk import (
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 
-ROOT = "/home/vdmo/pir/only-dgv-verifier"
-NATIVE = f"{ROOT}/native"
-GATE = "./target/release/dgv-gate"
-RELAY = "/home/vdmo/pir/onlyquantumstate-main/onlystate-relay/target/release/onlystate-relay"
-GATE_PORT = 7910
-RELAY_PORT = 7911
+ROOT = os.path.dirname(os.path.abspath(__file__))
+NATIVE = os.path.join(ROOT, "native")
+GATE = os.environ.get("DGV_GATE_BIN", os.path.join(NATIVE, "target", "release", "dgv-gate"))
+# onlystate-relay lives in a separate repository
+RELAY = os.environ.get("DGV_RELAY_BIN", os.path.join(ROOT, "..", "onlyquantumstate-main", "onlystate-relay", "target", "release", "onlystate-relay"))
+GATE_PORT = int(os.environ.get("DGV_TEST_GATE_PORT", "7910"))
+RELAY_PORT = int(os.environ.get("DGV_TEST_RELAY_PORT", "7911"))
 BASE = f"http://127.0.0.1:{GATE_PORT}"
 RELAY_URL = f"http://127.0.0.1:{RELAY_PORT}"
 ADMIN_KEY = "transport-admin-key"
-DB = f"{NATIVE}/dgv_transport_test.db"
+DB = f"{NATIVE}/dgv_transport_test.db".replace("\\", "/")  # sqlite URL needs forward slashes
 
 passed = 0
 failed = 0
@@ -94,6 +95,8 @@ def ed25519_keypair():
 
 
 def start_gate():
+    if get(f"{BASE}/health", timeout=2)[0] != 0:
+        raise RuntimeError(f"port {GATE_PORT} is already in use; set DGV_TEST_GATE_PORT")
     for suffix in ("", "-wal", "-shm"):
         if os.path.exists(DB + suffix):
             os.remove(DB + suffix)
@@ -101,6 +104,7 @@ def start_gate():
     env["DGV_RATE_LIMIT_DISABLED"] = "1"
     env["DGV_LISTEN_ADDR"] = f"127.0.0.1:{GATE_PORT}"
     env["DGV_ADMIN_KEY"] = ADMIN_KEY
+    env["DGV_A2A_ALLOW_UNAUTHENTICATED"] = "1"  # test gate without JWT
     env["DGV_STORAGE"] = "sqlite"
     env["DGV_DATABASE_URL"] = f"sqlite://{DB}"
     proc = subprocess.Popen([GATE], stdout=subprocess.DEVNULL,
@@ -200,11 +204,9 @@ def main():
             bad("transport_ref delivered verbatim", tr)
 
         # payload_hash binds the ciphertext
-        sealed2 = {"v": "dgv-sealed-v1", "envelope_id": sent2["envelope_id"],
-                   "counter": 1}
         # fetch what's actually on the wire: inbox hash vs sealed hash must match
         if envs and envs[0]["payload_hash"] != sealed_payload_hash(
-                {"v": "x", "envelope_id": "y", "counter": 1, "ct": "AA=="}):
+                {"v": "dgv-sealed-v3", "envelope_id": "y", "counter": 1, "ct": "AA=="}):
             ok("gate binds sealed hash not plaintext")
         else:
             bad("gate binds sealed hash not plaintext")

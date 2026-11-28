@@ -315,7 +315,9 @@ pub trait Storage: Send + Sync {
     // A2A envelopes
     async fn store_a2a_envelope(&self, e: A2aEnvelopeRecord) -> Result<(), StorageError>;
     async fn get_a2a_inbox(&self, recipient_id: &str) -> Result<Vec<A2aEnvelopeRecord>, StorageError>;
-    async fn mark_a2a_delivered(&self, envelope_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError>;
+    /// Marks an envelope delivered only if it is addressed to `recipient_id` and still waiting;
+    /// otherwise returns `Conflict`.
+    async fn mark_a2a_delivered(&self, envelope_id: &str, recipient_id: &str, delivered_unix_ms: i64) -> Result<(), StorageError>;
 
     // Evidence artifacts
     async fn store_evidence_artifact(&self, a: EvidenceArtifactRecord) -> Result<(), StorageError>;

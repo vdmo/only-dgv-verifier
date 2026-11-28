@@ -260,6 +260,8 @@ struct AppState {
     /// continuing authority must not assume it. `fail_open` restores the
     /// previous behaviour for development only.
     partition_fail_closed: bool,
+    /// Development only: allow A2A inbox and ack without JWT (agent_id is then self-declared).
+    a2a_allow_unauthenticated: bool,
     /// Peer gate base URLs that receive signed revocation broadcasts
     /// (DGV_PEERS, comma-separated). Only locally-originated revocations are
     /// broadcast — gossiped revocations are never re-gossiped, which bounds
@@ -4002,29 +4004,44 @@ async fn handle_a2a_send(
     }
 }
 
+/// Who may act as `agent_id` on the A2A inbox and ack routes: with JWT, only the
+/// verified subject; without JWT, nobody unless the development opt-in is set.
+async fn authorize_a2a_agent(
+    app: &AppState,
+    headers: &HeaderMap,
+    agent_id: &str,
+) -> Result<(), (StatusCode, Json<serde_json::Value>)> {
+    if app.jwt_config.is_none() {
+        if app.a2a_allow_unauthenticated {
+            return Ok(());
+        }
+        return Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({"error": "a2a_authentication_required: configure JWT, or set DGV_A2A_ALLOW_UNAUTHENTICATED=1 for development"})),
+        ));
+    }
+    match extract_agent_id(headers, &app.jwt_config, agent_id).await {
+        Ok(verified) if verified == agent_id => Ok(()),
+        Ok(_) => Err((
+            StatusCode::FORBIDDEN,
+            Json(json!({"error": "a2a_access_denied: JWT sub does not match agent_id"})),
+        )),
+        Err(e) => Err((
+            StatusCode::UNAUTHORIZED,
+            Json(json!({"error": format!("identity_verification_failed: {}", e)})),
+        )),
+    }
+}
+
 /// GET /a2a/inbox/:agent_id — fetch undelivered envelopes.
-/// When JWT is configured, the verified sub must equal agent_id.
+/// The caller must be authorized as `agent_id`.
 async fn handle_a2a_inbox(
     State(app): State<AppState>,
     Path(agent_id): Path<String>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    if app.jwt_config.is_some() {
-        match extract_agent_id(&headers, &app.jwt_config, &agent_id).await {
-            Ok(verified) if verified == agent_id => {}
-            Ok(_) => {
-                return (
-                    StatusCode::FORBIDDEN,
-                    Json(json!({"error": "inbox_access_denied: JWT sub does not match recipient"})),
-                );
-            }
-            Err(e) => {
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(json!({"error": format!("identity_verification_failed: {}", e)})),
-                );
-            }
-        }
+    if let Err(denied) = authorize_a2a_agent(&app, &headers, &agent_id).await {
+        return denied.into_response();
     }
 
     match app.storage.get_a2a_inbox(&agent_id).await {
@@ -4040,10 +4057,12 @@ async fn handle_a2a_inbox(
             Json(json!({"error": format!("storage_error: {}", e)})),
         ),
     }
+    .into_response()
 }
 
 /// POST /a2a/ack/:envelope_id — recipient acknowledges delivery.
-/// Body: {"agent_id": "..."} — must match envelope recipient (JWT-enforced if configured).
+/// Body: {"agent_id": "..."} — must be the envelope's recipient, and the caller
+/// must be authorized as that agent.
 async fn handle_a2a_ack(
     State(app): State<AppState>,
     Path(envelope_id): Path<String>,
@@ -4051,27 +4070,20 @@ async fn handle_a2a_ack(
     Json(req): Json<serde_json::Value>,
 ) -> impl IntoResponse {
     let agent_id = req.get("agent_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
-
-    if app.jwt_config.is_some() {
-        match extract_agent_id(&headers, &app.jwt_config, &agent_id).await {
-            Ok(verified) if verified == agent_id => {}
-            Ok(_) => {
-                return (
-                    StatusCode::FORBIDDEN,
-                    Json(json!({"error": "ack_denied: JWT sub does not match agent_id"})),
-                );
-            }
-            Err(e) => {
-                return (
-                    StatusCode::UNAUTHORIZED,
-                    Json(json!({"error": format!("identity_verification_failed: {}", e)})),
-                );
-            }
-        }
+    if agent_id.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "agent_id_required"})),
+        )
+            .into_response();
+    }
+    if let Err(denied) = authorize_a2a_agent(&app, &headers, &agent_id).await {
+        return denied.into_response();
     }
 
-    match app.storage.mark_a2a_delivered(&envelope_id, now_unix_ms()).await {
+    match app.storage.mark_a2a_delivered(&envelope_id, &agent_id, now_unix_ms()).await {
         Ok(()) => (StatusCode::OK, Json(json!({"delivered": true, "envelope_id": envelope_id}))),
+        // Same answer for "not yours" and "no such envelope": reveals nothing about others.
         Err(StorageError::Conflict) => (
             StatusCode::CONFLICT,
             Json(json!({"error": "already_delivered_or_not_found"})),
@@ -4081,6 +4093,7 @@ async fn handle_a2a_ack(
             Json(json!({"error": format!("storage_error: {}", e)})),
         ),
     }
+    .into_response()
 }
 
 // ── GET /policies/:tool/:action/versions — policy version history ────────────
@@ -4161,7 +4174,7 @@ async fn handle_well_known(State(app): State<AppState>) -> impl IntoResponse {
             "metrics": "/metrics",
         },
         "capabilities": {
-            "sealed_payload_versions": ["dgv-sealed-v1", "dgv-sealed-v2"],
+            "sealed_payload_versions": ["dgv-sealed-v3"],
             "delegation": "dgv-delegate-v1",
             "quorum": !app.quorum_peers.is_empty(),
             "quorum_size": app.quorum_size,
@@ -5015,7 +5028,16 @@ async fn main() {
         .and_then(|s| s.parse().ok())
         .unwrap_or(0);
 
+    // A2A inbox and ack need a verified identity. Without JWT they stay closed
+    // unless this development-only opt-in is set.
+    let a2a_allow_unauthenticated =
+        std::env::var("DGV_A2A_ALLOW_UNAUTHENTICATED").is_ok_and(|v| v == "1");
+    if a2a_allow_unauthenticated && jwt_config.is_none() {
+        log_event("warn", "a2a_unauthenticated_allowed", json!({"note": "anyone who knows an agent id can read its inbox and acknowledge for it — dev only"}));
+    }
+
     let app_state = AppState {
+        a2a_allow_unauthenticated,
         storage,
         keys,
         counters: Arc::new(std::sync::Mutex::new(Counters::default())),
