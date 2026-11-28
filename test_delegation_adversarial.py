@@ -12,9 +12,13 @@ from dgv_sdk import GateClient, GateError, delegate_canonical_string
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
 import hashlib
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
 NATIVE = os.path.join(HERE, "native")
-GATE = os.path.join(NATIVE, "target", "release", "dgv-gate")
+GATE = gate_testlib.gate_bin()
 PORT = 7971
 BASE = f"http://127.0.0.1:{PORT}"
 ADMIN = "adv-admin"
@@ -74,7 +78,7 @@ def main():
     tmp = tempfile.mkdtemp(prefix="dgv_adv_")
     env = os.environ.copy()
     env.update({"DGV_RATE_LIMIT_DISABLED": "1", "DGV_LISTEN_ADDR": f"127.0.0.1:{PORT}", "DGV_ADMIN_KEY": ADMIN,
-                "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": f"sqlite://{tmp}/g.db"})
+                "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": gate_testlib.sqlite_url(os.path.join(tmp, "g.db"))})
     gate = subprocess.Popen([GATE], env=env, cwd=NATIVE, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     try:
         for _ in range(60):

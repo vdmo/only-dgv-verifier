@@ -173,13 +173,14 @@ for fn in (vectors_match, boundaries_cannot_shift, every_envelope_field_is_signe
 def gate_tests():
     import dgv_sdk as sdk
     sys.path.insert(0, os.path.join(HERE, "demo"))
+    import gate_testlib
     from a2a_demo import find_gate, free_port, wait_healthy
 
     work = tempfile.mkdtemp(prefix="dgv-evidence-")
     port, admin = free_port(), "evidence-test-admin"
     env = {k: val for k, val in os.environ.items() if not k.startswith("DGV_")}
-    env.update({"DGV_STORAGE": "sqlite", "DGV_ADMIN_KEY": admin, "DGV_RATE_LIMIT_DISABLED": "1",
-                "DGV_DATABASE_URL": "sqlite://" + os.path.join(work, "g.db").replace("\\", "/"),
+    env.update({"DGV_ADMIN_KEY": admin, "DGV_RATE_LIMIT_DISABLED": "1",
+                **gate_testlib.db_env(os.path.join(work, "g.db")),
                 "DGV_LISTEN_ADDR": f"127.0.0.1:{port}", "DGV_SIGNING_KEY": os.path.join(work, "gate.key"),
                 "DGV_A2A_ALLOW_UNAUTHENTICATED": "1", "DGV_A2A_MAX_LIFETIME_MS": "120000"})
     proc = subprocess.Popen([find_gate()], cwd=work, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)

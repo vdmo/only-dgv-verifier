@@ -21,9 +21,11 @@ sys.path.insert(0, HERE)
 from dgv_sdk import sign_a2a_envelope
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
 EXE = ".exe" if os.name == "nt" else ""
-GATE = os.environ.get("DGV_GATE_BIN", os.path.join(HERE, "native", "target", "debug", "dgv-gate" + EXE))
+GATE = gate_testlib.gate_bin()
 PORT = 7931
 BASE = f"http://127.0.0.1:{PORT}"
 ADMIN = "ack-authz-test-admin"
@@ -55,9 +57,8 @@ def call(method, path, body=None, admin=False):
 
 def start(workdir, extra):
     env = {k: v for k, v in os.environ.items() if not k.startswith("DGV_")}
-    db = os.path.join(workdir, "authz.db").replace("\\", "/")
     env.update({
-        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": f"sqlite://{db}",
+        **gate_testlib.db_env(os.path.join(workdir, "authz.db")),
         "DGV_LISTEN_ADDR": f"127.0.0.1:{PORT}", "DGV_ADMIN_KEY": ADMIN, "DGV_RATE_LIMIT_DISABLED": "1",
         "DGV_SIGNING_KEY": os.path.join(workdir, "gate.key"),
     })

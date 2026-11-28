@@ -14,7 +14,12 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-GATE_BINARY = os.environ.get("DGV_GATE_BIN", os.path.join(os.path.dirname(__file__), "native", "target", "release", "dgv-gate"))
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
+
+GATE_BINARY = gate_testlib.gate_bin()
 TEST_DB = tempfile.mktemp(suffix=".db", prefix="dgv_v4_test_")
 TEST_PORT = "7892"
 BASE_URL = f"http://127.0.0.1:{TEST_PORT}"
@@ -219,8 +224,7 @@ def start_test_server():
 
 def start_gate(extra_env=None):
     env = os.environ.copy()
-    env["DGV_STORAGE"] = "sqlite"
-    env["DGV_DATABASE_URL"] = f"sqlite://{TEST_DB}"
+    env.update(gate_testlib.db_env(TEST_DB))
     env["DGV_LISTEN_ADDR"] = f"127.0.0.1:{TEST_PORT}"
     env["DGV_ADMIN_KEY"] = ADMIN_KEY
     env["DGV_A2A_ALLOW_UNAUTHENTICATED"] = "1"  # A2A tests run without JWT

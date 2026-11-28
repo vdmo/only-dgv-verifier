@@ -24,10 +24,12 @@ from dgv_sdk import GateClient, GateError, delegate_canonical_string
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
-ROOT = "/home/vdmo/pir/only-dgv-verifier"
-NATIVE = f"{ROOT}/native"
-GATE = "./target/release/dgv-gate"
+ROOT = gate_testlib.ROOT
+NATIVE = gate_testlib.NATIVE
+GATE = gate_testlib.gate_bin()
 PORT = 7920
 BASE = f"http://127.0.0.1:{PORT}"
 ADMIN_KEY = "delegation-admin-key"
@@ -144,7 +146,7 @@ def start_gate():
     env["DGV_LISTEN_ADDR"] = f"127.0.0.1:{PORT}"
     env["DGV_ADMIN_KEY"] = ADMIN_KEY
     env["DGV_STORAGE"] = "sqlite"
-    env["DGV_DATABASE_URL"] = f"sqlite://{DB}"
+    env["DGV_DATABASE_URL"] = gate_testlib.sqlite_url(DB)
     proc = subprocess.Popen([GATE], stdout=subprocess.DEVNULL,
                             stderr=subprocess.STDOUT, cwd=NATIVE, env=env)
     for _ in range(60):

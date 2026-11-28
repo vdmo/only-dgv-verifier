@@ -26,9 +26,11 @@ import sys
 import time
 import urllib.request
 import urllib.error
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
-DB_FILE = "/home/vdmo/pir/only-dgv-verifier/native/dgv_dist_test.db"
-KEY_FILE = "/home/vdmo/pir/only-dgv-verifier/native/dgv_dist_key.hex"
+DB_FILE = os.path.join(gate_testlib.NATIVE, "dgv_dist_test.db")
+KEY_FILE = os.path.join(gate_testlib.NATIVE, "dgv_dist_key.hex")
 
 def post(base_url, path, body):
     data = json.dumps(body).encode()
@@ -51,14 +53,14 @@ def get(base_url, path):
 
 def start_gate(port, env):
     env = env.copy()
-    env["DGV_DATABASE_URL"] = f"sqlite://{DB_FILE}"
+    env["DGV_DATABASE_URL"] = gate_testlib.sqlite_url(DB_FILE)
     env["DGV_SIGNING_KEY"] = KEY_FILE
     # Disable rate limiting for this test
     env["DGV_RATE_LIMIT_DISABLED"] = "1"
     proc = subprocess.Popen(
-        ["./target/release/dgv-gate"],
+        [gate_testlib.gate_bin()],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        cwd="/home/vdmo/pir/only-dgv-verifier/native",
+        cwd=gate_testlib.NATIVE,
         env=env,
     )
     # Wait for the gate to be ready

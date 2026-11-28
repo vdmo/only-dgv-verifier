@@ -8,10 +8,12 @@ import sys
 import time
 import urllib.request
 import urllib.error
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
 GATE_URL = "http://127.0.0.1:7878"
-DB_FILE = "/home/vdmo/pir/only-dgv-verifier/native/dgv_gate_test.db"
-KEY_FILE = "/home/vdmo/pir/only-dgv-verifier/native/dgv_test_key.hex"
+DB_FILE = os.path.join(gate_testlib.NATIVE, "dgv_gate_test.db")
+KEY_FILE = os.path.join(gate_testlib.NATIVE, "dgv_test_key.hex")
 ADMIN_KEY = "test-admin-key-12345"
 
 def post(path, body, admin_key=None):
@@ -62,13 +64,13 @@ def main():
     # Start the gate with SQLite
     env = os.environ.copy()
     env["DGV_STORAGE"] = "sqlite"
-    env["DGV_DATABASE_URL"] = f"sqlite://{DB_FILE}"
+    env["DGV_DATABASE_URL"] = gate_testlib.sqlite_url(DB_FILE)
     env["DGV_SIGNING_KEY"] = KEY_FILE
     env["DGV_ADMIN_KEY"] = ADMIN_KEY
     proc = subprocess.Popen(
-        ["./target/release/dgv-gate"],
+        [gate_testlib.gate_bin()],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        cwd="/home/vdmo/pir/only-dgv-verifier/native",
+        cwd=gate_testlib.NATIVE,
         env=env,
     )
     time.sleep(2)
@@ -257,9 +259,9 @@ def main():
         time.sleep(1)
 
         proc = subprocess.Popen(
-            ["./target/release/dgv-gate"],
+            [gate_testlib.gate_bin()],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            cwd="/home/vdmo/pir/only-dgv-verifier/native",
+            cwd=gate_testlib.NATIVE,
             env=env,
         )
         time.sleep(2)
@@ -311,7 +313,7 @@ def main():
 
         # 20. Load policies from YAML file
         status, load_result = post("/policies/load-file", {
-            "file_path": "/home/vdmo/pir/only-dgv-verifier/test_policies.yaml"
+            "file_path": os.path.join(gate_testlib.ROOT, "test_policies.yaml")
         }, admin_key=ADMIN_KEY)
         assert status == 200, f"load policy file: {status}"
         assert load_result["loaded"] >= 4, f"load policy file: expected >=4, got {load_result['loaded']}"

@@ -15,63 +15,26 @@ import argparse
 import html
 import json
 import os
-import queue
 import secrets
 import shutil
 import socket
 import subprocess
 import sys
 import tempfile
-import threading
 import time
 import urllib.request
 import uuid
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 import dgv_a2a_v2 as v2  # noqa: E402
 import dgv_sdk as sdk  # noqa: E402
+import gate_testlib  # noqa: E402
 from cryptography.hazmat.primitives import serialization  # noqa: E402
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
 
 MESSAGE = b"Synthetic order 1042: move 50 test units to warehouse B"
-
-
-# ── stand-in relay (used unless --relay-bin is given) ────────────────────────
-
-class StandInRelay(BaseHTTPRequestHandler):
-    """The four onlystate-relay routes the SDK uses, in memory, on 127.0.0.1. Not the real relay."""
-    queues = {}
-
-    def log_message(self, *args):
-        pass
-
-    def _reply(self, obj):
-        body = json.dumps(obj).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def _queue(self):
-        return self.queues.setdefault(self.path.rsplit("/", 1)[-1], queue.Queue())
-
-    def do_GET(self):
-        if self.path == "/health":
-            return self._reply({"status": "ok"})
-        try:
-            return self._reply(self._queue().get(timeout=3))
-        except queue.Empty:
-            return self._reply({"status": "timeout"})
-
-    def do_POST(self):
-        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-        if self.path.startswith("/send/"):
-            self._queue().put(body)
-        self._reply({"status": "ok"})
 
 
 # ── process helpers ──────────────────────────────────────────────────────────
@@ -339,7 +302,7 @@ def main():
         gate_port, admin = free_port(), secrets.token_hex(16)
         env = {k: v for k, v in os.environ.items() if not k.startswith("DGV_")}
         env.update({
-            "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": "sqlite://" + os.path.join(work, "gate.db").replace("\\", "/"),
+            **gate_testlib.db_env(os.path.join(work, "gate.db")),
             "DGV_LISTEN_ADDR": f"127.0.0.1:{gate_port}", "DGV_ADMIN_KEY": admin, "DGV_RATE_LIMIT_DISABLED": "1",
             "DGV_SIGNING_KEY": os.path.join(work, "gate.key"), "DGV_A2A_ALLOW_UNAUTHENTICATED": "1",
         })
@@ -357,8 +320,7 @@ def main():
             wait_healthy(relay_url, procs[-1], "relay")
         else:
             relay_name = "local stand-in, not onlystate-relay"
-            server = ThreadingHTTPServer(("127.0.0.1", relay_port), StandInRelay)
-            threading.Thread(target=server.serve_forever, daemon=True).start()
+            server = gate_testlib.StandInRelay(relay_port)
         print(f"gate {gate_url} | relay {relay_url} ({relay_name})")
 
         demo = Demo(gate_url, relay_url, admin)
@@ -372,7 +334,7 @@ def main():
             except subprocess.TimeoutExpired:
                 p.kill()
         if server:
-            server.shutdown()
+            server.terminate()
         shutil.rmtree(work, ignore_errors=True)
 
     write_report(args.report, demo.scenes, relay_name)
