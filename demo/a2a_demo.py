@@ -31,10 +31,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
+import dgv_a2a_v2 as v2  # noqa: E402
 import dgv_sdk as sdk  # noqa: E402
-from cryptography.exceptions import InvalidSignature  # noqa: E402
 from cryptography.hazmat.primitives import serialization  # noqa: E402
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey  # noqa: E402
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey  # noqa: E402
 
 MESSAGE = b"Synthetic order 1042: move 50 test units to warehouse B"
 
@@ -114,6 +114,9 @@ class Demo:
         self.relay = relay_url
         self.scenes = []
         self.agents = {}
+        self.evidence_path = None
+        # pinned before any message is sent; a real verifier gets it through a channel it trusts
+        self.gate_key = self.gate._request("GET", "/health")["verifying_key"]
 
     def agent(self, name):
         sk = Ed25519PrivateKey.generate()
@@ -122,7 +125,7 @@ class Demo:
         pub = sk.public_key().public_bytes(raw, serialization.PublicFormat.Raw).hex()
         enc = sdk.generate_enc_keypair()
         self.gate.register_agent_key(name, pub, enc["public_key_hex"])
-        self.agents[name] = {"sign": seed, "enc": enc}
+        self.agents[name] = {"sign": seed, "public": pub, "enc": enc}
 
     def scene(self, title, expect, kind="protects"):
         s = {"title": title, "expect": expect, "kind": kind, "lines": [], "ok": True}
@@ -158,14 +161,18 @@ class Demo:
 
     def receive(self, name="bob"):
         return sdk.recv_sealed_a2a(self.gate, name, self.agents[name]["enc"]["private_key_hex"], self.relay,
-                                   poll_timeout=10)
+                                   poll_timeout=10, gate_public_key_hex=self.gate_key)
 
     def waiting(self, name="bob"):
         return [e["envelope_id"] for e in self.gate.a2a_inbox(name)]
 
     def signed_envelope(self, signer, sender="alice", recipient="bob", ttl_ms=60_000, payload=b"x"):
+        now = int(time.time() * 1000)
+        # a negative ttl builds a well-formed envelope that ran out in the past
+        sent = now if ttl_ms > 0 else now + 2 * ttl_ms - 60_000
+        expires = now + ttl_ms
         return sdk.sign_a2a_envelope(self.agents[signer]["sign"], str(uuid.uuid4()), sender, recipient,
-                                     payload, str(uuid.uuid4()), int(time.time() * 1000) + ttl_ms)
+                                     payload, str(uuid.uuid4()), expires, sent_unix_ms=sent)
 
     def captured_send(self, counter, push=True):
         """Send, keeping a copy of what went to the relay. push=False holds the ciphertext back."""
@@ -200,26 +207,44 @@ class Demo:
                    f"bob opened: {got['plaintext'].decode() if got else None!r}")
         self.check(sent["envelope_id"] not in self.waiting(), "acknowledged, so it left bob's inbox")
 
-        self.scene("The delivery receipt can be checked", "The gate's signature verifies, and fails if altered")
-        resp = sent["gate_response"]
-        key = Ed25519PublicKey.from_public_bytes(bytes.fromhex(resp["verifying_key"]))
-        signed = f"a2a-deliver:{sent['envelope_id']}:alice:bob"
+        self.scene("The receipt can be checked offline",
+                   "Using keys known beforehand, with no gate: it verifies, and fails if anything changes")
+        evidence = sent["evidence"]
+        alice_pub = self.agents["alice"]["public"]
+        sealed_wire = wire["sealed"]
 
-        def verifies(text):
+        def verifies(ev, **kw):
             try:
-                key.verify(bytes.fromhex(resp["gate_receipt"]), text.encode())
+                v2.verify_evidence(ev, self.gate_key, alice_pub, **kw)
                 return True
-            except InvalidSignature:
+            except v2.EvidenceError:
                 return False
 
-        self.check(verifies(signed), "receipt signature verifies for this envelope, sender and recipient")
-        self.check(not verifies(signed.replace(":bob", ":mallory")), "same signature fails for another recipient")
-        self.note("limit: the receipt does not cover the message hash or the time")
-        self.note("limit: here the gate's public key comes from the same response; in real use, pin it beforehand")
+        self.check(verifies(evidence, sealed=sealed_wire),
+                   "sender signature, gate receipt and the sealed message all match")
+        for field, value in (("decided_unix_ms", evidence["receipt"]["decided_unix_ms"] + 1),
+                             ("payload_hash", "0" * 64), ("recipient_id", "mallory")):
+            altered = json.loads(json.dumps(evidence))
+            altered["receipt"][field] = value
+            self.check(not verifies(altered), f"receipt with a changed {field} is rejected")
+        if self.evidence_path:
+            os.makedirs(os.path.dirname(self.evidence_path), exist_ok=True)
+            with open(self.evidence_path, "w", encoding="utf-8") as f:
+                json.dump(evidence, f, indent=1)
+            self.note(f"saved for the command-line verifier: python dgv_a2a_v2.py "
+                      f"{os.path.relpath(self.evidence_path, ROOT)} --gate-key {self.gate_key} --sender-key {alice_pub}")
+        self.note("limit: a receipt shows the gate accepted the envelope, not that bob received or read it")
 
         self.scene("A forged sender is refused", "Mallory cannot send as Alice")
         env = self.signed_envelope(signer="mallory", sender="alice")
         self.refused(lambda: self.gate.a2a_send(**env), "envelope signed by mallory in alice's name", "signature")
+
+        self.scene("An altered delivery address is refused", "The transport reference is covered by the signature")
+        env = self.signed_envelope(signer="alice")
+        env["transport_ref"] = "direct:https://attacker.invalid/inbox"
+        self.refused(lambda: self.gate.a2a_send(**env), "envelope with an added transport reference", "signature")
+        self.refused(lambda: self.gate.a2a_send(**self.signed_envelope(signer="alice", ttl_ms=48 * 3600 * 1000)),
+                     "envelope valid for two days", "lifetime_too_long")
 
         self.scene("A swapped message is refused", "Bob neither opens nor acknowledges it; the real one still arrives")
         sent, wire = self.captured_send(counter=2, push=False)
@@ -337,6 +362,7 @@ def main():
         print(f"gate {gate_url} | relay {relay_url} ({relay_name})")
 
         demo = Demo(gate_url, relay_url, admin)
+        demo.evidence_path = os.path.join(os.path.dirname(os.path.abspath(args.report)), "evidence.json")
         demo.run()
     finally:
         for p in reversed(procs):

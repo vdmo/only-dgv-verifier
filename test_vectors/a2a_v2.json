@@ -1,0 +1,116 @@
+{
+ "comment": "Fixed THROWAWAY test keys. Never use them outside tests.",
+ "sender_seed_hex": "1111111111111111111111111111111111111111111111111111111111111111",
+ "gate_seed_hex": "3333333333333333333333333333333333333333333333333333333333333333",
+ "payload": "synthetic payload 1",
+ "cases": [
+  {
+   "name": "relay transport",
+   "envelope": {
+    "envelope_id": "env-0001",
+    "sender_id": "alice",
+    "recipient_id": "bob",
+    "payload_hash": "508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1",
+    "nonce": "n-0001",
+    "sent_unix_ms": 1790000000000,
+    "expires_unix_ms": 1790000060000,
+    "transport_ref": "relay:http://127.0.0.1:9000|abc"
+   },
+   "envelope_canonical": "{\"domain\":\"dgv-a2a-envelope-v2\",\"envelope_id\":\"env-0001\",\"expires_unix_ms\":1790000060000,\"nonce\":\"n-0001\",\"payload_hash\":\"508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1\",\"recipient_id\":\"bob\",\"sender_id\":\"alice\",\"sent_unix_ms\":1790000000000,\"transport_ref\":\"relay:http://127.0.0.1:9000|abc\"}",
+   "signature": "3880102b0f67445fa5cb44641e30f0cf85f6a65c0c3c789b798f5d990239ada75691b5174f94985fab0332ecab23c03bd6168cbf544b239882365c1df3ad0408",
+   "receipt": {
+    "decision": "accepted",
+    "decided_unix_ms": 1790000000000,
+    "envelope_hash": "bcc0795ca51ab70a27413d5a1e1d43157c89d5a91e05720da66b67d9d154ff0c",
+    "envelope_id": "env-0001",
+    "sender_id": "alice",
+    "recipient_id": "bob",
+    "payload_hash": "508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1",
+    "gate_key_id": "6c8f8607dbe87077a62a2990ce07d94aaf749df76f87b98eb786a6d10f030765"
+   },
+   "receipt_canonical": "{\"decided_unix_ms\":1790000000000,\"decision\":\"accepted\",\"domain\":\"dgv-a2a-receipt-v2\",\"envelope_hash\":\"bcc0795ca51ab70a27413d5a1e1d43157c89d5a91e05720da66b67d9d154ff0c\",\"envelope_id\":\"env-0001\",\"gate_key_id\":\"6c8f8607dbe87077a62a2990ce07d94aaf749df76f87b98eb786a6d10f030765\",\"payload_hash\":\"508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1\",\"recipient_id\":\"bob\",\"sender_id\":\"alice\"}",
+   "gate_receipt": "61cabc695b853ed10b05bfaa0c9900653bcdec3ebafe7a6ce5490660816b3068baf558715c2e8d8e3683785f71cb40d5d5a841521f354f2ab268b5d1f3769107"
+  },
+  {
+   "name": "no transport reference",
+   "envelope": {
+    "envelope_id": "env-0002",
+    "sender_id": "alice",
+    "recipient_id": "bob",
+    "payload_hash": "508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1",
+    "nonce": "n-0002",
+    "sent_unix_ms": 1790000000000,
+    "expires_unix_ms": 1790000060000,
+    "transport_ref": null
+   },
+   "envelope_canonical": "{\"domain\":\"dgv-a2a-envelope-v2\",\"envelope_id\":\"env-0002\",\"expires_unix_ms\":1790000060000,\"nonce\":\"n-0002\",\"payload_hash\":\"508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1\",\"recipient_id\":\"bob\",\"sender_id\":\"alice\",\"sent_unix_ms\":1790000000000,\"transport_ref\":null}",
+   "signature": "00c21067368f95012ffc46bd36ee54b496b74b5cfda65a20b0720efe392dce44ffb79568d6bb0ff1394ff6d861cb3f102dba275190cc32671dd85682d5986b0e",
+   "receipt": {
+    "decision": "accepted",
+    "decided_unix_ms": 1790000000000,
+    "envelope_hash": "c662e70a2be7a0e92319d53afc73ef63dccd99340d61ddd94e6398a7f185af67",
+    "envelope_id": "env-0002",
+    "sender_id": "alice",
+    "recipient_id": "bob",
+    "payload_hash": "508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1",
+    "gate_key_id": "6c8f8607dbe87077a62a2990ce07d94aaf749df76f87b98eb786a6d10f030765"
+   },
+   "receipt_canonical": "{\"decided_unix_ms\":1790000000000,\"decision\":\"accepted\",\"domain\":\"dgv-a2a-receipt-v2\",\"envelope_hash\":\"c662e70a2be7a0e92319d53afc73ef63dccd99340d61ddd94e6398a7f185af67\",\"envelope_id\":\"env-0002\",\"gate_key_id\":\"6c8f8607dbe87077a62a2990ce07d94aaf749df76f87b98eb786a6d10f030765\",\"payload_hash\":\"508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1\",\"recipient_id\":\"bob\",\"sender_id\":\"alice\"}",
+   "gate_receipt": "4007bcca424e9505713067d1c451504efd4e784d188fd6c3d4a14ed19f1405db17f9d618f009b4b80d7aed094c92571908b9ac6b669701ed5998370dc6080102"
+  },
+  {
+   "name": "escaping and unicode",
+   "envelope": {
+    "envelope_id": "e|\"\\/\n\t\u0001\u007f\u2028\u00e9\u20ac\ud83d\ude00",
+    "sender_id": "alice|bob",
+    "recipient_id": "bob",
+    "payload_hash": "508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1",
+    "nonce": "n-0003",
+    "sent_unix_ms": 1790000000000,
+    "expires_unix_ms": 1790000060000,
+    "transport_ref": "relay:http://127.0.0.1:9000|abc"
+   },
+   "envelope_canonical": "{\"domain\":\"dgv-a2a-envelope-v2\",\"envelope_id\":\"e|\\\"\\\\/\\n\\t\\u0001\u007f\u2028\u00e9\u20ac\ud83d\ude00\",\"expires_unix_ms\":1790000060000,\"nonce\":\"n-0003\",\"payload_hash\":\"508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1\",\"recipient_id\":\"bob\",\"sender_id\":\"alice|bob\",\"sent_unix_ms\":1790000000000,\"transport_ref\":\"relay:http://127.0.0.1:9000|abc\"}",
+   "signature": "19945c0aed7667d3a10d1291b98f171cd226c66e25c188ddfff745f9cb254a85d9d65bc88096db23385fc10ed2252abd3324e1d32a3381d3c43dfe156edc7e03",
+   "receipt": {
+    "decision": "accepted",
+    "decided_unix_ms": 1790000000000,
+    "envelope_hash": "a3d7737dfa300c87eee4b6221de088bb295915a190d137e788c4478d4d8b0e61",
+    "envelope_id": "e|\"\\/\n\t\u0001\u007f\u2028\u00e9\u20ac\ud83d\ude00",
+    "sender_id": "alice|bob",
+    "recipient_id": "bob",
+    "payload_hash": "508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1",
+    "gate_key_id": "6c8f8607dbe87077a62a2990ce07d94aaf749df76f87b98eb786a6d10f030765"
+   },
+   "receipt_canonical": "{\"decided_unix_ms\":1790000000000,\"decision\":\"accepted\",\"domain\":\"dgv-a2a-receipt-v2\",\"envelope_hash\":\"a3d7737dfa300c87eee4b6221de088bb295915a190d137e788c4478d4d8b0e61\",\"envelope_id\":\"e|\\\"\\\\/\\n\\t\\u0001\u007f\u2028\u00e9\u20ac\ud83d\ude00\",\"gate_key_id\":\"6c8f8607dbe87077a62a2990ce07d94aaf749df76f87b98eb786a6d10f030765\",\"payload_hash\":\"508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1\",\"recipient_id\":\"bob\",\"sender_id\":\"alice|bob\"}",
+   "gate_receipt": "4ed897b6ef47a76fdbdd4b88f8aad4315cf57dc79f22fad29822f27928a0fc0e630de5fe0050da820c68cc9ba3e741c585011a781f570120724a533b1d1c6507"
+  },
+  {
+   "name": "largest safe integer",
+   "envelope": {
+    "envelope_id": "env-0004",
+    "sender_id": "alice",
+    "recipient_id": "bob",
+    "payload_hash": "508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1",
+    "nonce": "n-0004",
+    "sent_unix_ms": 9007199254740990,
+    "expires_unix_ms": 9007199254740991,
+    "transport_ref": "relay:http://127.0.0.1:9000|abc"
+   },
+   "envelope_canonical": "{\"domain\":\"dgv-a2a-envelope-v2\",\"envelope_id\":\"env-0004\",\"expires_unix_ms\":9007199254740991,\"nonce\":\"n-0004\",\"payload_hash\":\"508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1\",\"recipient_id\":\"bob\",\"sender_id\":\"alice\",\"sent_unix_ms\":9007199254740990,\"transport_ref\":\"relay:http://127.0.0.1:9000|abc\"}",
+   "signature": "487c988088fb66d502e564a0bda1d877c037231891d7d2d2a592c85ae2ee4619fc062d66e7c763111c2a9899ddec64cba6d325bc95a52f2454631ab8cf6c870e",
+   "receipt": {
+    "decision": "accepted",
+    "decided_unix_ms": 9007199254740990,
+    "envelope_hash": "69530e014e9573d4544e2ac9b52b859a9a1ca93119778fcc18ba1e32b4559f95",
+    "envelope_id": "env-0004",
+    "sender_id": "alice",
+    "recipient_id": "bob",
+    "payload_hash": "508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1",
+    "gate_key_id": "6c8f8607dbe87077a62a2990ce07d94aaf749df76f87b98eb786a6d10f030765"
+   },
+   "receipt_canonical": "{\"decided_unix_ms\":9007199254740990,\"decision\":\"accepted\",\"domain\":\"dgv-a2a-receipt-v2\",\"envelope_hash\":\"69530e014e9573d4544e2ac9b52b859a9a1ca93119778fcc18ba1e32b4559f95\",\"envelope_id\":\"env-0004\",\"gate_key_id\":\"6c8f8607dbe87077a62a2990ce07d94aaf749df76f87b98eb786a6d10f030765\",\"payload_hash\":\"508eb164ed09f92a8bfc4a1eecd74a7303b72a79c01e56e0d4678106f4a542d1\",\"recipient_id\":\"bob\",\"sender_id\":\"alice\"}",
+   "gate_receipt": "df1c6b5026ecf4625059df280142ec60cf65cb3ce55777a35d7fc3b9e3519bbcf9abd73e1d53798e44e63b70b4c37875cf79414e17bf9151eb80fef3050ce20b"
+  }
+ ]
+}

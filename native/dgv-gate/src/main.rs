@@ -262,6 +262,8 @@ struct AppState {
     partition_fail_closed: bool,
     /// Development only: allow A2A inbox and ack without JWT (agent_id is then self-declared).
     a2a_allow_unauthenticated: bool,
+    /// Longest allowed `expires_unix_ms - sent_unix_ms` for an A2A envelope.
+    a2a_max_lifetime_ms: i64,
     /// Peer gate base URLs that receive signed revocation broadcasts
     /// (DGV_PEERS, comma-separated). Only locally-originated revocations are
     /// broadcast — gossiped revocations are never re-gossiped, which bounds
@@ -3790,24 +3792,19 @@ async fn handle_delegation_chain(
     )
 }
 
-/// Canonical string that the sender signs — binds all envelope fields together.
-fn a2a_canonical_string(
-    envelope_id: &str,
-    sender_id: &str,
-    recipient_id: &str,
-    payload_hash: &str,
-    nonce: &str,
-    sent_unix_ms: i64,
-    expires_unix_ms: i64,
-) -> String {
-    format!(
-        "{}|{}|{}|{}|{}|{}|{}",
-        envelope_id, sender_id, recipient_id, payload_hash, nonce, sent_unix_ms, expires_unix_ms
-    )
-}
+// ── A2A envelope v2 and receipt v2 (format: A2A_ENVELOPE_V2.md; mirrored by dgv_a2a_v2.py) ──
+
+const A2A_ENVELOPE_DOMAIN: &str = "dgv-a2a-envelope-v2";
+const A2A_RECEIPT_DOMAIN: &str = "dgv-a2a-receipt-v2";
+const A2A_MAX_ID_BYTES: usize = 256;
+const A2A_MAX_REF_BYTES: usize = 2048;
+const A2A_DEFAULT_MAX_LIFETIME_MS: i64 = 3_600_000;
 
 #[derive(Deserialize)]
 struct A2aSendRequest {
+    /// Must be "dgv-a2a-envelope-v2".
+    #[serde(default)]
+    version: String,
     envelope_id: String,
     sender_id: String,
     recipient_id: String,
@@ -3816,12 +3813,84 @@ struct A2aSendRequest {
     nonce: String,
     sent_unix_ms: i64,
     expires_unix_ms: i64,
-    /// Sender's Ed25519 signature (hex) over the canonical envelope string
+    /// Sender's Ed25519 signature (hex) over the canonical envelope
     signature: String,
     /// Where the ciphertext lives — "relay:<relay_url>|<queue_id>" or
-    /// "direct:<url>". Opaque to the gate; delivered to the recipient verbatim.
+    /// "direct:<url>". Opaque to the gate, covered by the sender's signature.
     #[serde(default)]
     transport_ref: Option<String>,
+}
+
+fn sha256_bytes_hex(data: &[u8]) -> String {
+    use sha2::Digest;
+    hex::encode(sha2::Sha256::digest(data))
+}
+
+/// Check field limits and return the exact bytes the sender must have signed (RFC 8785).
+fn a2a_envelope_canonical(req: &A2aSendRequest) -> Result<String, String> {
+    let text = |name: &str, v: &str, max: usize| {
+        if v.is_empty() || v.len() > max {
+            Err(format!("{name} must be 1 to {max} bytes"))
+        } else {
+            Ok(())
+        }
+    };
+    text("envelope_id", &req.envelope_id, A2A_MAX_ID_BYTES)?;
+    text("sender_id", &req.sender_id, A2A_MAX_ID_BYTES)?;
+    text("recipient_id", &req.recipient_id, A2A_MAX_ID_BYTES)?;
+    text("nonce", &req.nonce, A2A_MAX_ID_BYTES)?;
+    if let Some(r) = &req.transport_ref {
+        text("transport_ref", r, A2A_MAX_REF_BYTES)?;
+    }
+    if req.payload_hash.len() != 64
+        || !req.payload_hash.bytes().all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    {
+        return Err("payload_hash must be 64 lowercase hex characters".into());
+    }
+    // RFC 8785 writes numbers as doubles: larger integers would not be exact.
+    for (name, t) in [("sent_unix_ms", req.sent_unix_ms), ("expires_unix_ms", req.expires_unix_ms)] {
+        if t < 0 || t as u64 > JCS_MAX_SAFE_INT {
+            return Err(format!("{name} must be from 0 to 2^53-1"));
+        }
+    }
+    if req.expires_unix_ms <= req.sent_unix_ms {
+        return Err("expires_unix_ms must be after sent_unix_ms".into());
+    }
+    serde_jcs::to_string(&json!({
+        "domain": A2A_ENVELOPE_DOMAIN,
+        "envelope_id": req.envelope_id,
+        "sender_id": req.sender_id,
+        "recipient_id": req.recipient_id,
+        "payload_hash": req.payload_hash,
+        "nonce": req.nonce,
+        "sent_unix_ms": req.sent_unix_ms,
+        "expires_unix_ms": req.expires_unix_ms,
+        "transport_ref": req.transport_ref,
+    }))
+    .map_err(|e| format!("canonicalization failed: {e}"))
+}
+
+/// The receipt body the gate signs, and its canonical bytes.
+fn a2a_receipt(
+    req: &A2aSendRequest,
+    envelope_canonical: &str,
+    gate_public_key: &[u8],
+    decided_unix_ms: i64,
+) -> Result<(Value, String), String> {
+    let body = json!({
+        "decision": "accepted",
+        "decided_unix_ms": decided_unix_ms,
+        "envelope_hash": sha256_bytes_hex(envelope_canonical.as_bytes()),
+        "envelope_id": req.envelope_id,
+        "sender_id": req.sender_id,
+        "recipient_id": req.recipient_id,
+        "payload_hash": req.payload_hash,
+        "gate_key_id": sha256_bytes_hex(gate_public_key),
+    });
+    let mut signed = body.clone();
+    signed["domain"] = json!(A2A_RECEIPT_DOMAIN);
+    let canonical = serde_jcs::to_string(&signed).map_err(|e| format!("canonicalization failed: {e}"))?;
+    Ok((body, canonical))
 }
 
 async fn handle_a2a_send(
@@ -3829,6 +3898,23 @@ async fn handle_a2a_send(
     Json(req): Json<A2aSendRequest>,
 ) -> impl IntoResponse {
     let now = now_unix_ms();
+
+    // 0. Only the v2 format, with every field within limits
+    if req.version != A2A_ENVELOPE_DOMAIN {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "unsupported_envelope_version", "supported": A2A_ENVELOPE_DOMAIN})),
+        );
+    }
+    let canonical = match a2a_envelope_canonical(&req) {
+        Ok(c) => c,
+        Err(e) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(json!({"error": "invalid_envelope", "detail": e})),
+            );
+        }
+    };
 
     // 1. Sender must have a registered, active key
     let sender_key = match app.storage.get_agent_key(&req.sender_id).await {
@@ -3848,10 +3934,6 @@ async fn handle_a2a_send(
     };
 
     // 2. Verify sender's Ed25519 signature over the canonical envelope
-    let canonical = a2a_canonical_string(
-        &req.envelope_id, &req.sender_id, &req.recipient_id,
-        &req.payload_hash, &req.nonce, req.sent_unix_ms, req.expires_unix_ms,
-    );
     let key_bytes: [u8; 32] = match hex::decode(&sender_key.public_key_hex)
         .ok().and_then(|b| b.try_into().ok()) {
         Some(b) => b,
@@ -3901,6 +3983,13 @@ async fn handle_a2a_send(
         return (
             StatusCode::BAD_REQUEST,
             Json(json!({"error": "sent_timestamp_in_future"})),
+        );
+    }
+
+    if req.expires_unix_ms - req.sent_unix_ms > app.a2a_max_lifetime_ms {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(json!({"error": "lifetime_too_long", "max_lifetime_ms": app.a2a_max_lifetime_ms})),
         );
     }
 
@@ -3961,11 +4050,18 @@ async fn handle_a2a_send(
         }
     }
 
-    // 6. Gate-signed delivery receipt — evidence that the envelope passed checks
-    let receipt_sig = app.keys.sign_decision(&format!(
-        "a2a-deliver:{}:{}:{}",
-        req.envelope_id, req.sender_id, req.recipient_id
-    ));
+    // 6. Gate-signed receipt: what was accepted, when, and under which gate key
+    let (receipt, receipt_canonical) =
+        match a2a_receipt(&req, &canonical, &app.keys.vk.to_bytes(), now) {
+            Ok(r) => r,
+            Err(e) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(json!({"error": e})),
+                );
+            }
+        };
+    let receipt_sig = app.keys.sign_decision(&receipt_canonical);
 
     let rec = A2aEnvelopeRecord {
         envelope_id: req.envelope_id.clone(),
@@ -3977,6 +4073,7 @@ async fn handle_a2a_send(
         expires_unix_ms: req.expires_unix_ms,
         sender_signature: req.signature.clone(),
         gate_receipt_signature: receipt_sig.clone(),
+        receipt_json: Some(receipt.to_string()),
         transport_ref: req.transport_ref.clone(),
         delivered: false,
         delivered_unix_ms: None,
@@ -3988,6 +4085,7 @@ async fn handle_a2a_send(
             Json(json!({
                 "accepted": true,
                 "envelope_id": req.envelope_id,
+                "receipt": receipt,
                 "gate_receipt": receipt_sig,
                 "verifying_key": hex::encode(app.keys.vk.to_bytes()),
             })),
@@ -4175,6 +4273,8 @@ async fn handle_well_known(State(app): State<AppState>) -> impl IntoResponse {
         },
         "capabilities": {
             "sealed_payload_versions": ["dgv-sealed-v3"],
+            "a2a_envelope_version": A2A_ENVELOPE_DOMAIN,
+            "a2a_receipt_version": A2A_RECEIPT_DOMAIN,
             "delegation": "dgv-delegate-v1",
             "quorum": !app.quorum_peers.is_empty(),
             "quorum_size": app.quorum_size,
@@ -5036,8 +5136,15 @@ async fn main() {
         log_event("warn", "a2a_unauthenticated_allowed", json!({"note": "anyone who knows an agent id can read its inbox and acknowledge for it — dev only"}));
     }
 
+    let a2a_max_lifetime_ms = std::env::var("DGV_A2A_MAX_LIFETIME_MS")
+        .ok()
+        .and_then(|v| v.parse::<i64>().ok())
+        .filter(|v| *v > 0)
+        .unwrap_or(A2A_DEFAULT_MAX_LIFETIME_MS);
+
     let app_state = AppState {
         a2a_allow_unauthenticated,
+        a2a_max_lifetime_ms,
         storage,
         keys,
         counters: Arc::new(std::sync::Mutex::new(Counters::default())),
@@ -5545,5 +5652,42 @@ mod json_subset_model_diff {
             if json_subset(&c, &p) { yes += 1; }
         }
         assert!(yes * 5 >= n, "only {yes}/{n} accepted");
+    }
+}
+
+#[cfg(test)]
+mod a2a_v2_vectors {
+    use super::*;
+    use ed25519_dalek::{Signer, SigningKey};
+
+    /// The same file the Python implementation is tested against.
+    const VECTORS: &str = include_str!("../../../test_vectors/a2a_v2.json");
+
+    fn key(v: &Value, name: &str) -> SigningKey {
+        let bytes: [u8; 32] = hex::decode(v[name].as_str().unwrap()).unwrap().try_into().unwrap();
+        SigningKey::from_bytes(&bytes)
+    }
+
+    #[test]
+    fn gate_matches_the_shared_vectors_byte_for_byte() {
+        let v: Value = serde_json::from_str(VECTORS).unwrap();
+        let (sender, gate) = (key(&v, "sender_seed_hex"), key(&v, "gate_seed_hex"));
+        let cases = v["cases"].as_array().unwrap();
+        assert!(cases.len() >= 3);
+        for c in cases {
+            let name = c["name"].as_str().unwrap();
+            let mut request = c["envelope"].clone();
+            request["version"] = json!(A2A_ENVELOPE_DOMAIN);
+            request["signature"] = c["signature"].clone();
+            let req: A2aSendRequest = serde_json::from_value(request).unwrap();
+            let canonical = a2a_envelope_canonical(&req).unwrap();
+            assert_eq!(canonical, c["envelope_canonical"].as_str().unwrap(), "{name}");
+            assert_eq!(hex::encode(sender.sign(canonical.as_bytes()).to_bytes()), c["signature"].as_str().unwrap(), "{name}");
+            let decided = c["receipt"]["decided_unix_ms"].as_i64().unwrap();
+            let (body, signed) = a2a_receipt(&req, &canonical, &gate.verifying_key().to_bytes(), decided).unwrap();
+            assert_eq!(body, c["receipt"], "{name}");
+            assert_eq!(signed, c["receipt_canonical"].as_str().unwrap(), "{name}");
+            assert_eq!(hex::encode(gate.sign(signed.as_bytes()).to_bytes()), c["gate_receipt"].as_str().unwrap(), "{name}");
+        }
     }
 }

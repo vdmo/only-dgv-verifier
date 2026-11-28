@@ -10,6 +10,7 @@ throwaway test keys, so that old messages stay readable on explicit request.
 import base64
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import dgv_sdk as sdk
@@ -153,18 +154,16 @@ def ed25519():
     return seed, sk.public_key().public_bytes(raw, enc).hex()
 
 
-def deliver(forge):
+def deliver(forge, receipt=None):
     """Run recv_sealed_a2a against a fake gate and relay. `forge` signs the envelope with a key that is not the sender's."""
     a, b = agents()
     sign_sk, sign_pk = ed25519()
     sealed = seal(a, b, "env-r", 1, P1)
-    env = sdk.sign_a2a_envelope(ed25519()[0] if forge else sign_sk, "env-r", "agent-a", "agent-b", b"", "n-1", 2**62)
-    env["payload_hash"] = sdk.sealed_payload_hash(sealed)
-    key = ed25519()[0] if forge else sign_sk
-    canonical = sdk.a2a_canonical_string("env-r", "agent-a", "agent-b", env["payload_hash"], "n-1",
-                                         env["sent_unix_ms"], env["expires_unix_ms"])
-    sig = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(key)).sign(canonical.encode()).hex()
-    record = {**env, "sender_signature": sig, "transport_ref": "relay:http://unused|q"}
+    signer = ed25519()[0] if forge else sign_sk
+    now = int(time.time() * 1000)
+    env = sdk.sign_a2a_envelope(signer, "env-r", "agent-a", "agent-b", b"", "n-1", now + 60_000, sent_unix_ms=now,
+                                transport_ref="relay:http://unused|q", payload_hash=sdk.sealed_payload_hash(sealed))
+    record = {**env, "sender_signature": env["signature"]}
     acked = []
 
     class FakeGate:
@@ -179,7 +178,19 @@ def deliver(forge):
 
     original, sdk.relay_recv = sdk.relay_recv, lambda *args, **kw: sealed
     try:
-        return sdk.recv_sealed_a2a(FakeGate(), "agent-b", b["private_key_hex"], "http://unused"), acked
+        pinned = None
+        if receipt is not None:
+            gate_sk, pinned = ed25519()
+            body = {"decision": "accepted", "decided_unix_ms": now,
+                    "envelope_hash": sdk.dgv_a2a_v2.envelope_hash({k: env[k] for k in sdk.dgv_a2a_v2.ENVELOPE_FIELDS}),
+                    "envelope_id": "env-r", "sender_id": "agent-a", "recipient_id": "agent-b",
+                    "payload_hash": env["payload_hash"], "gate_key_id": sdk.dgv_a2a_v2.gate_key_id(pinned)}
+            signer_sk = gate_sk if receipt == "good" else ed25519()[0]
+            record["gate_receipt_signature"] = Ed25519PrivateKey.from_private_bytes(
+                bytes.fromhex(signer_sk)).sign(sdk.dgv_a2a_v2.receipt_bytes(body)).hex()
+            record["receipt_json"] = None if receipt == "missing" else sdk.json.dumps(body)
+        return sdk.recv_sealed_a2a(FakeGate(), "agent-b", b["private_key_hex"], "http://unused",
+                                   gate_public_key_hex=pinned), acked
     finally:
         sdk.relay_recv = original
 
@@ -198,6 +209,23 @@ def recipient_rejects_an_envelope_the_sender_did_not_sign():
         assert "signature" in str(e), str(e)
         return
     raise AssertionError("forged envelope was opened and acknowledged")
+
+
+@test
+def recipient_with_a_pinned_gate_key_accepts_a_good_receipt():
+    got, acked = deliver(forge=False, receipt="good")
+    assert got["plaintext"] == P1 and acked == ["env-r"]
+
+
+@test
+def recipient_with_a_pinned_gate_key_rejects_a_bad_or_missing_receipt():
+    for kind in ("wrong-key", "missing"):
+        try:
+            deliver(forge=False, receipt=kind)
+        except ValueError as e:
+            assert "receipt" in str(e), str(e)
+            continue
+        raise AssertionError(f"{kind} receipt was accepted")
 
 
 for ok, name, why in results:

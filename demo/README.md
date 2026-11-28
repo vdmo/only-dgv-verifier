@@ -23,20 +23,21 @@ python demo/a2a_demo.py --relay-bin /path/to/onlystate-relay
 ## Scenes
 
 1. A signed, encrypted message is delivered; the gate stores only a hash.
-2. The gate's delivery receipt verifies, and fails if altered.
+2. The receipt verifies offline against keys known beforehand, and fails if altered. The evidence is saved to `demo/out/evidence.json` for `dgv_a2a_v2.py`.
 3. A forged sender is refused.
-4. A swapped message is refused and not acknowledged; the genuine one then arrives.
-5. A replayed envelope is refused.
-6. Another agent cannot acknowledge Bob's message.
-7. An expired envelope is refused.
-8. The withdrawn encryption formats cannot be used to send.
-9. A revoked agent is cut off.
-10. **Known limit:** without JWT, anyone who can reach the gate can claim to be Bob.
+4. An altered transport reference and an over-long lifetime are refused.
+5. A swapped message is refused and not acknowledged; the genuine one then arrives.
+6. A replayed envelope is refused.
+7. Another agent cannot acknowledge Bob's message.
+8. An expired envelope is refused.
+9. The withdrawn encryption formats cannot be used to send.
+10. A revoked agent is cut off.
+11. **Known limit:** without JWT, anyone who can reach the gate can claim to be Bob.
 
 ## Limits
 
 - This is the `dgv` protocol, **not** Google's Agent2Agent (A2A) protocol.
 - Runs on one machine, with development settings (no JWT, no TLS, rate limiting off). Not a deployment example.
-- The delivery receipt covers the envelope, sender and recipient IDs, not the message hash or time.
+- A receipt shows the gate accepted an envelope, not that the recipient received or read it. Refusals are not signed.
 - Encryption is not post-quantum, has no forward secrecy if the recipient's key is stolen, and has not been independently reviewed.
 - A passing run shows these scenes behaved as described. It is not a security audit.

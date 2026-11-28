@@ -346,8 +346,9 @@ def main():
         bad("fail_closed execute", f"{status} {e}")
 
     status, a = post(u4, "/a2a/send", {
+        "version": "dgv-a2a-envelope-v2",
         "envelope_id": "env-1", "sender_id": "s", "recipient_id": "r",
-        "payload_hash": "h", "nonce": "n", "sent_unix_ms": int(time.time() * 1000),
+        "payload_hash": "0" * 64, "nonce": "n", "sent_unix_ms": int(time.time() * 1000),
         "expires_unix_ms": int(time.time() * 1000) + 60000, "signature": "00" * 64,
     })
     if status >= 400:

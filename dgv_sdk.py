@@ -42,6 +42,8 @@ import urllib.error
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+import dgv_a2a_v2
+
 
 @dataclass
 class Decision:
@@ -445,12 +447,13 @@ class GateClient:
         expires_unix_ms: int,
         signature: str,
         transport_ref: Optional[str] = None,
+        version: str = dgv_a2a_v2.ENVELOPE_DOMAIN,
     ) -> Dict[str, Any]:
-        """Submit a signed A2A envelope. The signature must be the sender's
-        Ed25519 signature over the canonical string:
-        envelope_id|sender_id|recipient_id|payload_hash|nonce|sent_unix_ms|expires_unix_ms
-        Use A2aEnvelope.sign() to build this."""
+        """Submit a signed A2A envelope (dgv-a2a-envelope-v2). Build it with
+        sign_a2a_envelope(); the signature covers every field, including
+        transport_ref. The response carries the gate's signed `receipt`."""
         body: Dict[str, Any] = {
+            "version": version,
             "envelope_id": envelope_id,
             "sender_id": sender_id,
             "recipient_id": recipient_id,
@@ -527,19 +530,6 @@ def delegate_canonical_string(
             f"|{delegatee_id}|{params_hash}|{expires_unix_ms}")
 
 
-def a2a_canonical_string(
-    envelope_id: str,
-    sender_id: str,
-    recipient_id: str,
-    payload_hash: str,
-    nonce: str,
-    sent_unix_ms: int,
-    expires_unix_ms: int,
-) -> str:
-    """Canonical string that senders sign — binds all envelope fields together."""
-    return f"{envelope_id}|{sender_id}|{recipient_id}|{payload_hash}|{nonce}|{sent_unix_ms}|{expires_unix_ms}"
-
-
 def sign_a2a_envelope(
     signing_key_hex: str,
     envelope_id: str,
@@ -549,13 +539,14 @@ def sign_a2a_envelope(
     nonce: str,
     expires_unix_ms: int,
     sent_unix_ms: Optional[int] = None,
+    transport_ref: Optional[str] = None,
+    payload_hash: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Build and sign an A2A envelope. Requires PyNaCl (`pip install pynacl`).
+    """Build and sign an A2A envelope (format: A2A_ENVELOPE_V2.md). Needs
+    PyNaCl or `cryptography`.
 
-    Returns a dict ready to pass to GateClient.a2a_send(**result), minus
-    payload_hash which is computed from `payload` (the payload itself never
-    transits the gate).
-    """
+    Returns a dict ready for GateClient.a2a_send(**result). `payload_hash` is
+    SHA-256 of `payload` unless given (the payload never transits the gate)."""
     import hashlib
     import time
     try:
@@ -567,21 +558,29 @@ def sign_a2a_envelope(
         sk = Ed25519PrivateKey.from_private_bytes(bytes.fromhex(signing_key_hex))
         sign = lambda msg: sk.sign(msg).hex()
 
-    sent = sent_unix_ms if sent_unix_ms is not None else int(time.time() * 1000)
-    payload_hash = hashlib.sha256(payload).hexdigest()
-    canonical = a2a_canonical_string(
-        envelope_id, sender_id, recipient_id, payload_hash, nonce, sent, expires_unix_ms
-    )
-    signature = sign(canonical.encode())
-    return {
+    envelope = {
         "envelope_id": envelope_id,
         "sender_id": sender_id,
         "recipient_id": recipient_id,
-        "payload_hash": payload_hash,
+        "payload_hash": payload_hash or hashlib.sha256(payload).hexdigest(),
         "nonce": nonce,
-        "sent_unix_ms": sent,
+        "sent_unix_ms": sent_unix_ms if sent_unix_ms is not None else int(time.time() * 1000),
         "expires_unix_ms": expires_unix_ms,
-        "signature": signature,
+        "transport_ref": transport_ref,
+    }
+    signature = sign(dgv_a2a_v2.envelope_bytes(envelope))
+    return {"version": dgv_a2a_v2.ENVELOPE_DOMAIN, **envelope, "signature": signature}
+
+
+def a2a_evidence(sent: Dict[str, Any], response: Dict[str, Any]) -> Dict[str, Any]:
+    """The record to keep for offline verification: what was signed (from
+    sign_a2a_envelope) plus the gate's signed receipt (from a2a_send).
+    Check it with dgv_a2a_v2.py."""
+    return {
+        "envelope": {k: sent[k] for k in dgv_a2a_v2.ENVELOPE_FIELDS},
+        "signature": sent["signature"],
+        "receipt": response["receipt"],
+        "gate_receipt": response["gate_receipt"],
     }
 
 
@@ -883,38 +882,41 @@ def send_sealed_a2a(
         raise GateError(400, {"error": "recipient_has_no_enc_key", "recipient_id": recipient_id})
     eid = envelope_id or str(uuid.uuid4())
     sealed = seal_a2a_payload(sender_enc_private_hex, enc_pub, eid, counter, plaintext)
-    ph = sealed_payload_hash(sealed)
     sent = int(time.time() * 1000)
-    nonce = str(uuid.uuid4())
-    canonical = a2a_canonical_string(eid, sender_id, recipient_id, ph,
-                                     nonce, sent, sent + expires_in_ms)
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-    sig = Ed25519PrivateKey.from_private_bytes(
-        bytes.fromhex(sender_signing_key_hex)).sign(canonical.encode()).hex()
     queue_id = relay_queue_id(recipient_id)
-    resp = client.a2a_send(eid, sender_id, recipient_id, ph, nonce, sent,
-                           sent + expires_in_ms, sig,
-                           transport_ref=transport_ref_relay(relay_url, queue_id))
+    envelope = sign_a2a_envelope(
+        sender_signing_key_hex, eid, sender_id, recipient_id, b"", str(uuid.uuid4()),
+        sent + expires_in_ms, sent_unix_ms=sent,
+        transport_ref=transport_ref_relay(relay_url, queue_id),
+        payload_hash=sealed_payload_hash(sealed))
+    resp = client.a2a_send(**envelope)
     relay_send(relay_url, queue_id, sealed)
-    return {"envelope_id": eid, "gate_response": resp}
+    return {"envelope_id": eid, "gate_response": resp,
+            "evidence": a2a_evidence(envelope, resp)}
 
 
-def _verify_envelope_signature(env: Dict[str, Any], recipient_id: str,
-                               sender_public_hex: Optional[str]) -> None:
+def _verify_envelope(env: Dict[str, Any], recipient_id: str,
+                     sender_public_hex: Optional[str],
+                     gate_public_key_hex: Optional[str]) -> None:
     """Check end to end that the registered sender signed this envelope for this
-    recipient and payload hash, instead of relying on the gate's say-so."""
-    from cryptography.exceptions import InvalidSignature
-    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+    recipient, instead of relying on the gate's say-so. With a pinned gate key,
+    also check the gate's receipt."""
     if not sender_public_hex:
         raise ValueError("sender has no signing key: envelope signature cannot be verified")
     try:
-        canonical = a2a_canonical_string(
-            env["envelope_id"], env["sender_id"], recipient_id, env["payload_hash"],
-            env["nonce"], env["sent_unix_ms"], env["expires_unix_ms"])
-        Ed25519PublicKey.from_public_bytes(bytes.fromhex(sender_public_hex)).verify(
-            bytes.fromhex(env["sender_signature"]), canonical.encode())
-    except (KeyError, ValueError, InvalidSignature) as exc:
-        raise ValueError("envelope signature verification failed") from exc
+        envelope = {k: env.get(k) for k in dgv_a2a_v2.ENVELOPE_FIELDS}
+        envelope["recipient_id"] = recipient_id
+        dgv_a2a_v2.verify_sender(envelope, env.get("sender_signature"), sender_public_hex)
+    except dgv_a2a_v2.EvidenceError as exc:
+        raise ValueError(f"envelope signature verification failed: {exc}") from exc
+    if gate_public_key_hex is None:
+        return
+    try:
+        receipt = json.loads(env.get("receipt_json") or "null")
+        dgv_a2a_v2.verify_receipt(envelope, receipt, env.get("gate_receipt_signature"),
+                                  gate_public_key_hex)
+    except ValueError as exc:
+        raise ValueError(f"gate receipt verification failed: {exc}") from exc
 
 
 def recv_sealed_a2a(
@@ -923,9 +925,11 @@ def recv_sealed_a2a(
     enc_private_hex: str,
     relay_url: str,
     poll_timeout: int = 35,
+    gate_public_key_hex: Optional[str] = None,
 ) -> Optional[Dict[str, Any]]:
     """Receive one sealed envelope: gate inbox → relay fetch → hash-binding
-    check → verify the sender's envelope signature → open → ack. Returns
+    check → verify the sender's envelope signature (and, if
+    `gate_public_key_hex` is given, the gate's receipt) → open → ack. Returns
     {"envelope_id", "sender_id", "plaintext"} or None if the inbox is empty.
     Raises on hash mismatch, bad signature, key mismatch, or decryption
     failure — nothing is acked."""
@@ -944,7 +948,8 @@ def recv_sealed_a2a(
         if sealed_payload_hash(sealed) != env["payload_hash"]:
             raise ValueError("payload_hash mismatch: ciphertext does not match gate record")
         sender_keys = client.get_agent_key(env["sender_id"])
-        _verify_envelope_signature(env, agent_id, sender_keys.get("public_key_hex"))
+        _verify_envelope(env, agent_id, sender_keys.get("public_key_hex"),
+                         gate_public_key_hex)
         sender_enc = sender_keys.get("enc_public_key_hex")
         if not sender_enc:
             raise ValueError("sender_has_no_enc_key")
