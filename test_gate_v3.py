@@ -9,10 +9,12 @@ import time
 import hashlib
 import hmac
 import base64
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-GATE_BINARY = os.path.join(os.path.dirname(__file__), "native", "target", "release", "dgv-gate")
+GATE_BINARY = gate_testlib.gate_bin()
 TEST_DB = tempfile.mktemp(suffix=".db", prefix="dgv_v3_test_")
 TEST_PORT = "7891"
 BASE_URL = f"http://127.0.0.1:{TEST_PORT}"
@@ -92,7 +94,7 @@ def get(path, headers=None, admin_key=None):
 def start_gate(jwt_enabled=False):
     env = os.environ.copy()
     env["DGV_STORAGE"] = "sqlite"
-    env["DGV_DATABASE_URL"] = f"sqlite://{TEST_DB}"
+    env["DGV_DATABASE_URL"] = gate_testlib.sqlite_url(TEST_DB)
     env["DGV_LISTEN_ADDR"] = f"127.0.0.1:{TEST_PORT}"
     env["DGV_ADMIN_KEY"] = ADMIN_KEY
     env["DGV_RATE_LIMIT_DISABLED"] = "1"

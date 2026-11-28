@@ -32,10 +32,12 @@ import urllib.error
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
-ROOT = "/home/vdmo/pir/only-dgv-verifier"
-NATIVE = f"{ROOT}/native"
-GATE = "./target/release/dgv-gate"
+ROOT = gate_testlib.ROOT
+NATIVE = gate_testlib.NATIVE
+GATE = gate_testlib.gate_bin()
 DEAD_PG = "postgres://postgres:postgres@127.0.0.1:15999/dgv_gate"
 
 FILES = {
@@ -195,21 +197,21 @@ def main():
     # ── A. Signed gossip between disconnected nodes ─────────────────────────
     print("--- A. Signed gossip (separate DBs, no shared storage) ---")
     g1, u1 = start_gate(7890, {
-        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": f"sqlite://{FILES['db1']}",
+        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db1']),
         "DGV_SIGNING_KEY": FILES["k1"],
         "DGV_PEERS": "http://127.0.0.1:7891",
         "DGV_GOSSIP_KEYS": vk2,
     })
     procs.append(g1)
     g2, u2 = start_gate(7891, {
-        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": f"sqlite://{FILES['db2']}",
+        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db2']),
         "DGV_SIGNING_KEY": FILES["k2"],
         "DGV_PEERS": "http://127.0.0.1:7890",
         "DGV_GOSSIP_KEYS": vk1,
     })
     procs.append(g2)
     g3, u3 = start_gate(7892, {
-        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": f"sqlite://{FILES['db3']}",
+        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db3']),
         "DGV_SIGNING_KEY": FILES["k1"],  # same key ok; no peers/trust config
     })
     procs.append(g3)
@@ -392,7 +394,7 @@ def main():
         cwd=NATIVE,
         env={**os.environ, "DGV_PARTITION_POLICY": "bogus",
              "DGV_LISTEN_ADDR": "127.0.0.1:7897",
-             "DGV_DATABASE_URL": f"sqlite://{FILES['db1']}",
+             "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db1']),
              "DGV_SIGNING_KEY": FILES["k1"]},
     )
     rc = proc.wait(timeout=15)
@@ -404,12 +406,12 @@ def main():
     # ── C. Shared-storage propagation latency ───────────────────────────────
     print("\n--- C. Shared-storage propagation latency (two gates, one DB) ---")
     ga, ua = start_gate(7895, {
-        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": f"sqlite://{FILES['db_shared']}",
+        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db_shared']),
         "DGV_SIGNING_KEY": FILES["k1"],
     })
     procs.append(ga)
     gb, ub = start_gate(7896, {
-        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": f"sqlite://{FILES['db_shared']}",
+        "DGV_STORAGE": "sqlite", "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db_shared']),
         "DGV_SIGNING_KEY": FILES["k1"],
     })
     procs.append(gb)

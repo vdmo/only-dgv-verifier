@@ -31,10 +31,12 @@ import sys
 import time
 import urllib.request
 import urllib.error
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
 PG_PORT = 15432
-DB_URL = f"postgres://postgres:postgres@127.0.0.1:{PG_PORT}/dgv_gate"
-KEY_FILE = "/home/vdmo/pir/only-dgv-verifier/native/dgv_concurrent_key.hex"
+DB_URL = os.environ.get("DGV_TEST_DATABASE_URL") or f"postgres://postgres:postgres@127.0.0.1:{PG_PORT}/dgv_gate"
+KEY_FILE = os.path.join(gate_testlib.NATIVE, "dgv_concurrent_key.hex")
 
 def post(base_url, path, body):
     data = json.dumps(body).encode()
@@ -74,9 +76,9 @@ def start_gate(port, env):
     env["DGV_LISTEN_ADDR"] = f"127.0.0.1:{port}"
     # Rate limiting enabled for concurrent test (we test it explicitly)
     proc = subprocess.Popen(
-        ["./target/release/dgv-gate"],
+        [gate_testlib.gate_bin()],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        cwd="/home/vdmo/pir/only-dgv-verifier/native",
+        cwd=gate_testlib.NATIVE,
         env=env,
     )
     # Wait for the gate to be ready

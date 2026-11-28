@@ -24,10 +24,12 @@ import urllib.error
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
-ROOT = "/home/vdmo/pir/only-dgv-verifier"
-NATIVE = f"{ROOT}/native"
-GATE = f"{NATIVE}/target/release/dgv-gate"
+ROOT = gate_testlib.ROOT
+NATIVE = gate_testlib.NATIVE
+GATE = gate_testlib.gate_bin()
 
 FILES = {
     "k1": f"{NATIVE}/dgv_q_k1.hex",
@@ -150,7 +152,7 @@ def main():
     )
 
     env1 = {
-        "DGV_DATABASE_URL": f"sqlite://{FILES['db1']}",
+        "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db1']),
         "DGV_SIGNING_KEY": FILES["k1"],
         "DGV_ADMIN_KEY": "admin-1",
         "DGV_GOSSIP_KEYS": trusted_keys,
@@ -159,7 +161,7 @@ def main():
         "DGV_PARTITION_POLICY": "fail_closed",
     }
     env2 = {
-        "DGV_DATABASE_URL": f"sqlite://{FILES['db2']}",
+        "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db2']),
         "DGV_SIGNING_KEY": FILES["k2"],
         "DGV_ADMIN_KEY": "admin-2",
         "DGV_GOSSIP_KEYS": trusted_keys,
@@ -168,7 +170,7 @@ def main():
         "DGV_PARTITION_POLICY": "fail_closed",
     }
     env3 = {
-        "DGV_DATABASE_URL": f"sqlite://{FILES['db3']}",
+        "DGV_DATABASE_URL": gate_testlib.sqlite_url(FILES['db3']),
         "DGV_SIGNING_KEY": FILES["k3"],
         "DGV_ADMIN_KEY": "admin-3",
         "DGV_GOSSIP_KEYS": trusted_keys,

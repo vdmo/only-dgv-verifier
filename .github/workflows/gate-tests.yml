@@ -1,0 +1,66 @@
+name: gate-tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Tests only read the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          # throwaway database that exists only for this job
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python dependencies
+        run: pip install "cryptography>=50"
+
+      - name: Rust toolchain
+        run: rustup update stable --no-self-update && rustup default stable
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            native/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('native/Cargo.lock') }}
+
+      - name: Build the gate
+        working-directory: native
+        run: cargo build --release --locked -p dgv-gate
+
+      - name: Rust tests
+        working-directory: native
+        run: cargo test --release --locked -p dgv-gate -p dgv-storage
+
+      - name: Gate tests (SQLite)
+        run: python run_tests.py
+
+      - name: Gate tests (Postgres)
+        run: python run_tests.py --postgres postgres://postgres@127.0.0.1:5432/postgres

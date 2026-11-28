@@ -44,10 +44,12 @@ from dgv_sdk import (
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 NATIVE = os.path.join(ROOT, "native")
-GATE = os.environ.get("DGV_GATE_BIN", os.path.join(NATIVE, "target", "release", "dgv-gate"))
+GATE = gate_testlib.gate_bin()
 # onlystate-relay lives in a separate repository
 RELAY = os.environ.get("DGV_RELAY_BIN", os.path.join(ROOT, "..", "onlyquantumstate-main", "onlystate-relay", "target", "release", "onlystate-relay"))
 GATE_PORT = int(os.environ.get("DGV_TEST_GATE_PORT", "7910"))
@@ -105,8 +107,7 @@ def start_gate():
     env["DGV_LISTEN_ADDR"] = f"127.0.0.1:{GATE_PORT}"
     env["DGV_ADMIN_KEY"] = ADMIN_KEY
     env["DGV_A2A_ALLOW_UNAUTHENTICATED"] = "1"  # test gate without JWT
-    env["DGV_STORAGE"] = "sqlite"
-    env["DGV_DATABASE_URL"] = f"sqlite://{DB}"
+    env.update(gate_testlib.db_env(DB))
     proc = subprocess.Popen([GATE], stdout=subprocess.DEVNULL,
                             stderr=subprocess.STDOUT, cwd=NATIVE, env=env)
     for _ in range(60):
@@ -120,6 +121,9 @@ def start_gate():
 
 
 def start_relay():
+    if not os.path.exists(RELAY):
+        print("INFO onlystate-relay not found: using the in-memory stand-in relay")
+        return gate_testlib.StandInRelay(RELAY_PORT)
     proc = subprocess.Popen(
         [RELAY, "--port", str(RELAY_PORT), "--poll-timeout-secs", "3"],
         stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)

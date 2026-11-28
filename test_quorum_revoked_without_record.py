@@ -10,10 +10,14 @@ import json, os, subprocess, sys, tempfile, threading, time, urllib.request, url
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from cryptography.hazmat.primitives import serialization
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import gate_testlib  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NATIVE = os.path.join(HERE, "native")
-GATE = os.path.join(NATIVE, "target", "release", "dgv-gate")
+GATE = gate_testlib.gate_bin()
 passed = failed = 0
 
 
@@ -87,7 +91,7 @@ def run_scenario(name, modes, quorum_size, port):
     env = os.environ.copy()
     env.update({
         "DGV_RATE_LIMIT_DISABLED": "1", "DGV_LISTEN_ADDR": f"127.0.0.1:{port}",
-        "DGV_DATABASE_URL": f"sqlite://{os.path.join(tmp, 'g.db')}",
+        "DGV_DATABASE_URL": gate_testlib.sqlite_url(os.path.join(tmp, "g.db")),
         "DGV_SIGNING_KEY": keyf, "DGV_ADMIN_KEY": "admin",
         "DGV_GOSSIP_KEYS": ",".join(p.vk for p in peers),
         "DGV_QUORUM_PEERS": ",".join(p.url for p in peers),
